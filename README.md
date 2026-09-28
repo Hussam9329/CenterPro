@@ -8,6 +8,10 @@ This branch contains the complete interactive frontend with fictional, linked da
 
 Preview roles: **المدير العام**, **مدير العمليات**, **موظف**. Select a role on the login screen; no real password is required. The visible password field is a design demonstration. Changes remain in `sessionStorage` for the current browser tab and can be reset from Settings. No credentials are stored. An accidentally created Vercel Production deployment displays a holding screen instead of exposing the mock application.
 
+Preview: https://centerpro-lm2dg7nj5-hussam9329s-projects.vercel.app/login
+
+Verified application commit: `e35659f`. [GitHub quality run](https://github.com/Hussam9329/CenterPro/actions/runs/36420193405) passed all gates, including 89 domain tests and 28 browser tests. See [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
+
 ## Implemented preview
 
 - Branded Arabic RTL, Latin digits, Baghdad dates/times, light theme, original vector logo, locally bundled Noto Sans Arabic and Inter.

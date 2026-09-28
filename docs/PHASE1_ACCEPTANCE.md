@@ -2,6 +2,16 @@
 
 Reviewed on 2026-09-28. This delivery is the complete frontend approval phase inside the final Next.js repository. All records, sessions, permissions, attendance outcomes and financial mutations are browser-only simulations.
 
+## Review links
+
+- Preview: https://centerpro-lm2dg7nj5-hussam9329s-projects.vercel.app/login
+- Application commit: `e35659fe91ba81c4d6b44963bed3ad6cbad893c0`
+- Preview branch: `preview/ui-approval`
+- Passing CI: https://github.com/Hussam9329/CenterPro/actions/runs/36420193405
+- Vercel deployment: `dpl_9GkmMgMvPSbEuai8vdbJGxvSfH1C`, READY, Preview (`target: null`).
+
+The published app was independently opened and exercised in a browser: admin login/dashboard/payroll, employee login/home, additional report/QR routes, mobile employee layout and manifest. Public access returned HTTP 200 and the browser smoke run recorded no JavaScript page errors.
+
 ## Delivered workflows
 
 - Arabic RTL identity, original vector logo, locally bundled brand fonts and light responsive layouts.
@@ -24,7 +34,7 @@ Reviewed on 2026-09-28. This delivery is the complete frontend approval phase in
 | Strict TypeScript + route types | Pass |
 | Domain tests | 89 passed |
 | Production build | Pass; 23 routes |
-| Browser workflows + responsive/accessibility suite | 28 passed (27 in the final full run; quick-link regression passed on targeted rerun after correcting an ambiguous test locator) |
+| Browser workflows + responsive/accessibility suite | 28 passed in GitHub Actions on the delivered application commit |
 | Responsive coverage | 18 admin/employee routes at each of eight sizes |
 | Automated accessibility | No WCAG 2 A/AA violations detected on dashboard, employees, payroll and settings |
 | Excel export | Numeric money values, date cells and RTL worksheet verified |
@@ -37,6 +47,8 @@ Sizes: 360×800, 390×844, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900
 ## Review instructions
 
 Open the Preview, choose a role on the login screen and enter without a real password. Use the employee role for the personal dashboard and scanner. Use the Super Admin role for configuration and archives. The fixture includes unresolved attendance, excused/unexcused absences, a partial month, a negative salary and a payment requiring review. Changes persist only in the current tab's session; Settings can restore the original fixture.
+
+Vercel requires a first Production deployment for a new project before Preview is available. A temporary static holding page with no app data or functionality was used to initialize the project, then removed after the Preview was verified. The application handoff is the Preview deployment above; it was not promoted to Production.
 
 No Vercel environment variables are required for Phase 1. The application does not connect to Neon. Production deployments show a holding page until the frontend approval phase is complete.
 
