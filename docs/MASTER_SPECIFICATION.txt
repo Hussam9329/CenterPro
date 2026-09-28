@@ -1,0 +1,2221 @@
+
+CENTERPRO — FINAL MASTER DEVELOPMENT PROMPT
+0. ROLE AND EXECUTION MODE
+You are the lead software engineer, product engineer, database architect, security engineer, and UI/UX implementer responsible for building CenterPro.
+Build a complete, production-ready application.
+This is NOT:
+•	a prototype
+•	a static mockup
+•	a design-only dashboard
+•	a demo with fake data
+•	a partial proof of concept
+Every major feature described below must be backed by real database logic and production-ready server-side validation.
+The application will run on:
+•	GitHub repository: Hussam9329/CenterPro
+•	Vercel
+•	Neon PostgreSQL
+Use environment variables for all credentials.
+Never place secrets inside source code, Git history, logs, screenshots, README examples, client bundles, or generated files.
+Do not stop after scaffolding.
+Continue implementation through:
+1.	Database
+2.	Authentication
+3.	Permissions
+4.	UI design system
+5.	Employee management
+6.	Attendance
+7.	QR system
+8.	Payroll
+9.	Reports
+10.	Audit system
+11.	Responsive polish
+12.	Automated testing
+13.	Production build validation
+14.	Deployment readiness
+Do not ask for confirmation between normal implementation phases.
+Only stop when a genuinely blocking external requirement cannot be completed without owner input.
+________________________________________
+1. PRODUCT
+Product name:
+CenterPro
+CenterPro is an internal management platform for one physical center.
+It manages:
+•	Employees
+•	Employee accounts
+•	Departments
+•	Workdays
+•	Attendance
+•	QR attendance
+•	Absences
+•	Lateness
+•	Salary rules
+•	Payroll
+•	Deductions
+•	Bonuses
+•	Salary payments
+•	Monthly payroll archives
+•	Reports
+•	Audit logs
+There is only one center.
+Do NOT add:
+•	branches
+•	multi-company support
+•	multi-tenant architecture
+unless explicitly requested in the future.
+________________________________________
+2. CORE PRODUCT PRINCIPLES
+CenterPro must be:
+•	Extremely simple to operate
+•	Fast
+•	Professional
+•	Reliable
+•	Financially accurate
+•	Secure
+•	Mobile-friendly
+•	Fully responsive
+•	Arabic-first
+•	Easy for non-technical employees
+The UI must feel like a custom-built CenterPro application.
+It must NOT feel like:
+•	an off-the-shelf admin template
+•	default shadcn
+•	generic SaaS dashboard
+•	AI-generated design
+•	a collection of disconnected pages
+All screens must share one coherent design system.
+________________________________________
+3. LANGUAGE
+The application interface is:
+Arabic only
+Use:
+dir="rtl"
+throughout the application.
+All numbers must use English/Latin digits:
+0 1 2 3 4 5 6 7 8 9
+Dates also use Latin digits.
+Example:
+27/09/2026
+Times:
+02:17:43 PM
+Do NOT add an English UI language switch.
+________________________________________
+4. OFFICIAL TIMEZONE
+Official application timezone:
+Asia/Baghdad
+Store timestamps correctly in the database, preferably UTC.
+Convert them for display and operational rules using:
+Asia/Baghdad
+Attendance time must NEVER be taken from the employee's phone clock.
+The server is authoritative.
+________________________________________
+5. TECHNOLOGY STACK
+Use:
+•	Next.js
+•	App Router
+•	TypeScript
+•	TypeScript strict mode
+•	React
+•	Tailwind CSS
+•	PostgreSQL
+•	Neon PostgreSQL
+•	Drizzle ORM
+•	Zod or equivalent server validation
+•	PWA support
+•	Vercel
+Use production-quality UI primitives but customize them completely.
+If using shadcn/ui, treat it only as an implementation foundation.
+Do NOT ship default shadcn visual styling.
+________________________________________
+6. AUTHENTICATION ARCHITECTURE
+Authentication is based on:
+Username + Password
+NOT email login.
+Example:
+اسم الموظف:
+محمد خليل
+
+Username:
+KALEL21
+
+Password:
+********
+Username:
+•	Required
+•	Unique
+•	Case-insensitive for authentication
+Passwords must be securely hashed.
+Prefer:
+Argon2id
+or another production-grade password hashing implementation compatible with the deployment environment.
+Never store plaintext passwords.
+________________________________________
+7. SESSION SECURITY
+Use secure server-side sessions.
+Requirements:
+•	Cryptographically secure session ID
+•	Session stored server-side/database
+•	HttpOnly cookie
+•	Secure cookie in production
+•	SameSite protection
+•	Expiration
+•	Server-side invalidation
+•	Logout invalidates session
+•	Password reset invalidates existing sessions
+Add sensible rate limiting to authentication attempts.
+Never trust frontend role state.
+Every protected server endpoint/action must validate the logged-in user's permissions.
+________________________________________
+8. USER ROLES
+Three roles:
+SUPER_ADMIN
+ADMIN
+EMPLOYEE
+Arabic UI names:
+Super Admin
+Admin / Manager
+موظف
+________________________________________
+9. SUPER ADMIN PERMISSIONS
+Super Admin has full control.
+Can:
+•	Create employees
+•	Edit employees
+•	Activate/deactivate employees
+•	Manage employee accounts
+•	Reset passwords
+•	Create Admin accounts
+•	Manage user roles
+•	Manage departments
+•	Manage salary settings
+•	Open workdays
+•	Review attendance
+•	Edit attendance
+•	Manage deductions
+•	Manage bonuses
+•	Manage payroll
+•	Archive payroll months
+•	Reopen archived months
+•	Manage salary payments
+•	View all reports
+•	View audit log
+•	Manage system settings
+Only Super Admin can:
+•	Create/modify Admin accounts
+•	Manage role permissions
+•	Reopen archived payroll months
+•	Change protected salary configuration
+________________________________________
+10. ADMIN / MANAGER PERMISSIONS
+Admin / Manager can handle daily operations.
+Can:
+•	Add employees
+•	Edit employee information
+•	Manage employee login username
+•	Reset employee password
+•	Activate/deactivate employees
+•	Open workdays
+•	Review attendance
+•	Modify attendance
+•	Add deductions
+•	Add bonuses
+•	Manage current payroll
+•	Mark salaries paid
+•	Generate reports
+Cannot:
+•	Create Super Admin
+•	Modify protected role permissions
+•	Reopen archived months
+•	Access functions reserved for Super Admin
+________________________________________
+11. EMPLOYEE PERMISSIONS
+Employee can only see data belonging to their own account.
+Can view:
+•	Own profile
+•	Attendance
+•	Absences
+•	Lateness
+•	Current salary
+•	Salary breakdown
+•	Deductions
+•	Deduction reasons
+•	Bonuses
+•	Bonus reasons
+•	Historical payroll
+•	Payment status
+Can:
+•	Open QR scanner
+•	Register own attendance
+Cannot:
+•	Edit profile
+•	Edit username
+•	Change own password
+•	View another employee
+•	Edit attendance
+•	Edit payroll
+•	Edit deductions
+•	Access admin pages
+________________________________________
+12. PASSWORD MANAGEMENT
+Employees cannot change their own password.
+Admin or Super Admin changes the password.
+Flow:
+ملف الموظف
+→ تغيير كلمة المرور
+→ إدخال كلمة المرور الجديدة
+→ حفظ
+Do NOT require:
+•	current password
+•	old password
+•	multi-step confirmation
+•	unnecessary confirmation modal
+Save directly after the Admin presses Save.
+Password change must:
+1.	Validate the Admin permission
+2.	Hash new password
+3.	Replace old password hash
+4.	Invalidate existing employee sessions
+5.	Create Audit Log event
+Never include the actual password in Audit Log.
+________________________________________
+13. EMPLOYEE ID
+Every employee receives an automatically generated unique ID.
+Format:
+CP-0001
+CP-0002
+CP-0003
+CP-0004
+Employee IDs:
+•	Are generated automatically
+•	Are unique
+•	Never repeat
+•	Never get reused
+•	Remain the same if employee becomes inactive
+Use proper concurrency-safe generation.
+________________________________________
+14. EMPLOYEE PROFILE DATA
+Each employee profile contains:
+•	Employee ID
+•	Full name
+•	Profile image
+•	Address / residence
+•	Employee phone number
+•	Guardian phone number
+•	Department
+•	Start date
+•	Active / Inactive
+•	Gender
+•	Date of birth
+•	Notes
+•	Educational qualification
+•	Email
+•	Telegram username
+•	Username
+•	Role
+•	Created at
+•	Updated at
+Optionally support an employment end date internally for correct history management.
+Department must come from the Department table.
+Do NOT use manually typed free-text departments.
+________________________________________
+15. DEFAULT DEPARTMENTS
+Seed the following departments:
+1. التصحيح
+2. التدقيق
+3. المتابعة
+4. المبيعات
+5. التصميم
+6. الادارة
+Admin interface must allow adding future departments.
+Departments support:
+Active
+Inactive
+Do not hard-delete a department with historical references.
+Use soft disable/inactive.
+________________________________________
+16. DEPARTMENT SALARY SYSTEM
+Each department has its own independent salary settings.
+A department can use one of two salary modes:
+TIERED
+FIXED
+Arabic:
+نظام شرائح
+راتب قطعي
+________________________________________
+17. TIERED SALARY MODE
+Tiered salary is NOT globally hardcoded.
+Each department can have different salary rules.
+Example for:
+قسم التصحيح
+Example configuration:
+قيمة اليومية:
+25,000 د.ع
+
+0 – 4 أيام:
+عدد أيام الحضور × اليومية
+
+5 – 8 أيام:
+200,000 د.ع
+
+9 – 16 يوم:
+400,000 د.ع
+
+بعد اليوم 16:
+كل يوم إضافي +25,000 د.ع
+
+الحد الأعلى:
+600,000 د.ع
+________________________________________
+18. CORRECTION DEPARTMENT EXAMPLE
+With:
+Daily Rate = 25,000
+Half Salary = 200,000
+Full Salary = 400,000
+Maximum Salary = 600,000
+Expected calculations:
+0 days = 0
+
+1 day = 25,000
+2 days = 50,000
+3 days = 75,000
+4 days = 100,000
+
+5 days = 200,000
+6 days = 200,000
+7 days = 200,000
+8 days = 200,000
+
+9 days = 400,000
+10 days = 400,000
+11 days = 400,000
+12 days = 400,000
+13 days = 400,000
+14 days = 400,000
+15 days = 400,000
+16 days = 400,000
+
+17 days = 425,000
+18 days = 450,000
+19 days = 475,000
+20 days = 500,000
+21 days = 525,000
+22 days = 550,000
+23 days = 575,000
+24 days = 600,000
+
+25 days = 600,000
+26 days = 600,000
+27 days = 600,000
+28 days = 600,000
+29 days = 600,000
+30 days = 600,000
+31 days = 600,000
+________________________________________
+19. FLEXIBLE SALARY TIER BUILDER
+Do not write:
+0–4
+5–8
+9–16
+as immutable application logic.
+Create configurable salary rules per department.
+A salary tier should support fields conceptually equivalent to:
+from_days
+to_days
+calculation_type
+fixed_amount
+Calculation types:
+PER_DAY
+FIXED
+Example:
+Tier 1
+from: 0
+to: 4
+type: PER_DAY
+
+Tier 2
+from: 5
+to: 8
+type: FIXED
+amount: 200000
+
+Tier 3
+from: 9
+to: 16
+type: FIXED
+amount: 400000
+Then department also stores:
+Daily Rate
+Extra Days Start
+Maximum Salary
+Unexcused Absence Deduction
+Extra days use the same Daily Rate.
+Example:
+Base after final tier
++
+(extra attendance days × Daily Rate)
+then cap at Maximum Salary.
+Validate tiers:
+•	No overlaps
+•	No invalid negative day counts
+•	Start <= End
+•	Clear order
+Provide a clean admin editor.
+________________________________________
+20. MAXIMUM SALARY
+Maximum Salary is configured independently for every Tiered department.
+Example:
+التصحيح:
+600,000
+
+قسم آخر:
+Different value
+The salary must never exceed the department maximum.
+________________________________________
+21. FIXED SALARY DEPARTMENT
+A department may use:
+راتب قطعي
+Example:
+الإدارة
+Fixed Salary:
+1,000,000 د.ع
+If the employee has full-month employment:
+16 attendance days → 1,000,000
+20 attendance days → 1,000,000
+24 attendance days → 1,000,000
+30 attendance days → 1,000,000
+Attendance above the normal amount does NOT increase Fixed Base Salary.
+________________________________________
+22. EMPLOYEE FIXED SALARY OVERRIDE
+A specific employee can have a Fixed Salary even if their department normally uses the Tiered system.
+In employee payroll settings provide:
+☐ هذا الموظف راتبه قطعي
+When enabled, reveal:
+الراتب القطعي
+قيمة اليومية
+Employee-level Fixed Salary overrides department Tiered Salary logic.
+Daily Rate field may override the department Daily Rate.
+If employee Daily Rate override is empty:
+Use department Daily Rate.
+________________________________________
+23. FIXED SALARY FULL-MONTH LOGIC
+For an employee employed for the full payroll month:
+Base Salary = Fixed Salary
+regardless of how many attendance days exceed the normal work amount.
+Absences and other financial adjustments are applied AFTER the fixed Base Salary.
+Example:
+Fixed Salary:
+1,000,000
+
+1 excused absence:
+- Daily Rate
+
+Bonus:
++50,000
+
+Other deduction:
+-25,000
+________________________________________
+24. FIXED SALARY PARTIAL FIRST/LAST MONTH
+If a Fixed Salary employee starts during the middle of the month or their employment ends during the middle of the month:
+Do NOT automatically give the complete Fixed Salary.
+For that partial employment month:
+Partial Base Salary =
+Attendance Days × Effective Daily Rate
+Cap this value at:
+Fixed Salary
+Then apply absence deductions, other deductions, and bonuses normally.
+Example:
+Started during the month
+Attendance = 8 days
+Daily Rate = 25,000
+
+Partial Base =
+8 × 25,000
+= 200,000
+This special partial-month logic applies only to the first or final partial employment month.
+________________________________________
+25. ATTENDANCE COUNT AND SALARY
+For Tiered Salary:
+Only actual:
+حضور
+counts toward salary tier thresholds.
+The following do NOT increase attendance count:
+غياب بعذر
+غياب بدون عذر
+مستثنى / لا يوجد دوام
+غير محسوم
+________________________________________
+26. EXCUSED ABSENCE
+Absence type:
+غياب بعذر
+Deduction:
+Effective Daily Rate × Number of Excused Absence Days
+Example:
+Attendance:
+14 days
+
+Tier Salary:
+400,000
+
+Excused Absence:
+1
+
+Daily Rate:
+25,000
+
+Result:
+400,000 - 25,000
+= 375,000
+This is intentional.
+The absence deduction is applied separately after determining Base Salary.
+________________________________________
+27. UNEXCUSED ABSENCE
+Each department has an independent:
+خصم الغياب بدون عذر
+Example:
+Daily Rate:
+25,000
+
+Unexcused Absence Deduction:
+50,000
+One unexcused absence:
+-50,000
+Two:
+-100,000
+Do not assume it equals the Daily Rate.
+________________________________________
+28. OTHER DEDUCTIONS
+Admin can manually add deductions to an employee.
+Fields:
+•	Employee
+•	Amount
+•	Date
+•	Type
+•	Reason
+•	Created by
+•	Created at
+Types:
+اعتراض
+خصم إداري
+أخرى
+If:
+أخرى
+is selected:
+Show required input:
+نوع الخصم
+Reason is always mandatory.
+Example:
+المبلغ:
+15,000 د.ع
+
+النوع:
+اعتراض
+
+السبب:
+اعتراض على تصحيح السؤال رقم 4
+________________________________________
+29. BONUS SYSTEM
+Admin can add:
+مكافأة
+A clear checkbox/toggle/action named:
+مكافأة
+reveals:
+•	Amount
+•	Reason
+•	Date
+Reason is mandatory.
+Example:
+50,000 د.ع
+
+أداء مميز خلال الأسبوع
+________________________________________
+30. FINAL SALARY FORMULA
+For Tiered employee:
+Final Salary
+=
+Tiered Base Salary
+- Excused Absence Deductions
+- Unexcused Absence Deductions
+- Other Deductions
++ Bonuses
+For full-month Fixed Salary employee:
+Final Salary
+=
+Fixed Salary
+- Excused Absence Deductions
+- Unexcused Absence Deductions
+- Other Deductions
++ Bonuses
+For partial first/final month Fixed Salary employee:
+Base =
+Attendance Days × Daily Rate
+
+Final Salary
+=
+Base
+- Excused Absence Deductions
+- Unexcused Absence Deductions
+- Other Deductions
++ Bonuses
+________________________________________
+31. NEGATIVE SALARIES
+Final Salary is allowed to become negative.
+Do NOT clamp the result to zero.
+Example:
+Base Salary:
+75,000
+
+Deductions:
+100,000
+
+Final Salary:
+-25,000 د.ع
+Keep negative values visible so management knows how much the employee owes.
+________________________________________
+32. MONEY STORAGE
+All IQD amounts must be stored as integers.
+Examples:
+25000
+200000
+400000
+1000000
+Never use floating-point values for money.
+________________________________________
+33. OPEN MONTH RECALCULATION RULE
+Payroll month uses Gregorian calendar months.
+Example:
+September 2026
+While the payroll month is:
+OPEN
+changes to salary configuration apply to the entire currently open month.
+Example:
+On September 15:
+Daily Rate changes:
+25,000 → 30,000
+September has NOT been archived yet.
+Recalculate September using the new configuration.
+This applies to:
+•	Daily Rate
+•	Tiers
+•	Full Salary
+•	Fixed amounts
+•	Maximum Salary
+•	Fixed Salary
+•	Unexcused absence deduction
+•	Employee Fixed Salary override
+•	Employee Daily Rate override
+Archived months must NOT change.
+________________________________________
+34. WORKDAY SYSTEM
+Admin manually opens a workday.
+Button:
+فتح يوم حضور
+There can be only one Workday for each Gregorian date.
+Database must enforce:
+UNIQUE(work_date)
+Workday form includes:
+•	Date
+•	Work Start Time
+•	Participating Departments
+Do NOT store Work Start Time on Department.
+Start Time belongs to each Workday.
+________________________________________
+35. WORKDAY START TIME
+Example:
+Workday:
+27/09/2026
+
+Start:
+02:00:00 PM
+The same start time applies to all selected employees for that workday.
+________________________________________
+36. SELECT DEPARTMENTS FOR A WORKDAY
+When opening attendance day:
+Admin selects which departments are required.
+Example:
+☑ التصحيح
+☑ التدقيق
+☐ المتابعة
+☐ المبيعات
+☐ التصميم
+☐ الادارة
+Employees in selected departments are included by default.
+________________________________________
+37. EMPLOYEE-LEVEL WORKDAY OVERRIDES
+Department participation is not enough.
+Support individual employee overrides.
+Admin can:
+Include employee manually
+even if their department is not selected.
+Admin can:
+Exclude employee manually
+even if their department is selected.
+Excluded status:
+مستثنى / لا يوجد دوام
+Employee-level override always wins over department-level selection.
+________________________________________
+38. EXEMPT EMPLOYEE
+Status:
+مستثنى / لا يوجد دوام
+An exempt employee:
+•	Does not count as present
+•	Does not count as absent
+•	Does not receive absence deduction
+•	Does not count toward attendance salary tiers
+•	Remains visible in historical record
+________________________________________
+39. EMPLOYEE START DATE
+An employee must not be expected on workdays earlier than:
+تاريخ المباشرة
+Do not count them absent before employment begins.
+Inactive employees should not appear as expected employees in new workdays.
+Historical records remain visible.
+________________________________________
+40. QR ATTENDANCE
+Attendance is registered using a dynamic QR system.
+Physical setup:
+•	A dedicated iPad inside the center
+•	iPad displays CenterPro Attendance screen
+•	Employee opens CenterPro on their own phone
+•	Employee logs into their account
+•	Employee opens QR scanner
+•	Employee scans the iPad QR
+________________________________________
+41. ATTENDANCE DISPLAY PAGE
+Create a dedicated route similar to:
+/attendance-display
+The route is optimized for:
+•	iPad
+•	Tablet
+•	Fullscreen display
+Do not show normal Admin sidebar.
+Display:
+•	CenterPro logo
+•	Current date
+•	Workday start time
+•	Large QR
+•	QR refresh indicator
+•	Instructions
+Example:
+تسجيل الحضور
+
+افتح حساب CenterPro من هاتفك
+ثم امسح رمز QR لتسجيل حضورك.
+________________________________________
+42. DYNAMIC QR
+QR must NOT be static.
+QR lifetime must be configurable between:
+30 – 60 seconds
+Default:
+45 seconds
+After expiration:
+Generate a new QR automatically.
+No manual refresh required.
+________________________________________
+43. QR TOKEN SECURITY
+QR token must be generated server-side.
+Use:
+•	Cryptographically secure signature
+•	Expiration
+•	Workday ID
+•	Nonce/token ID
+•	Issued timestamp
+Never put sensitive employee details inside QR.
+Server validates:
+•	Token signature
+•	Token expiration
+•	Workday exists
+•	Workday is open
+•	User authenticated
+•	User is active employee
+•	Employee is expected today
+•	Employee is not exempt
+•	Attendance not already recorded
+________________________________________
+44. NO WIFI OR GPS REQUIREMENT
+Do NOT require:
+•	Same Wi-Fi
+•	Wi-Fi SSID
+•	IP matching
+•	GPS
+•	Geolocation
+These are explicitly out of scope.
+________________________________________
+45. EMPLOYEE QR SCANNER
+Employee dashboard has prominent action:
+Scan QR — تسجيل الحضور
+Use the device camera.
+Create a professional mobile camera scanner.
+Handle:
+•	Camera permission
+•	Permission denied
+•	Camera unavailable
+•	Invalid QR
+•	Expired QR
+•	Duplicate attendance
+•	Network error
+________________________________________
+46. ATTENDANCE RECORDING
+When a valid QR is scanned:
+Server records exact check-in timestamp.
+Example:
+02:17:43 PM
+Success UI:
+تم تسجيل حضورك بنجاح
+
+وقت الدخول:
+02:17:43 PM
+________________________________________
+47. ATTENDANCE DUPLICATE PREVENTION
+Each employee can only register attendance once per Workday.
+Database constraint:
+UNIQUE(workday_id, employee_id)
+If scanned again:
+تم تسجيل حضورك مسبقاً اليوم
+
+وقت الحضور:
+02:17:43 PM
+Do not insert another attendance record.
+________________________________________
+48. LATENESS
+No grace period exists.
+If work begins:
+02:00:00 PM
+Then:
+02:00:00 PM
+= on time
+but:
+02:00:01 PM
+= 1 second late
+Example:
+Check-in:
+02:17:43 PM
+
+Late:
+17 minutes 43 seconds
+Calculate lateness in seconds.
+Store:
+lateness_seconds
+________________________________________
+49. LATENESS AND PAYROLL
+Lateness currently has:
+NO automatic salary deduction.
+It is statistics only.
+Admin may manually create a deduction if required.
+Do not automatically penalize employees for lateness.
+________________________________________
+50. LATENESS STATISTICS
+Employee sees:
+•	Number of late days
+•	Total lateness
+•	Lateness per workday
+Admin sees:
+•	Late employees today
+•	Total lateness by employee
+•	Monthly late count
+•	Filters by department
+•	Filters by employee
+•	Filters by month
+________________________________________
+51. DAILY ATTENDANCE REVIEW
+At end of day Admin opens:
+مراجعة حضور اليوم
+Show all expected employees.
+Statuses:
+حاضر
+غير محسوم
+غياب بعذر
+غياب بدون عذر
+مستثنى / لا يوجد دوام
+A valid QR scan automatically marks:
+حاضر
+No scan remains:
+غير محسوم
+________________________________________
+52. ABSENCE UI
+For unresolved employee Admin can choose:
+☑ غائب
+Then reveal:
+غياب بعذر
+غياب بدون عذر
+These are mutually exclusive choices.
+Do not allow both.
+________________________________________
+53. ADMIN DAILY ATTENDANCE ACTIONS
+Admin can:
+•	Mark excused absence
+•	Mark unexcused absence
+•	Add manual attendance
+•	Change check-in time
+•	Remove attendance
+•	Convert attendance to absence
+•	Convert absence to attendance
+•	Mark employee exempt
+•	Remove exemption
+________________________________________
+54. CLOSE WORKDAY
+Button:
+إغلاق اليوم
+Do not automatically convert unresolved employees to absent.
+Prefer preventing close while unresolved employees remain.
+Display:
+باقي 4 موظفين لم يتم تحديد حالتهم.
+Provide quick link/action to review them.
+After closing:
+Admin may still edit historical attendance.
+Every post-close modification must be audited.
+________________________________________
+55. MANUAL ATTENDANCE
+When Admin manually adds or edits attendance:
+Store:
+•	Employee
+•	Workday
+•	Status
+•	Check-in timestamp if present
+•	Modification reason when relevant
+•	Admin user
+•	Created/updated timestamp
+Recalculate lateness after manual time modification.
+________________________________________
+56. PAYROLL MONTHS
+Payroll months follow standard Gregorian months.
+Example:
+September 2026
+October 2026
+November 2026
+Do not implement custom salary cycles.
+Possible states:
+OPEN
+ARCHIVED
+REOPENED
+________________________________________
+57. PAYROLL ARCHIVE
+At month end:
+Admin can press:
+إغلاق وأرشفة رواتب September 2026
+Before archiving:
+•	Calculate all employee payroll
+•	Validate relevant attendance data
+•	Warn if unresolved attendance remains
+•	Prefer blocking archive until unresolved attendance is resolved
+Show strong confirmation:
+سيتم تثبيت بيانات الرواتب والحضور والخصومات
+والمكافآت لهذا الشهر وإنشاء نسخة أرشيفية كاملة.
+________________________________________
+58. ARCHIVED PAYROLL SNAPSHOT
+Archive a complete snapshot for every employee.
+Include:
+•	Employee ID
+•	Employee name
+•	Department
+•	Salary mode
+•	Salary configuration used
+•	Daily Rate
+•	Tier rules if relevant
+•	Fixed Salary if relevant
+•	Maximum Salary
+•	Attendance days
+•	Excused absences
+•	Unexcused absences
+•	Exempt days
+•	Lateness
+•	Base Salary
+•	Absence deductions
+•	Other deductions
+•	Bonuses
+•	Final Salary
+•	Payment status
+•	Archive timestamp
+An archived month must remain unchanged even if current department settings later change.
+________________________________________
+59. REOPEN ARCHIVED MONTH
+Only Super Admin can reopen.
+Action:
+إعادة فتح الشهر للتعديل
+After reopening, display visible warning banner:
+هذا الشهر مؤرشف سابقاً وتمت إعادة فتحه للتعديل.
+Do not silently replace archived financial rules with current department rules.
+Use the archived snapshot as the default historical configuration.
+Any recalculation/change to the reopened month must be an explicit Super Admin action.
+Audit everything.
+________________________________________
+60. SALARY PAYMENT STATUS
+Every employee/month payroll supports:
+غير مصروف
+تم الصرف
+يحتاج مراجعة
+When marking salary paid:
+Store:
+•	Employee
+•	Payroll month
+•	Final salary at payment time
+•	Amount paid
+•	Payment date
+•	Paid by
+•	Timestamp
+Example:
+تم الصرف
+
+650,000 د.ع
+02/10/2026
+بواسطة: أحمد
+________________________________________
+61. EDITING AFTER PAYMENT
+If payroll changes after being marked paid:
+Do NOT silently replace historical payment information.
+Change payroll status to:
+يحتاج مراجعة
+Show:
+المبلغ المصروف سابقاً:
+650,000 د.ع
+
+الراتب الحالي بعد التعديل:
+625,000 د.ع
+
+الفرق:
+-25,000 د.ع
+Preserve payment history.
+________________________________________
+62. EMPLOYEE DASHBOARD
+Employee homepage must be optimized for mobile.
+Greeting:
+مرحباً بك، علي
+موظفنا المميز في CenterPro
+Display premium summary cards for:
+راتبك الحالي
+625,000 د.ع
+
+أيام الحضور
+25
+
+أيام الغياب بعذر
+1
+
+أيام الغياب بدون عذر
+0
+
+مرات التأخير
+3
+
+إجمالي التأخير
+42 دقيقة
+
+الخصومات
+25,000 د.ع
+
+المكافآت
+50,000 د.ع
+
+صافي الراتب المتوقع
+650,000 د.ع
+Primary action:
+Scan QR — تسجيل الحضور
+________________________________________
+63. EMPLOYEE ATTENDANCE HISTORY
+Display:
+•	Date
+•	Status
+•	Check-in time
+•	Lateness
+•	Financial effect if relevant
+Employee must clearly see:
+غياب بعذر
+-25,000
+or:
+خصم
+15,000
+
+السبب:
+اعتراض على تصحيح السؤال رقم 4
+________________________________________
+64. EMPLOYEE DEDUCTION HISTORY
+Employee can see every deduction.
+Display:
+•	Date
+•	Type
+•	Amount
+•	Reason
+Do not hide deduction reasons.
+________________________________________
+65. EMPLOYEE BONUS HISTORY
+Employee can see:
+•	Date
+•	Amount
+•	Reason
+________________________________________
+66. ADMIN DASHBOARD
+Create a premium operational dashboard.
+Useful cards:
+•	إجمالي الموظفين الفعالين
+•	الحاضرون اليوم
+•	غير المحسومين اليوم
+•	الغائبون اليوم
+•	المتأخرون اليوم
+•	إجمالي رواتب الشهر
+•	إجمالي الخصومات
+•	إجمالي المكافآت
+•	الرواتب غير المصروفة
+Quick actions:
+فتح يوم حضور
+مراجعة حضور اليوم
+إضافة موظف
+إضافة خصم
+إضافة مكافأة
+الرواتب
+التقارير
+Do not overload the dashboard.
+Prioritize immediate operational information.
+________________________________________
+67. EMPLOYEE MANAGEMENT
+Employee list must provide:
+•	Search
+•	Department filter
+•	Active/Inactive filter
+•	Salary mode filter
+•	Sorting
+•	Pagination
+Actions:
+•	Add employee
+•	View profile
+•	Edit
+•	Reset password
+•	Activate
+•	Deactivate
+Desktop may use a table.
+Mobile must use an appropriate card/list experience.
+________________________________________
+68. EMPLOYEE CREATION
+Create employee and login account in the same workflow.
+Sections can include:
+المعلومات الشخصية
+معلومات الاتصال
+معلومات العمل
+معلومات الحساب
+إعدادات الراتب
+ملاحظات
+Use progressive, clear grouping.
+Do not create one giant confusing form.
+________________________________________
+69. DEPARTMENT MANAGEMENT
+Super Admin can:
+•	Add department
+•	Edit department
+•	Activate/deactivate department
+•	Configure salary type
+•	Configure salary rules
+Department details include:
+اسم القسم
+الحالة
+نوع الراتب
+قيمة اليومية
+خصم الغياب بدون عذر
+Tiered departments also include:
+•	Salary tiers
+•	Extra-day rules
+•	Maximum Salary
+Fixed departments include:
+•	Fixed Salary
+________________________________________
+70. SALARY SETTING CHANGE WARNING
+If current payroll month is open:
+When salary settings are changed show:
+سيتم تطبيق هذا التعديل على الشهر المفتوح حالياً
+وإعادة احتساب الرواتب.
+User must clearly understand the financial impact before Save.
+________________________________________
+71. PAYROLL PAGE
+Provide month selector.
+Show:
+•	Employee
+•	Department
+•	Salary Mode
+•	Attendance
+•	Excused Absence
+•	Unexcused Absence
+•	Base Salary
+•	Other Deductions
+•	Bonuses
+•	Final Salary
+•	Payment Status
+Click employee for detailed breakdown.
+________________________________________
+72. PAYROLL BREAKDOWN
+Example:
+الراتب الأساسي                 400,000 د.ع
+غياب بعذر                      -25,000 د.ع
+غياب بدون عذر                        0 د.ع
+خصومات أخرى                    -15,000 د.ع
+المكافآت                       +50,000 د.ع
+------------------------------------------
+صافي الراتب                    410,000 د.ع
+Keep financial breakdown easy to audit manually.
+________________________________________
+73. REPORTING
+Provide professional:
+•	PDF
+•	Excel
+reports.
+Required reports:
+كشف رواتب الشهر
+كشف الحضور
+كشف الغيابات
+كشف الخصومات
+كشف المكافآت
+تقرير موظف
+قسيمة راتب
+Filters where relevant:
+•	Month
+•	Department
+•	Employee
+•	Date range
+•	Attendance status
+________________________________________
+74. PDF DESIGN
+PDF reports must:
+•	Support Arabic RTL correctly
+•	Use approved Arabic typography where technically possible
+•	Use CenterPro identity
+•	Use English digits
+•	Be print-friendly
+•	Avoid broken Arabic shaping
+•	Avoid clipped tables
+•	Repeat table headers on additional pages where appropriate
+Test actual generated PDFs.
+________________________________________
+75. EXCEL EXPORT
+Excel exports must contain structured data.
+Use:
+•	Proper column headers
+•	Correct numeric money cells
+•	Dates as valid dates where possible
+•	Separate useful sheets when appropriate
+•	Arabic column titles
+Do not export screenshots.
+________________________________________
+76. AUDIT LOG
+Implement a comprehensive Audit Log.
+Store:
+•	Actor User ID
+•	Actor Name
+•	Actor Role
+•	Action
+•	Entity Type
+•	Entity ID
+•	Old Values
+•	New Values
+•	Timestamp
+•	IP if available
+•	User Agent if available
+________________________________________
+77. REQUIRED AUDIT EVENTS
+Audit at least:
+•	Employee created
+•	Employee edited
+•	Employee activated
+•	Employee deactivated
+•	Username changed
+•	Password reset
+•	Role changed
+•	Department created
+•	Department edited
+•	Salary settings changed
+•	Workday opened
+•	Workday closed
+•	Attendance created
+•	Attendance deleted
+•	Attendance status changed
+•	Check-in time changed
+•	Exemption added/removed
+•	Deduction created
+•	Deduction edited
+•	Deduction deleted
+•	Bonus created
+•	Bonus edited
+•	Bonus deleted
+•	Payroll archived
+•	Payroll reopened
+•	Salary marked paid
+•	Paid payroll changed
+Never store:
+•	Password
+•	Password hash
+•	Session secret
+•	Secret token
+in audit event payloads.
+________________________________________
+78. AUDIT LOG UI
+Filters:
+•	User
+•	Employee
+•	Action
+•	Entity type
+•	Date range
+Example:
+أحمد
+عدل وقت حضور محمد خليل
+
+من:
+02:17:43 PM
+
+إلى:
+02:10:00 PM
+
+27/09/2026 — 07:34:12 PM
+________________________________________
+79. VISUAL IDENTITY — MANDATORY
+Follow official CenterPro visual identity.
+Primary:
+CenterPro Crimson
+#A51C30
+White:
+#FFFFFF
+Support Ink:
+#111318
+Use white as the dominant surface.
+Crimson is the primary action/accent color.
+Dark ink is the main typography/neutral color.
+________________________________________
+80. TYPOGRAPHY
+Arabic:
+Noto Sans Arabic
+Latin / English numbers:
+Inter
+Use a clear typography scale.
+Do not use random fonts.
+________________________________________
+81. UI DESIGN QUALITY — CRITICAL ACCEPTANCE REQUIREMENT
+UI/UX quality is a core deliverable.
+Do not treat UI polish as optional.
+The finished product should look like a professionally designed custom internal platform.
+Required characteristics:
+•	Premium
+•	Clean
+•	Calm
+•	Precise
+•	Modern
+•	Institutional
+•	Easy to understand
+•	Consistent
+•	Not over-designed
+Use:
+•	Strong hierarchy
+•	Generous whitespace
+•	Consistent grid
+•	Structured content blocks
+•	Clear navigation
+•	Consistent control sizes
+•	High-quality icons from one icon family
+•	Thoughtful empty states
+•	Thoughtful loading states
+•	Thoughtful confirmation dialogs
+________________________________________
+82. DO NOT USE
+Avoid:
+•	Gradients
+•	Neon
+•	Glow
+•	Random blobs
+•	Overly decorative backgrounds
+•	Generic tech effects
+•	Excessive glassmorphism
+•	Excessive shadows
+•	Huge rounded cards everywhere
+•	Random colors
+•	Generic admin template appearance
+•	Default shadcn appearance
+•	AI-looking dashboard layouts
+________________________________________
+83. DESIGN SYSTEM
+Create reusable design tokens.
+At minimum define:
+•	Colors
+•	Typography
+•	Font weights
+•	Spacing scale
+•	Radius scale
+•	Shadows
+•	Border colors
+•	Button sizes
+•	Input heights
+•	Table density
+•	Card padding
+•	Modal sizing
+•	Mobile touch target sizing
+•	Status indicators
+Do not style pages independently with arbitrary values.
+________________________________________
+84. BUTTON SYSTEM
+Primary Button:
+Crimson background
+White text
+Secondary:
+White
+Subtle border
+Dark text
+Destructive:
+Use a clear destructive treatment without introducing random brand-inconsistent design.
+Buttons need:
+•	Hover
+•	Active
+•	Focus
+•	Disabled
+•	Loading
+states.
+________________________________________
+85. FORM DESIGN
+Forms must be:
+•	Easy to scan
+•	Clearly grouped
+•	Large enough for touch devices
+•	Accessible
+•	Error messages directly associated with fields
+Do not show technical validation messages.
+Use clear Arabic.
+________________________________________
+86. LIGHT MODE ONLY
+CenterPro has no Dark Mode.
+It must remain light even if the user's phone/computer uses Dark Mode.
+Set appropriate:
+color-scheme: light;
+and metadata/theme settings.
+Do not allow OS Dark Mode to automatically invert or recolor controls.
+________________________________________
+87. RESPONSIVE DESIGN — CRITICAL
+CenterPro must be genuinely responsive.
+Do NOT simply shrink desktop layouts.
+Every major page must be intentionally designed for:
+360px
+390px
+430px
+768px
+1024px
+1366px
+1440px
+1920px
+Test each major feature across representative viewport sizes.
+________________________________________
+88. MOBILE
+On mobile:
+•	No clipped text
+•	No overlapping controls
+•	No inaccessible buttons
+•	No desktop sidebar
+•	No uncontrolled horizontal overflow
+•	Tables must convert to mobile-friendly presentation where appropriate
+•	Forms must be touch-friendly
+•	Cards must not be excessively large
+•	Sticky actions may be used where beneficial
+•	QR scanner should use most of the available viewport
+Employee UI must be designed mobile-first.
+________________________________________
+89. TABLETS / IPAD
+Tablet UI must:
+•	Be touch-friendly
+•	Properly use available width
+•	Avoid cramped desktop tables
+•	Avoid oversized mobile cards
+•	Support Admin operations
+•	Support fullscreen Attendance QR Display
+The Attendance Display route must be particularly optimized for iPad.
+________________________________________
+90. DESKTOP
+Desktop:
+•	Use well-designed sidebar
+•	Use larger tables where appropriate
+•	Allow useful filters to remain visible
+•	Use available space efficiently
+•	Avoid extremely stretched content
+Use reasonable maximum content widths.
+________________________________________
+91. WIDE SCREENS
+At:
+1440+
+1920+
+do not stretch cards/forms infinitely.
+Use:
+•	max widths
+•	structured multi-column layouts
+•	sensible dashboard grid
+________________________________________
+92. RESPONSIVE ACCEPTANCE RULE
+No page is considered finished until it is visually reviewed at:
+•	Mobile
+•	Tablet
+•	Laptop
+•	Desktop
+•	Wide desktop
+Fix:
+•	hierarchy
+•	spacing
+•	clipping
+•	overlap
+•	touch targets
+•	modal behavior
+•	form layout
+•	table behavior
+•	navigation behavior
+before marking it complete.
+________________________________________
+93. NAVIGATION
+Admin desktop navigation:
+الرئيسية
+الموظفون
+الحضور
+أيام العمل
+الرواتب
+الخصومات
+المكافآت
+الأقسام
+التقارير
+سجل العمليات
+الإعدادات
+Employee:
+الرئيسية
+تسجيل الحضور
+سجل الحضور
+راتبي
+حسابي
+Mobile navigation must be simplified.
+________________________________________
+94. BRAND SPLASH MOTION
+When the website is freshly opened into the main application experience:
+Show a short CenterPro branded intro.
+Concept:
+1.	C structure appears
+2.	P aligns/joins
+3.	Full CenterPro symbol completes
+4.	CenterPro wordmark appears
+5.	Smooth transition into application
+Duration:
+Approximately:
+1 – 2 seconds
+Do not replay animation during normal internal navigation.
+A hard/fresh application load may show it again.
+________________________________________
+95. WELCOME MESSAGE
+After branded intro:
+Employee:
+مرحباً بك، محمد
+موظفنا المميز في CenterPro
+Admin can receive a role-appropriate greeting.
+Animation must be:
+•	Smooth
+•	Professional
+•	Subtle
+•	Brand-consistent
+No glow.
+No gradient.
+Respect:
+prefers-reduced-motion
+________________________________________
+96. PWA
+Implement installable PWA behavior.
+Requirements:
+•	Manifest
+•	App icons
+•	Standalone mode
+•	Proper mobile viewport
+•	Camera access support
+•	Brand theme color
+Do NOT cache sensitive financial/API responses irresponsibly.
+QR validation and attendance registration require live server validation.
+________________________________________
+97. PROFILE PHOTO STORAGE
+Do not store raw image files in PostgreSQL.
+Use production-compatible object storage.
+Vercel Blob is acceptable.
+Store database references/URLs.
+Validate:
+•	MIME type
+•	File type
+•	Maximum size
+________________________________________
+98. DATABASE
+Create a normalized schema.
+Expected concepts/tables include:
+users
+sessions
+
+employees
+departments
+
+department_salary_configs
+salary_tiers
+employee_salary_overrides
+
+workdays
+workday_departments
+workday_employee_overrides
+attendance_records
+
+deductions
+bonuses
+
+payroll_months
+payroll_employee_snapshots
+salary_payments
+
+audit_logs
+
+app_settings
+Additional supporting tables are allowed when architecturally justified.
+________________________________________
+99. IMPORTANT DATABASE CONSTRAINTS
+At minimum:
+users.username UNIQUE
+employees.employee_code UNIQUE
+workdays.work_date UNIQUE
+attendance_records(workday_id, employee_id) UNIQUE
+Use:
+•	Foreign keys
+•	Indexes
+•	Constraints
+•	Transactions
+________________________________________
+100. FINANCIAL TRANSACTIONS
+Use database transactions for operations such as:
+•	Employee + account creation
+•	Payroll archive
+•	Payroll reopen
+•	Attendance modification
+•	Password reset/session invalidation
+•	Salary payment
+•	High-impact financial changes
+Avoid partial state.
+________________________________________
+101. PAYROLL DOMAIN SERVICE
+Payroll calculation must live in a dedicated domain layer.
+Do not calculate salary inside React components.
+Suggested structure:
+lib/
+  payroll/
+    calculateTieredSalary.ts
+    calculateFixedSalary.ts
+    calculateAbsenceDeductions.ts
+    calculateEmployeePayroll.ts
+Components receive results.
+Financial logic remains testable independently.
+________________________________________
+102. ATTENDANCE DOMAIN SERVICE
+Similarly create:
+lib/
+  attendance/
+Responsibilities:
+•	QR token validation
+•	Workday validation
+•	Employee eligibility
+•	Duplicate prevention
+•	Check-in recording
+•	Lateness calculation
+•	Attendance status changes
+________________________________________
+103. SERVER-SIDE SECURITY
+Never trust:
+•	Employee ID from frontend
+•	Role from frontend
+•	Salary amount from frontend
+•	Attendance timestamp from frontend
+•	QR expiration from frontend
+•	Workday eligibility from frontend
+Server must derive/validate all sensitive information.
+________________________________________
+104. VALIDATION
+Validate all mutations server-side.
+Use schemas.
+Examples:
+•	Money >= 0 when entering a deduction or bonus amount
+•	Dates valid
+•	Username non-empty
+•	Unique username
+•	Employee department exists
+•	Salary tier ranges valid
+•	Fixed salary valid
+•	Maximum Salary valid
+•	QR rotation interval 30–60 seconds
+Final Salary itself may be negative.
+________________________________________
+105. ERROR STATES
+Use meaningful Arabic messages.
+Examples:
+تعذر تسجيل الحضور.
+انتهت صلاحية رمز QR.
+امسح الرمز الجديد.
+تم تسجيل حضورك مسبقاً.
+لا يوجد يوم حضور مفتوح حالياً.
+أنت مستثنى من دوام هذا اليوم.
+Do not expose:
+•	SQL errors
+•	stack traces
+•	secret values
+•	internal paths
+________________________________________
+106. LOADING STATES
+Every data-dependent page must have intentional loading UI.
+Use:
+•	Skeletons
+•	Progress indicators where appropriate
+•	Disabled loading buttons
+Avoid blank screens.
+________________________________________
+107. EMPTY STATES
+Examples:
+لا توجد خصومات لهذا الشهر.
+لا توجد مكافآت.
+لا توجد سجلات حضور.
+لم يتم فتح يوم حضور اليوم.
+Provide useful next action where relevant.
+________________________________________
+108. CONFIRMATIONS
+Use strong confirmation for:
+•	Deactivating employee
+•	Removing attendance
+•	Deleting deduction
+•	Deleting bonus
+•	Archiving month
+•	Reopening month
+•	Salary configuration changes affecting current payroll
+Do NOT add unnecessary confirmation when Admin resets employee password.
+________________________________________
+109. SEARCH AND FILTERING
+Large management pages need:
+•	Debounced search
+•	Server filtering where appropriate
+•	Pagination
+•	Stable sorting
+Avoid loading unlimited historical rows into browser memory.
+________________________________________
+110. PERFORMANCE
+Optimize:
+•	Database indexes
+•	Queries
+•	Pagination
+•	Server rendering
+•	Image loading
+•	Dashboard aggregation
+•	API request count
+Avoid unnecessary client-side state and giant JSON payloads.
+________________________________________
+111. ACCESSIBILITY
+Support:
+•	Keyboard navigation
+•	Focus states
+•	Labels
+•	Accessible dialogs
+•	Sufficient contrast
+•	Touch targets
+•	Screen-reader friendly controls where practical
+________________________________________
+112. REQUIRED PAYROLL UNIT TESTS
+For:
+Daily Rate = 25,000
+Tier 1 = 0–4 PER_DAY
+Tier 2 = 5–8 FIXED 200,000
+Tier 3 = 9–16 FIXED 400,000
+Maximum = 600,000
+Assert:
+0 -> 0
+1 -> 25,000
+3 -> 75,000
+4 -> 100,000
+
+5 -> 200,000
+8 -> 200,000
+
+9 -> 400,000
+16 -> 400,000
+
+17 -> 425,000
+18 -> 450,000
+19 -> 475,000
+20 -> 500,000
+21 -> 525,000
+22 -> 550,000
+23 -> 575,000
+24 -> 600,000
+
+25 -> 600,000
+28 -> 600,000
+31 -> 600,000
+________________________________________
+113. ABSENCE TEST
+Test:
+Attendance:
+14
+
+Base:
+400,000
+
+Excused absence:
+1
+
+Daily Rate:
+25,000
+Expected:
+Final before other adjustments:
+375,000
+________________________________________
+114. NEGATIVE SALARY TEST
+Base:
+75,000
+
+Deductions:
+100,000
+Expected:
+-25,000
+Do not clamp.
+________________________________________
+115. FIXED SALARY TESTS
+Given:
+Fixed Salary = 1,000,000
+For full employment month:
+16 attendance -> 1,000,000
+24 attendance -> 1,000,000
+30 attendance -> 1,000,000
+Attendance above normal must not increase salary.
+Test absence deductions separately.
+________________________________________
+116. PARTIAL FIXED SALARY TEST
+Partial first month:
+Attendance:
+8
+
+Daily Rate:
+25,000
+
+Fixed Salary:
+1,000,000
+Expected Base:
+200,000
+Then apply deductions and bonuses.
+________________________________________
+117. ATTENDANCE TESTS
+Test:
+•	Valid dynamic QR
+•	Expired QR
+•	Forged QR
+•	Invalid signature
+•	Closed Workday
+•	Missing Workday
+•	Inactive employee
+•	Exempt employee
+•	Employee not scheduled
+•	Duplicate scan
+•	Valid scan
+•	Manual attendance
+•	Manual time edit
+________________________________________
+118. LATENESS TESTS
+Start:
+02:00:00 PM
+Tests:
+02:00:00 -> 0 seconds
+02:00:01 -> 1 second
+02:01:00 -> 60 seconds
+02:17:43 -> 1063 seconds
+Use Asia/Baghdad.
+________________________________________
+119. PERMISSION TESTS
+Employee must fail access to:
+•	Employee management
+•	Payroll editing
+•	Attendance editing
+•	Other employee profiles
+•	Audit Log
+•	Department settings
+•	Admin APIs
+Admin must fail Super Admin-only operations.
+________________________________________
+120. ARCHIVE TESTS
+Test sequence:
+1.	September OPEN
+2.	Calculate salaries
+3.	Change Department Daily Rate
+4.	September recalculates
+5.	Archive September
+6.	Change Department settings again
+7.	Archived September remains unchanged
+8.	Reopen September as Super Admin
+9.	Historical snapshot remains intact until explicit modification
+________________________________________
+121. PAYMENT TEST
+Test:
+1.	Salary = 650,000
+2.	Mark paid
+3.	Modify payroll
+4.	New salary = 625,000
+Expected:
+Status = يحتاج مراجعة
+Previous paid = 650,000
+Current = 625,000
+Difference = -25,000
+________________________________________
+122. AUDIT TESTS
+Ensure every protected mutation produces Audit Log.
+Password reset audit must say equivalent to:
+تم تغيير كلمة مرور الموظف
+but must NOT contain password content.
+________________________________________
+123. RESPONSIVE TESTING
+Manually or with automated browser tests verify at:
+360×800
+390×844
+430×932
+768×1024
+1024×1366
+1366×768
+1440×900
+1920×1080
+Check:
+•	Sidebar
+•	Mobile navigation
+•	Tables
+•	Cards
+•	Forms
+•	Dialogs
+•	Employee dashboard
+•	Payroll
+•	Workday review
+•	QR scanner
+•	QR display
+•	Reports screen
+________________________________________
+124. NO HORIZONTAL OVERFLOW
+Do not accept accidental body-level horizontal scrolling on mobile.
+If a data table truly requires horizontal interaction on an admin screen:
+Contain it inside an intentional scroll region.
+Do not allow the entire page to overflow.
+________________________________________
+125. DATE / TIME DISPLAY
+Date:
+27/09/2026
+Time:
+02:17:43 PM
+Use Latin digits.
+Use:
+Asia/Baghdad
+for rendering operational times.
+________________________________________
+126. INITIAL DATABASE SEED
+Seed:
+التصحيح
+التدقيق
+المتابعة
+المبيعات
+التصميم
+الادارة
+Do NOT hardcode real passwords.
+Provide secure initial Super Admin bootstrap command or environment-driven setup.
+Example concept:
+pnpm db:seed-admin
+________________________________________
+127. ENVIRONMENT VARIABLES
+Example .env.example:
+DATABASE_URL=
+SESSION_SECRET=
+APP_TIMEZONE=Asia/Baghdad
+
+BLOB_READ_WRITE_TOKEN=
+Add others only when required.
+Never include actual production secrets.
+________________________________________
+128. README
+Create a professional README with:
+•	Product overview
+•	Stack
+•	Installation
+•	Environment variables
+•	Neon setup
+•	Drizzle migrations
+•	Super Admin bootstrap
+•	Development
+•	Testing
+•	Build
+•	Vercel deployment
+•	Storage configuration
+•	Security notes
+•	Backup guidance
+________________________________________
+129. QUALITY GATES
+Before declaring implementation complete, run:
+Lint
+TypeScript typecheck
+Unit tests
+Integration tests
+Production build
+Fix all application-owned errors.
+Do not ignore TypeScript issues.
+Do not suppress legitimate failures simply to make CI pass.
+________________________________________
+130. NO DEMO DATA IN PRODUCTION
+Do not ship fake employees, fake payroll, or demo attendance in production.
+Seed only:
+•	required departments
+•	required configuration
+•	securely created initial admin
+________________________________________
+131. IMPORTANT BUSINESS RULES — NEVER CHANGE
+These rules are authoritative:
+1.	One physical center only.
+2.	Arabic RTL only.
+3.	English digits/dates.
+4.	Light Mode only.
+5.	Dynamic QR.
+6.	No Wi-Fi restriction.
+7.	No GPS restriction.
+8.	Work Start Time belongs to Workday.
+9.	No lateness grace period.
+10.	Lateness has no automatic deduction.
+11.	Admin resolves absence manually.
+12.	Tier salary counts Attendance only.
+13.	Excused absence = Daily Rate deduction.
+14.	Unexcused absence deduction is configured per department.
+15.	Different departments can have different salary rules.
+16.	Tier salary maximum differs per department.
+17.	Employee can have Fixed Salary override.
+18.	Full-month Fixed Salary does not increase with extra attendance.
+19.	Partial first/final Fixed Salary month uses Attendance × Daily Rate.
+20.	Final Salary can be negative.
+21.	Open month uses current settings.
+22.	Archived month remains frozen.
+23.	Only Super Admin can reopen archive.
+24.	Employee cannot change own password.
+25.	Admin password reset is intentionally simple.
+26.	Attendance timestamps come from server.
+27.	Duplicate attendance is impossible.
+28.	Historical modifications are audited.
+________________________________________
+132. FINAL ACCEPTANCE CRITERIA
+CenterPro is not considered complete until all of the following work correctly:
+Authentication
+•	Username/password login
+•	Role authorization
+•	Secure sessions
+•	Password reset
+•	Session invalidation
+Employees
+•	Add
+•	Edit
+•	Activate
+•	Deactivate
+•	Employee ID
+•	Profile photo
+•	Department
+•	Salary override
+•	Login account
+Departments
+•	Add
+•	Edit
+•	Activate/deactivate
+•	Tier Salary
+•	Fixed Salary
+•	Maximum Salary
+•	Daily Rate
+•	Unexcused absence rate
+Workdays
+•	Open
+•	Select departments
+•	Employee overrides
+•	Start time
+•	One workday/date
+•	Close
+•	Reopen/edit operational records as authorized
+QR
+•	Dynamic QR
+•	Automatic rotation
+•	Real camera scan
+•	Expiration
+•	Server validation
+•	Duplicate protection
+Attendance
+•	Check-in seconds precision
+•	Manual editing
+•	Exemption
+•	Excused absence
+•	Unexcused absence
+•	Lateness
+•	End-of-day review
+Payroll
+•	Tier salary
+•	Extra attendance
+•	Maximum salary
+•	Fixed salary
+•	Fixed employee override
+•	Partial fixed month
+•	Excused absence deduction
+•	Unexcused absence deduction
+•	Other deduction
+•	Bonus
+•	Negative salary
+•	Current month recalculation
+Archive
+•	Archive
+•	Snapshot
+•	Reopen
+•	Historical isolation
+Payments
+•	Unpaid
+•	Paid
+•	Needs Review
+•	Payment history
+Reports
+•	PDF
+•	Excel
+•	Correct Arabic
+•	Correct financial values
+Audit
+•	Financial actions
+•	Attendance changes
+•	Password changes
+•	Payroll archive/reopen
+•	Admin identity
+UI
+•	Premium design
+•	CenterPro branding
+•	Light mode
+•	RTL
+•	Fully responsive
+•	No generic dashboard appearance
+•	No broken mobile screens
+Build
+•	Tests passing
+•	Typecheck passing
+•	Production build passing
+•	Vercel-ready
+________________________________________
+133. IMPLEMENTATION PHILOSOPHY
+When making implementation decisions:
+Prefer:
+Simple
+Predictable
+Auditable
+Data-safe
+Mobile-friendly
+Maintainable
+over cleverness.
+Do not invent new payroll rules.
+Do not silently change historical financial records.
+Do not hide negative balances.
+Do not trust client data.
+Do not weaken authorization for convenience.
+Do not sacrifice responsive quality.
+Do not sacrifice UI quality.
+________________________________________
+134. FINAL UI STANDARD
+Before considering CenterPro complete, perform a dedicated UI polish pass.
+Review every page for:
+•	Alignment
+•	Typography
+•	Arabic readability
+•	Spacing
+•	Visual hierarchy
+•	Brand consistency
+•	Responsive behavior
+•	Icon consistency
+•	Button consistency
+•	Empty states
+•	Loading states
+•	Modal quality
+•	Table density
+•	Mobile usability
+The final CenterPro application must look intentionally designed and professionally engineered.
+Functional correctness and visual quality are equally required.
+
