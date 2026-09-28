@@ -89,6 +89,7 @@ Phase 2 will add normalized Drizzle migrations, secure bootstrap (`db:seed-admin
 - `docs/MASTER_SPECIFICATION.txt`: supplied final specification, preserved verbatim.
 - `docs/IMPLEMENTATION_PLAN.md`: phase boundary and execution plan.
 - `docs/BRAND.md`: exact identity provenance and asset constraints.
+- `docs/PHASE1_ACCEPTANCE.md`: delivered workflows, verification evidence and review instructions.
 
 ## Security and data boundary
 

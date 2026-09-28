@@ -7,6 +7,9 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
+    "playwright-report/**",
+    "test-results/**",
+    "qa-artifacts/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",

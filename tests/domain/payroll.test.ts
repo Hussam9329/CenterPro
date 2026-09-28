@@ -178,6 +178,21 @@ describe('archive and payment', () => {
   it('rejects missing historical snapshot rather than silently calculating with current rules', () => {
     expect(() => getEmployeePayroll(createInitialData(), 'CP-0011', '2026-08')).toThrow();
   });
+  it('explicit historical recalculation retains archived employment dates and department', () => {
+    const data = createInitialData();
+    const month = data.months.find((item) => item.month === '2026-08')!;
+    const before = structuredClone(month.snapshots['CP-0012']);
+    month.state = 'REOPENED';
+    const employee = data.employees.find((item) => item.id === 'CP-0012')!;
+    employee.startDate = '2026-08-15';
+    employee.departmentId = 'dept-correction';
+    employee.name = 'اسم جديد';
+    const after = recalculateReopenedPayroll(data, employee.id, month.month);
+    expect(after.baseSalary).toBe(before.baseSalary);
+    expect(after.partialMonth).toBe(false);
+    expect(after.employeeName).toBe(before.employeeName);
+    expect(after.departmentName).toBe(before.departmentName);
+  });
   it('does not produce a full fixed salary before employee starts', () => {
     expect(calculateEmployeePayroll(createInitialData(), 'CP-0011', '2026-08').baseSalary).toBe(0);
   });

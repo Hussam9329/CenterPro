@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { CalendarDays, Clock3, LockKeyhole, Plus, QrCode, Users } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
@@ -16,9 +17,10 @@ const emptyForm = (): Workday => ({ id: '', date: DEMO_TODAY, startTime: '14:00:
 
 export default function WorkdaysPage() {
   const { data, session, updateData } = useDemo();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const [month, setMonth] = useState(DEMO_MONTH);
-  const [form, setForm] = useState<Workday | null>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('open') === 'new' ? emptyForm() : null);
+  const [form, setForm] = useState<Workday | null>(() => searchParams.get('open') === 'new' ? emptyForm() : null);
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [transition, setTransition] = useState<Workday | null>(null);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Gift, MinusCircle, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, Pagination, SearchInput, Select, StatCard, Textarea } from '@/components/ui';
@@ -15,6 +16,7 @@ interface AdjustmentForm { employeeId: string; amount: string; date: string; rea
 
 export function AdjustmentsPage({ kind }: { kind: 'deductions' | 'bonuses' }) {
   const { data, session, updateData } = useDemo();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const isDeduction = kind === 'deductions';
   const noun = isDeduction ? 'خصم' : 'مكافأة';
@@ -24,7 +26,7 @@ export function AdjustmentsPage({ kind }: { kind: 'deductions' | 'bonuses' }) {
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Adjustment | null>(null);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => searchParams.get('add') === '1' && !monthIsLocked(data, DEMO_MONTH, session?.role));
   const [toDelete, setToDelete] = useState<Adjustment | null>(null);
   const [error, setError] = useState('');
   const [form, setForm] = useState<AdjustmentForm>({ employeeId: '', amount: '', date: DEMO_TODAY, reason: '', type: 'خصم إداري', customType: '' });

@@ -35,6 +35,25 @@ async function addBonus(page: Page, amount: number, month = '2026-09', employeeI
 test.describe('Finance preview workflows', () => {
   test.use({ viewport: { width: 1366, height: 900 } });
 
+  test('all four dashboard quick links open creation dialogs through client navigation', async ({ page }) => {
+    await login(page);
+    const shortcuts = [
+      { link: 'إضافة خصم', url: /\/deductions\?add=1$/, dialog: 'إضافة خصم' },
+      { link: 'إضافة مكافأة', url: /\/bonuses\?add=1$/, dialog: 'إضافة مكافأة' },
+      { link: 'إضافة موظف', url: /\/employees\?add=1$/, dialog: 'إضافة موظف جديد' },
+      { link: 'فتح يوم حضور', url: /\/workdays\?open=new$/, dialog: 'فتح يوم حضور' },
+    ];
+    for (const shortcut of shortcuts) {
+      await page.locator('.quick-actions').getByRole('link', { name: shortcut.link, exact: true }).click();
+      await expect(page).toHaveURL(shortcut.url);
+      const dialog = page.getByRole('dialog', { name: shortcut.dialog, exact: true });
+      await expect(dialog).toBeVisible();
+      await dialog.getByRole('button', { name: 'إغلاق النافذة', exact: true }).click();
+      await page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true }).getByRole('link', { name: 'الرئيسية', exact: true }).click();
+      await expect(page).toHaveURL(/\/dashboard$/);
+    }
+  });
+
   test('shows payment differences, updates open salary after bonus and keeps payment history', async ({ page }) => {
     await login(page);
     await page.goto('/payroll');

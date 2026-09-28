@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyRound, Pencil, Plus, UserCheck, Users, UserX } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
@@ -12,6 +13,7 @@ import styles from '@/components/people/people.module.css';
 
 export default function EmployeesPage() {
   const { data, session, updateData } = useDemo();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -20,7 +22,7 @@ export default function EmployeesPage() {
   const [salary, setSalary] = useState('all');
   const [sort, setSort] = useState('code');
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<Employee | 'new' | null>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('add') === '1' ? 'new' : null);
+  const [editing, setEditing] = useState<Employee | 'new' | null>(() => searchParams.get('add') === '1' ? 'new' : null);
   const [passwordEmployee, setPasswordEmployee] = useState<Employee | null>(null);
   const [toggleEmployee, setToggleEmployee] = useState<Employee | null>(null);
   const pageSize = 8;

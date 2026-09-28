@@ -39,10 +39,12 @@ test('keyboard navigation and key pages meet accessibility checks', async({page}
   await expect(page.getByLabel('اسم المستخدم',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'دخول إلى المعاينة'}).click();
   await expect(page).toHaveURL('/dashboard');
+  const violations:unknown[]=[];
   for(const path of ['/dashboard','/employees','/payroll','/settings']){
     await page.goto(path);
     await expect(page.locator('h1')).toBeVisible();
     const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();
-    expect(result.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>n.target)})),path).toEqual([]);
+    violations.push(...result.violations.map(v=>({path,id:v.id,impact:v.impact,nodes:v.nodes.map(n=>n.target)})));
   }
+  expect(violations).toEqual([]);
 });
