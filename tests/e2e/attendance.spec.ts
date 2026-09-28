@@ -1,11 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect, gotoPreview, loginPreview, seedPopulatedPreview, readPreviewData } from './helpers/preview';
+import { createPopulatedTestData } from '../fixtures/populated-data';
 
 async function login(page: Page, role: 'المدير العام' | 'مدير العمليات' | 'موظف' = 'المدير العام') {
-  await page.goto('/login');
-  await page.getByRole('button', { name: role, exact: true }).click();
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
-  await expect(page).toHaveURL(role === 'موظف' ? /\/employee$/ : /\/dashboard$/);
-  await expect(page.locator('.brand-intro')).toBeHidden();
+  await seedPopulatedPreview(page);
+  await loginPreview(page, role);
 }
 
 async function reviewEmployee(page: Page, name: string) {
@@ -18,39 +17,81 @@ async function reviewEmployee(page: Page, name: string) {
 test.describe('Attendance preview workflows', () => {
   test.use({ viewport: { width: 1366, height: 900 } });
 
-  test('opens one workday per date, applies employee overrides and blocks unresolved close', async ({ page }) => {
+  test('empty attendance guides prerequisites and legacy workdays redirects', async ({ page }) => {
+    await loginPreview(page);
+    await gotoPreview(page, '/workdays');
+    await expect(page).toHaveURL(/\/attendance$/);
+    await expect(page.getByRole('heading', { name: 'لا توجد أيام حضور حتى الآن.', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'إضافة قسم', exact: true })).toBeVisible();
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'أيام العمل', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'فتح يوم حضور جديد', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'فتح يوم حضور جديد', exact: true });
+    await expect(dialog.getByRole('heading', { name: 'أضف قسماً أولاً', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('link', { name: 'الأقسام', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'فتح يوم الحضور', exact: true })).toHaveCount(0);
+    const data = await readPreviewData(page);
+    expect(data.departments).toHaveLength(0);
+    expect(data.employees).toHaveLength(0);
+    expect(data.workdays).toHaveLength(0);
+  });
+
+  test('unified day lifecycle enforces one OPEN, overrides, review, and reopen protection', async ({ page }) => {
     await login(page, 'مدير العمليات');
-    await page.goto('/workdays?open=new');
-    const dialog = page.getByRole('dialog', { name: 'فتح يوم حضور', exact: true });
-    await expect(dialog).toBeVisible();
+    await gotoPreview(page, '/workdays?open=new');
+    await expect(page).toHaveURL(/\/attendance\?open=new$/);
+    let dialog = page.getByRole('dialog', { name: 'فتح يوم حضور جديد', exact: true });
+    await expect(dialog.getByRole('heading', { name: 'يوجد يوم حضور مفتوح حالياً.', exact: true })).toBeVisible();
+    await expect(dialog).toContainText('يجب إغلاقه قبل فتح يوم حضور جديد.');
+    await dialog.getByRole('link', { name: 'الذهاب إلى اليوم المفتوح', exact: true }).click();
+    await expect(page).toHaveURL(/\/attendance\/wd-2026-09-28$/);
+    await page.getByRole('button', { name: 'إغلاق اليوم', exact: true }).click();
+    const closeDialog = page.getByRole('dialog', { name: 'إغلاق يوم الحضور' });
+    await expect(closeDialog).toContainText('يوجد 2 موظفين');
+    await expect(closeDialog.getByRole('button', { name: 'تأكيد إغلاق اليوم' })).toHaveCount(0);
+    await closeDialog.getByRole('button', { name: 'مراجعة الحالات غير المحسومة', exact: true }).click();
+    await expect(page.locator('.desktop-table tbody tr')).toHaveCount(2);
+    for (const name of ['علي محمد حسن', 'حسين فاضل سالم']) {
+      const review = await reviewEmployee(page, name);
+      await review.getByLabel('الحالة الجديدة', { exact: true }).selectOption('PRESENT');
+      await review.getByLabel('سبب التعديل', { exact: true }).fill('إثبات الحضور بعد مراجعة الإدارة');
+      await review.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+      await expect(review).toBeHidden();
+    }
+    await page.getByRole('button', { name: 'إغلاق اليوم', exact: true }).click();
+    await closeDialog.getByRole('button', { name: 'تأكيد إغلاق اليوم', exact: true }).click();
+    await expect(closeDialog).toBeHidden();
+    expect((await readPreviewData(page)).workdays.filter(day => day.state === 'OPEN')).toHaveLength(0);
+    await gotoPreview(page, '/attendance?open=new');
+    dialog = page.getByRole('dialog', { name: 'فتح يوم حضور جديد', exact: true });
     await dialog.getByRole('checkbox', { name: 'التصحيح', exact: true }).check();
     await dialog.getByRole('button', { name: 'فتح يوم الحضور', exact: true }).click();
-    await expect(dialog.getByRole('alert')).toContainText('يوجد يوم حضور');
-    await dialog.getByLabel('التاريخ', { exact: false }).fill('2026-09-29');
-    await dialog.getByLabel('وقت بدء الدوام', { exact: false }).fill('15:00:00');
+    await expect(dialog.getByRole('alert')).toContainText('يوجد يوم حضور بهذا التاريخ');
+    await dialog.getByLabel('التاريخ', { exact: true }).fill('2026-09-29');
+    await dialog.getByLabel('وقت بدء الدوام', { exact: true }).fill('15:00:00');
     await dialog.locator('summary').filter({ hasText: 'تخصيص مشاركة الموظفين' }).click();
     await dialog.getByLabel('مشاركة علي محمد حسن', { exact: true }).selectOption('EXCLUDE');
     await dialog.getByLabel('مشاركة حسين فاضل سالم', { exact: true }).selectOption('INCLUDE');
     await dialog.getByRole('button', { name: 'فتح يوم الحضور', exact: true }).click();
     await expect(dialog).toBeHidden();
-    const workday = page.locator('article').filter({ hasText: '29/09/2026' });
-    await expect(workday).toHaveCount(1);
-    await expect(workday).toContainText('3 غير محسوم');
-    await workday.getByRole('button', { name: 'إغلاق اليوم', exact: true }).click();
-    const closeDialog = page.getByRole('dialog', { name: 'إغلاق يوم الحضور' });
-    await expect(closeDialog).toContainText('باقي 3 موظفين');
-    await expect(closeDialog.getByRole('button', { name: 'تأكيد إغلاق اليوم' })).toHaveCount(0);
-    await closeDialog.getByRole('link', { name: 'مراجعة الحالات غير المحسومة' }).click();
-    await expect(page).toHaveURL(/date=2026-09-29&status=UNRESOLVED/);
+    await expect(page.getByRole('heading', { name: 'حضور 29/09/2026', exact: true })).toBeVisible();
+    await page.getByLabel('حالة الحضور', { exact: true }).selectOption('UNRESOLVED');
     await expect(page.locator('.desktop-table tbody tr')).toHaveCount(3);
     await page.getByLabel('حالة الحضور', { exact: true }).selectOption('EXEMPT');
     await expect(page.locator('.desktop-table tbody tr')).toHaveCount(1);
     await expect(page.locator('.desktop-table tbody tr')).toContainText('علي محمد حسن');
+    await gotoPreview(page, '/attendance/wd-2026-09-28');
+    await page.getByRole('button', { name: 'إعادة فتح اليوم', exact: true }).click();
+    const reopen = page.getByRole('dialog', { name: 'إعادة فتح يوم الحضور', exact: true });
+    await expect(reopen).toContainText('أغلق اليوم المفتوح قبل إعادة فتح يوم آخر.');
+    await expect(reopen.getByRole('button', { name: 'إعادة فتح اليوم', exact: true })).toHaveCount(0);
+    const data = await readPreviewData(page);
+    expect(data.workdays.filter(day => day.state === 'OPEN')).toHaveLength(1);
+    expect(data.workdays.find(day => day.state === 'OPEN')?.date).toBe('2026-09-29');
   });
 
   test('records manual seconds, keeps absence choices exclusive and creates audit details', async ({ page }) => {
     await login(page);
-    await page.goto('/attendance?date=2026-09-28');
+    await gotoPreview(page, '/attendance/wd-2026-09-28');
     let dialog = await reviewEmployee(page, 'علي محمد حسن');
     await dialog.getByLabel('الحالة الجديدة', { exact: true }).selectOption('PRESENT');
     await dialog.getByLabel('وقت الحضور', { exact: false }).fill('14:00:01');
@@ -72,19 +113,36 @@ test.describe('Attendance preview workflows', () => {
     row = page.locator('.desktop-table tbody tr').filter({ hasText: 'علي محمد حسن' });
     await expect(row).toContainText('غياب بدون عذر');
     await expect(row).not.toContainText('02:00:01 PM');
-    const audit = await page.evaluate(() => {
-      const state = JSON.parse(sessionStorage.getItem('centerpro-ui-preview-v1') || '{}');
-      return state.data.audit[0];
-    });
+    const audit = (await readPreviewData(page)).audit[0];
     expect(audit.action).toBe('تعديل حالة الحضور');
     expect(audit.employeeId).toBe('CP-0001');
     expect(audit.newValues.reason).toBe('تصحيح الحالة بعد مراجعة الإدارة');
     expect(audit.oldValues.status).toBe('PRESENT');
   });
 
+  test('closed day settings require a reason and update lateness in the same context', async ({ page }) => {
+    await login(page);
+    await gotoPreview(page, '/attendance/wd-2026-09-27');
+    await page.getByRole('button', { name: 'تعديل اليوم', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'تعديل يوم الحضور', exact: true });
+    await dialog.getByLabel('وقت بدء الدوام', { exact: true }).fill('13:00:00');
+    await dialog.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+    await expect(dialog).toBeVisible();
+    expect((await readPreviewData(page)).workdays.find(day => day.id === 'wd-2026-09-27')?.startTime).toBe('14:00:00');
+    await dialog.getByLabel('سبب التعديل', { exact: true }).fill('تصحيح وقت بدء الدوام بعد مراجعة السجل');
+    await dialog.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/attendance\/wd-2026-09-27$/);
+    const data = await readPreviewData(page);
+    expect(data.workdays.find(day => day.id === 'wd-2026-09-27')).toMatchObject({ state: 'CLOSED', startTime: '13:00:00' });
+    expect(data.attendance.find(record => record.workdayId === 'wd-2026-09-27' && record.employeeId === 'CP-0002')).toMatchObject({ status: 'PRESENT', latenessSeconds: 3287 });
+    expect(data.attendance.find(record => record.workdayId === 'wd-2026-09-27' && record.employeeId === 'CP-0001')).toMatchObject({ status: 'EXCUSED', latenessSeconds: 0 });
+    expect(data.audit[0].newValues.reason).toBe('تصحيح وقت بدء الدوام بعد مراجعة السجل');
+  });
+
   test('requires reason and explicit confirmation when removing attendance', async ({ page }) => {
     await login(page);
-    await page.goto('/attendance?date=2026-09-28');
+    await gotoPreview(page, '/attendance/wd-2026-09-28');
     const dialog = await reviewEmployee(page, 'مريم أحمد ناصر');
     await dialog.getByRole('button', { name: 'إزالة تسجيل الحضور', exact: true }).click();
     await expect(dialog.getByRole('alert')).toContainText('اكتب سبب إزالة الحضور');
@@ -102,8 +160,10 @@ test.describe('Attendance preview workflows', () => {
 
   test('archived attendance is read-only for operations admin', async ({ page }) => {
     await login(page, 'مدير العمليات');
-    await page.goto('/attendance?date=2026-08-27');
+    await gotoPreview(page, '/attendance/wd-2026-08-27');
     await expect(page.getByText('هذا الشهر مؤرشف وسجلاته للقراءة فقط.', { exact: false })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'تعديل اليوم', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'إعادة فتح اليوم', exact: true })).toBeDisabled();
     await page.locator('.desktop-table tbody tr').filter({ hasText: 'علي محمد حسن' }).getByRole('button', { name: 'التفاصيل', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'مراجعة سجل الحضور', exact: true });
     await expect(dialog).toContainText('هذا السجل محمي');
@@ -111,9 +171,76 @@ test.describe('Attendance preview workflows', () => {
     await expect(dialog.getByLabel('سبب التعديل')).toHaveCount(0);
   });
 
+  test('reopened attendance waits for explicit payroll recalculation without replacing history', async ({ page }) => {
+    const fixture = createPopulatedTestData();
+    // A later department rate must not replace an archived month's own rules.
+    fixture.departments.find(department => department.id === 'dept-correction')!.salary.dailyRate = 30000;
+    await seedPopulatedPreview(page, fixture);
+    await loginPreview(page);
+    const before = await readPreviewData(page);
+    const archived = before.months.find(month => month.month === '2026-08')!;
+    await gotoPreview(page, '/payroll');
+    await page.getByLabel('شهر الرواتب', { exact: true }).fill('2026-08');
+    await page.getByRole('button', { name: 'إعادة فتح للتعديل', exact: true }).click();
+    const reopening = page.getByRole('dialog', { name: 'إعادة فتح الشهر للتعديل', exact: true });
+    await reopening.getByLabel('للتأكيد، اكتب 2026-08', { exact: true }).fill('2026-08');
+    await reopening.getByRole('button', { name: 'تأكيد إعادة الفتح', exact: true }).click();
+    await expect(reopening).toBeHidden();
+
+    await gotoPreview(page, '/attendance/wd-2026-08-27');
+    const review = await reviewEmployee(page, 'علي محمد حسن');
+    await review.getByRole('checkbox', { name: 'غائب', exact: true }).check();
+    await review.getByLabel('سبب التعديل', { exact: true }).fill('تثبيت عذر موثق بعد مراجعة الحضور التاريخي');
+    await expect(review).toContainText('يتطلب إعادة الاحتساب الصريحة');
+    await review.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+    await expect(review).toBeHidden();
+    let pending = await readPreviewData(page);
+    let pendingMonth = pending.months.find(month => month.month === '2026-08')!;
+    expect(pendingMonth.snapshots).toEqual(archived.snapshots);
+    expect(pendingMonth.sourceSnapshot).toEqual(archived.sourceSnapshot);
+    expect(pending.attendance.find(record => record.workdayId === 'wd-2026-08-27' && record.employeeId === 'CP-0001')?.status).toBe('EXCUSED');
+
+    await page.getByRole('button', { name: 'تعديل اليوم', exact: true }).click();
+    const settings = page.getByRole('dialog', { name: 'تعديل يوم الحضور', exact: true });
+    await settings.getByLabel('وقت بدء الدوام', { exact: true }).fill('13:00:00');
+    await settings.getByLabel('سبب التعديل', { exact: true }).fill('تصحيح موعد بداية اليوم في السجل التاريخي');
+    await settings.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+    await expect(settings).toBeHidden();
+    pending = await readPreviewData(page);
+    pendingMonth = pending.months.find(month => month.month === '2026-08')!;
+    expect(pendingMonth.snapshots).toEqual(archived.snapshots);
+    expect(pendingMonth.sourceSnapshot).toEqual(archived.sourceSnapshot);
+    expect(pending.payments).toEqual(before.payments);
+
+    await gotoPreview(page, '/payroll');
+    await page.getByLabel('شهر الرواتب', { exact: true }).fill('2026-08');
+    await expect(page.getByText('توجد تعديلات على السجلات تنتظر إعادة الاحتساب.', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'إعادة الاحتساب بالقواعد المؤرشفة', exact: true }).click();
+    const recalculation = page.getByRole('dialog', { name: 'إعادة احتساب الشهر المؤرشف', exact: true });
+    await recalculation.getByLabel('للتأكيد، اكتب 2026-08', { exact: true }).fill('2026-08');
+    await recalculation.getByRole('button', { name: 'تأكيد إعادة الاحتساب', exact: true }).click();
+    await expect(recalculation).toBeHidden();
+    const after = await readPreviewData(page);
+    const recalculated = after.months.find(month => month.month === '2026-08')!;
+    const result = recalculated.snapshots['CP-0001'];
+    expect(result.attendanceDays).toBe(archived.snapshots['CP-0001'].attendanceDays - 1);
+    expect(result.excusedDays).toBe(archived.snapshots['CP-0001'].excusedDays + 1);
+    expect(result.finalSalary).toBeLessThan(archived.snapshots['CP-0001'].finalSalary);
+    expect(result.salaryConfig).toEqual(archived.snapshots['CP-0001'].salaryConfig);
+    expect(result.salaryConfig.dailyRate).toBe(25000);
+    expect(result.paymentStatus).toBe('REVIEW');
+    expect(recalculated.sourceSnapshot?.attendance.find(record => record.workdayId === 'wd-2026-08-27' && record.employeeId === 'CP-0001')?.status).toBe('EXCUSED');
+    expect(recalculated.sourceSnapshot?.workdays.find(day => day.id === 'wd-2026-08-27')?.startTime).toBe('13:00:00');
+    expect(recalculated.sourceSnapshot?.departments).toEqual(archived.sourceSnapshot?.departments);
+    expect(recalculated.sourceSnapshot?.employees).toEqual(archived.sourceSnapshot?.employees);
+    expect(recalculated.snapshots['CP-0002'].latenessSeconds).toBeGreaterThan(archived.snapshots['CP-0002'].latenessSeconds);
+    expect(after.payments).toEqual(before.payments);
+    await expect(page.getByText('توجد تعديلات على السجلات تنتظر إعادة الاحتساب.', { exact: true })).toHaveCount(0);
+  });
+
   test('employee mock scan updates own record once and handles failure outcomes', async ({ page }) => {
     await login(page, 'موظف');
-    await page.goto('/employee/scan');
+    await gotoPreview(page, '/employee/scan');
     await expect(page.getByText('الكاميرا تقرأ الرمز فعلياً؛ النتيجة محاكاة محلية', { exact: false })).toBeVisible();
     await page.locator('summary').filter({ hasText: 'تجربة حالات الواجهة' }).click();
     await page.getByLabel('حالة التجربة', { exact: true }).selectOption('EXPIRED');
@@ -127,21 +254,21 @@ test.describe('Attendance preview workflows', () => {
     await expect(page.getByRole('heading', { name: 'تم تسجيل حضورك التجريبي', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'تجربة الحالة', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'تم تسجيل حضورك مسبقاً اليوم', exact: true })).toBeVisible();
-    const records = await page.evaluate(() => {
-      const state = JSON.parse(sessionStorage.getItem('centerpro-ui-preview-v1') || '{}');
-      return state.data.attendance.filter((record: { workdayId: string; employeeId: string }) => record.workdayId === 'wd-2026-09-28' && record.employeeId === state.session.employeeId);
-    });
+    const records = (await readPreviewData(page)).attendance.filter(record => record.workdayId === 'wd-2026-09-28' && record.employeeId === 'CP-0001');
     expect(records).toHaveLength(1);
     expect(records[0].status).toBe('PRESENT');
     expect(records[0].source).toBe('QR');
-    await page.goto('/attendance');
+    await gotoPreview(page, '/attendance');
     await expect(page).toHaveURL(/\/employee$/);
   });
 
   test('attendance display generates a rotating preview QR without sidebar', async ({ page }) => {
-    await login(page);
-    await page.clock.install();
-    await page.goto('/attendance-display');
+    const fixture = createPopulatedTestData();
+    fixture.workdays.forEach(day => { day.state = day.date === '2026-09-27' ? 'OPEN' : 'CLOSED'; });
+    await seedPopulatedPreview(page, fixture);
+    await loginPreview(page);
+    await gotoPreview(page, '/attendance-display');
+    await expect(page.getByText('27/09/2026', { exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'تسجيل الحضور', exact: true })).toBeVisible();
     await expect(page.locator('aside.sidebar')).toHaveCount(0);
     const qr = page.locator('svg').filter({ has: page.locator('title', { hasText: 'رمز تسجيل حضور تجريبي' }) });

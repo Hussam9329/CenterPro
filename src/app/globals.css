@@ -148,7 +148,7 @@ fieldset { min-width: 0; }
 .btn-primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
 .btn-secondary, .button-link { color: #525762; background: #fff; border-color: #e3e5e9; }
 .btn-secondary:hover, .button-link:hover { background: #faf8f9; border-color: #cfc7cb; color: var(--brand); }
-.btn-ghost { background: transparent; border-color: transparent; color: #737985; }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn-ghost:hover { color: var(--brand); background: #fcf0f2; }
 .btn-danger { background: #a51c30; border-color: #a51c30; color: #fff; }
 .btn-danger:hover { background: #851424; border-color: #851424; }
@@ -255,18 +255,11 @@ fieldset { min-width: 0; }
 .loading-title, .skeleton-heading { height: 50px; width: min(310px,70%); }
 .loading-stat { height: 135px; }
 .loading-main, .skeleton-card { min-height: 360px; width: 100%; }
-.brand-intro { position: fixed; z-index: 200; inset: 0; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 23px; pointer-events: none; animation: intro-out 1.35s ease both; }
-.brand-intro .brand { animation: brand-reveal 1.1s ease both; }
-.brand-intro .brand img { width: 235px; }
-.brand-intro > span:not(.brand) { color: #a4a0a7; font-size: 11px; animation: wordmark-reveal 1.1s ease both; }
 .spin { animation: spin .85s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dialog-in { from { opacity: 0; transform: translate(-50%,-48%); } to { opacity: 1; transform: translate(-50%,-50%); } }
 @keyframes skeleton-pulse { 50% { opacity: .55; } }
-@keyframes intro-out { 0%,72% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
-@keyframes brand-reveal { 0% { opacity: 0; clip-path: inset(0 79% 0 0); transform: translateY(8px); } 27% { opacity: 1; clip-path: inset(0 67% 0 0); } 72%,100% { opacity: 1; clip-path: inset(0); transform: translateY(0); } }
-@keyframes wordmark-reveal { 0%,40% { opacity: 0; transform: translateY(4px); } 75%,100% { opacity: 1; transform: translateY(0); } }
 
 /* Dashboard */
 .dashboard-split { display: grid; grid-template-columns: minmax(0,1.8fr) minmax(0,1fr); gap: 22px; }
@@ -513,7 +506,6 @@ fieldset { min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-  .brand-intro { display: none; }
 }
 
 /* Keep secondary copy readable at compact UI sizes. */
@@ -610,3 +602,15 @@ fieldset { min-width: 0; }
   .legend-item strong { font-size: 11px; }
   .quick-action > span { font-size: 10px; }
 }
+
+/* Guided first-run setup retains the CenterPro card hierarchy. */
+.setup-guide { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; list-style:none; padding:0; margin:0; }
+.setup-step { min-width:0; padding:22px; border:1px solid var(--border); border-radius:14px; background:var(--surface-soft, #fafafb); }
+.setup-step-top { display:flex; align-items:center; justify-content:space-between; color:var(--brand, #a51c30); margin-bottom:18px; }
+.setup-step-number { display:grid; place-items:center; width:34px; height:34px; background:#fff; border:1px solid var(--border); border-radius:10px; font:600 13px 'Inter Variable', sans-serif; }
+.setup-step h3 { font-size:14px; margin:0 0 8px; }
+.setup-step p { font-size:11px; line-height:1.9; color:#6b707b; margin:0 0 18px; }
+.setup-step .muted { font-size:10px; }
+.setup-step.completed { background:#fff; }
+.login-role:disabled { cursor:not-allowed; opacity:.55; }
+@media(max-width:600px) { .setup-guide { grid-template-columns:1fr; gap:10px; } .setup-step { padding:18px; } .setup-step-top { margin-bottom:10px; } }

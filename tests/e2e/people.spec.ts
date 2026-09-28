@@ -1,24 +1,12 @@
-import { expect, test, type Page } from '@playwright/test';
-import type { DemoData } from '../../src/lib/types';
-
-async function login(page: Page, role: 'المدير العام' | 'مدير العمليات' | 'موظف' = 'المدير العام') {
-  await page.goto('/login');
-  await page.getByRole('button', { name: role, exact: true }).click();
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
-  await expect(page).toHaveURL(role === 'موظف' ? /\/employee$/ : /\/dashboard$/);
-  await expect(page.locator('.brand-intro')).toBeHidden();
-}
-
-async function data(page: Page): Promise<DemoData> {
-  return page.evaluate(() => JSON.parse(sessionStorage.getItem('centerpro-ui-preview-v1') || '{}').data);
-}
+import { test, expect, gotoPreview, loginPreview, seedPopulatedPreview, readPreviewData, PREVIEW_STORAGE_KEY } from './helpers/preview';
 
 test.describe('Employee and department preview workflows', () => {
   test.use({ viewport: { width: 1366, height: 900 } });
+  test.beforeEach(async ({ page }) => { await seedPopulatedPreview(page); });
 
   test('creates employee and account through grouped form with unique case-insensitive username', async ({ page }) => {
-    await login(page);
-    await page.goto('/employees');
+    await loginPreview(page);
+    await gotoPreview(page, '/employees');
     await page.getByRole('button', { name: 'إضافة موظف', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'إضافة موظف جديد', exact: true });
     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
@@ -54,19 +42,19 @@ test.describe('Employee and department preview workflows', () => {
     await expect(row).toHaveCount(1);
     await expect(row).toContainText('اختبار موظف جديد');
     await expect(row).toContainText('CP-0015');
-    await expect(row).toContainText('راتب قطعي');
-    const state = await data(page);
+    await expect(row).toContainText('قطعي');
+    const state = await readPreviewData(page);
     const created = state.employees.find(item => item.username === 'TEST100')!;
     expect(created).toMatchObject({ code: 'CP-0015', name: 'اختبار موظف جديد', gender: 'FEMALE', departmentId: 'dept-correction', startDate: '2026-09-20', fixedOverride: true, fixedSalary: 1000000, dailyRateOverride: 25000 });
     expect(created.photo).toBeUndefined();
     expect(state.audit[0]).toMatchObject({ action: 'إضافة موظف وحساب دخول', employeeId: created.id });
-    expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v1'))).not.toContain(password);
+    expect(await page.evaluate(key => sessionStorage.getItem(key), PREVIEW_STORAGE_KEY)).not.toContain(password);
   });
 
   test('editing and confirmed deactivation retain employee code and all historical records', async ({ page }) => {
-    await login(page);
-    await page.goto('/employees/CP-0001');
-    const before = await data(page);
+    await loginPreview(page);
+    await gotoPreview(page, '/employees/CP-0001');
+    const before = await readPreviewData(page);
     const history = before.attendance.filter(item => item.employeeId === 'CP-0001');
     await page.getByRole('button', { name: 'تعديل الملف', exact: true }).click();
     const form = page.getByRole('dialog', { name: 'تعديل بيانات الموظف', exact: true });
@@ -79,12 +67,12 @@ test.describe('Employee and department preview workflows', () => {
     let confirm = page.getByRole('dialog', { name: 'تأكيد إيقاف الموظف', exact: true });
     await expect(confirm).toContainText('الاحتفاظ بملفه وسجلاته السابقة كاملة');
     await confirm.getByRole('button', { name: 'إلغاء', exact: true }).click();
-    expect((await data(page)).employees.find(item => item.id === 'CP-0001')!.active).toBe(true);
+    expect((await readPreviewData(page)).employees.find(item => item.id === 'CP-0001')!.active).toBe(true);
     await page.getByRole('button', { name: 'إيقاف الموظف', exact: true }).click();
     confirm = page.getByRole('dialog', { name: 'تأكيد إيقاف الموظف', exact: true });
     await confirm.getByRole('button', { name: 'إيقاف الموظف', exact: true }).click();
     await expect(confirm).toBeHidden();
-    const inactive = await data(page);
+    const inactive = await readPreviewData(page);
     expect(inactive.employees.find(item => item.id === 'CP-0001')).toMatchObject({ active: false, code: 'CP-0001' });
     expect(inactive.attendance.filter(item => item.employeeId === 'CP-0001')).toEqual(history);
     expect(inactive.months).toEqual(before.months);
@@ -92,12 +80,12 @@ test.describe('Employee and department preview workflows', () => {
     confirm = page.getByRole('dialog', { name: 'تفعيل الموظف', exact: true });
     await confirm.getByRole('button', { name: 'تفعيل الموظف', exact: true }).click();
     await expect(confirm).toBeHidden();
-    expect((await data(page)).employees.find(item => item.id === 'CP-0001')).toMatchObject({ active: true, code: 'CP-0001', name: 'علي محمد حسن المعدّل' });
+    expect((await readPreviewData(page)).employees.find(item => item.id === 'CP-0001')).toMatchObject({ active: true, code: 'CP-0001', name: 'علي محمد حسن المعدّل' });
   });
 
   test('password reset saves directly without old password, confirmation or stored secret', async ({ page }) => {
-    await login(page, 'مدير العمليات');
-    await page.goto('/employees/CP-0001');
+    await loginPreview(page, 'مدير العمليات');
+    await gotoPreview(page, '/employees/CP-0001');
     await page.getByRole('button', { name: 'حساب الدخول', exact: true }).click();
     await page.getByRole('button', { name: 'تغيير كلمة المرور', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'تغيير كلمة المرور', exact: true });
@@ -107,35 +95,35 @@ test.describe('Employee and department preview workflows', () => {
     await dialog.getByLabel('كلمة المرور الجديدة', { exact: false }).fill(secret);
     await dialog.getByRole('button', { name: 'حفظ', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    const state = await data(page);
+    const state = await readPreviewData(page);
     expect(state.audit[0]).toMatchObject({ action: 'محاكاة تغيير كلمة مرور الموظف', employeeId: 'CP-0001', newValues: { simulated: true } });
-    expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v1'))).not.toContain(secret);
+    expect(await page.evaluate(key => sessionStorage.getItem(key), PREVIEW_STORAGE_KEY)).not.toContain(secret);
   });
 
   test('fixed and tier configuration changes warn before affecting open payroll while archives stay intact', async ({ page }) => {
-    await login(page);
-    await page.goto('/departments');
-    const before = await data(page);
+    await loginPreview(page);
+    await gotoPreview(page, '/departments');
+    const before = await readPreviewData(page);
     const correctionCard = page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'التصحيح', exact: true }) });
     await correctionCard.getByRole('button', { name: 'إعدادات القسم', exact: true }).click();
     let dialog = page.getByRole('dialog', { name: 'إعدادات قسم التصحيح', exact: true });
-    await dialog.getByLabel('نظام الراتب', { exact: true }).selectOption('FIXED');
+    await dialog.getByLabel('نوع الراتب', { exact: true }).selectOption('FIXED');
     await dialog.getByLabel('الراتب القطعي', { exact: false }).fill('950000');
     await dialog.getByLabel('قيمة اليومية', { exact: false }).fill('35000');
     await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
     let confirmation = page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true });
     await expect(confirmation).toContainText('الشهر المفتوح حالياً');
-    expect((await data(page)).departments[0].salary).toEqual(before.departments[0].salary);
+    expect((await readPreviewData(page)).departments[0].salary).toEqual(before.departments[0].salary);
     await confirmation.getByRole('button', { name: 'إلغاء', exact: true }).click();
     await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
     await page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true }).getByRole('button', { name: 'حفظ وإعادة الاحتساب', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    let state = await data(page);
+    let state = await readPreviewData(page);
     expect(state.departments[0].salary).toMatchObject({ mode: 'FIXED', fixedSalary: 950000, dailyRate: 35000 });
     expect(state.months).toEqual(before.months);
     await correctionCard.getByRole('button', { name: 'إعدادات القسم', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'إعدادات قسم التصحيح', exact: true });
-    await dialog.getByLabel('نظام الراتب', { exact: true }).selectOption('TIERED');
+    await dialog.getByLabel('نوع الراتب', { exact: true }).selectOption('TIERED');
     await dialog.getByLabel('من يوم', { exact: true }).nth(1).fill('4');
     await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
     await expect(dialog.getByRole('alert')).toContainText('دون تداخل');
@@ -144,20 +132,20 @@ test.describe('Employee and department preview workflows', () => {
     confirmation = page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true });
     await confirmation.getByRole('button', { name: 'حفظ وإعادة الاحتساب', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    state = await data(page);
+    state = await readPreviewData(page);
     expect(state.departments[0].salary.mode).toBe('TIERED');
     expect(state.departments[0].salary.tiers[1].fromDays).toBe(5);
     expect(state.months).toEqual(before.months);
   });
 
   test('operations admin cannot change privileged accounts, roles or protected salary settings', async ({ page }) => {
-    await login(page, 'مدير العمليات');
-    await page.goto('/employees/CP-0012');
+    await loginPreview(page, 'مدير العمليات');
+    await gotoPreview(page, '/employees/CP-0012');
     await expect(page.getByRole('button', { name: 'تعديل الملف', exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: 'إيقاف الموظف', exact: true })).toBeDisabled();
     await page.getByRole('button', { name: 'حساب الدخول', exact: true }).click();
     await expect(page.getByRole('button', { name: 'تغيير كلمة المرور', exact: true })).toBeDisabled();
-    await page.goto('/employees/CP-0001');
+    await gotoPreview(page, '/employees/CP-0001');
     await page.getByRole('button', { name: 'تعديل الملف', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'تعديل بيانات الموظف', exact: true });
     await dialog.getByRole('button', { name: /حساب الدخول/ }).click();
@@ -167,7 +155,7 @@ test.describe('Employee and department preview workflows', () => {
     await expect(dialog.getByRole('checkbox', { name: 'هذا الموظف راتبه قطعي', exact: true })).toBeDisabled();
     await expect(dialog).toContainText('إعدادات الراتب محمية');
     await dialog.getByRole('button', { name: 'إغلاق النافذة', exact: true }).click();
-    await page.goto('/departments');
+    await gotoPreview(page, '/departments');
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByRole('button', { name: 'إضافة قسم', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'إعدادات القسم', exact: true })).toHaveCount(0);

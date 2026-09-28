@@ -12,18 +12,18 @@ export function validateSalaryConfig(config: SalaryConfig): void {
   integer(config.maximum, 'الحد الأعلى');
   if (config.mode === 'FIXED') return;
   integer(config.extraDaysStart, 'بداية الأيام الإضافية');
-  if (!config.tiers.length) throw new Error('أضف شريحة راتب واحدة على الأقل.');
+  if (!config.tiers.length) throw new Error('أضف قانون راتب واحداً على الأقل.');
   let previousEnd = -1;
   for (const tier of config.tiers) {
-    integer(tier.fromDays, 'بداية الشريحة');
-    integer(tier.toDays, 'نهاية الشريحة');
-    integer(tier.amount, 'مبلغ الشريحة');
-    if (tier.fromDays > tier.toDays) throw new Error('بداية الشريحة يجب ألا تتجاوز نهايتها.');
-    if (tier.fromDays <= previousEnd) throw new Error('يجب ترتيب شرائح الراتب دون تداخل.');
-    if (tier.fromDays !== previousEnd + 1) throw new Error('يجب أن تغطي الشرائح جميع أعداد أيام الحضور بدءاً من 0 دون فجوات.');
+    integer(tier.fromDays, 'بداية القانون');
+    integer(tier.toDays, 'نهاية القانون');
+    integer(tier.amount, 'مبلغ القانون');
+    if (tier.fromDays > tier.toDays) throw new Error('بداية القانون يجب ألا تتجاوز نهايته.');
+    if (tier.fromDays <= previousEnd) throw new Error('يجب ترتيب قوانين القسم دون تداخل.');
+    if (tier.fromDays !== previousEnd + 1) throw new Error('يجب أن تغطي قوانين القسم جميع أعداد أيام الحضور بدءاً من 0 دون فجوات.');
     previousEnd = tier.toDays;
   }
-  if (config.extraDaysStart <= previousEnd) throw new Error('الأيام الإضافية يجب أن تبدأ بعد نهاية آخر شريحة.');
+  if (config.extraDaysStart <= previousEnd) throw new Error('الأيام الإضافية يجب أن تبدأ بعد نهاية آخر قانون.');
 }
 
 export function calculateTieredSalary(days: number, config: SalaryConfig): number {
@@ -32,13 +32,13 @@ export function calculateTieredSalary(days: number, config: SalaryConfig): numbe
   const tier = config.tiers.find((item) => days >= item.fromDays && days <= item.toDays);
   if (tier) return Math.min(config.maximum, tier.type === 'PER_DAY' ? days * config.dailyRate : tier.amount);
   const finalTier = config.tiers.at(-1);
-  if (!finalTier) throw new Error('إعدادات شرائح الراتب غير مكتملة.');
+  if (!finalTier) throw new Error('إعدادات قوانين القسم غير مكتملة.');
   if (days > finalTier.toDays) {
     const base = finalTier.type === 'PER_DAY' ? finalTier.toDays * config.dailyRate : finalTier.amount;
     const extraDays = Math.max(0, days - config.extraDaysStart + 1);
     return Math.min(config.maximum, base + extraDays * config.dailyRate);
   }
-  throw new Error('عدد أيام الحضور غير مغطى بشرائح الراتب.');
+  throw new Error('عدد أيام الحضور غير مغطى بقوانين القسم.');
 }
 
 export function calculateFixedSalary(days: number, rate: number, fixed: number, partial: boolean): number {

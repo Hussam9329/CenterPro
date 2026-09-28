@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLatenessSeconds, isExpected, statusLabel } from '../../src/lib/attendance';
-import { createInitialData, DEMO_TODAY } from '../../src/lib/mock-data';
+import { DEMO_TODAY } from '../../src/lib/mock-data';
+import { createPopulatedTestData } from '../fixtures/populated-data';
 
 describe('Baghdad attendance rules', () => {
   it.each([['14:00:00', 0], ['14:00:01', 1], ['14:01:00', 60], ['14:17:43', 1063], ['13:59:59', 0]])('arrival %s -> %i late seconds, without grace', (time, seconds) => {
@@ -13,7 +14,7 @@ describe('Baghdad attendance rules', () => {
     expect(() => getLatenessSeconds('invalid', DEMO_TODAY, '14:00:00')).toThrow();
   });
   it('expected employees respect selected departments and explicit individual overrides', () => {
-    const data = createInitialData();
+    const data = createPopulatedTestData();
     const employee = data.employees[0];
     const workday = data.workdays.find((item) => item.date === DEMO_TODAY)!;
     expect(isExpected(employee, workday)).toBe(true);
@@ -26,7 +27,7 @@ describe('Baghdad attendance rules', () => {
     expect(isExpected(employee, workday)).toBe(false);
   });
   it('overrides cannot include inactive, not-yet-started or ended employees', () => {
-    const data = createInitialData();
+    const data = createPopulatedTestData();
     const employee = data.employees[0];
     const workday = data.workdays.find((item) => item.date === DEMO_TODAY)!;
     workday.overrides[employee.id] = 'INCLUDE';
@@ -43,7 +44,7 @@ describe('Baghdad attendance rules', () => {
 
 describe('coherent fictional fixture', () => {
   it('all records have valid employees/workdays and only one attendance record per employee per day', () => {
-    const data = createInitialData();
+    const data = createPopulatedTestData();
     const employeeIds = new Set(data.employees.map((item) => item.id));
     const workdayIds = new Set(data.workdays.map((item) => item.id));
     expect(new Set(data.attendance.map((item) => `${item.employeeId}:${item.workdayId}`)).size).toBe(data.attendance.length);
@@ -55,9 +56,9 @@ describe('coherent fictional fixture', () => {
     }
   });
   it('new fixtures are independent and password audit contains no credentials', () => {
-    const first = createInitialData();
+    const first = createPopulatedTestData();
     first.employees[0].name = 'تم التغيير';
-    expect(createInitialData().employees[0].name).not.toBe('تم التغيير');
+    expect(createPopulatedTestData().employees[0].name).not.toBe('تم التغيير');
     const resetAudit = first.audit.find((item) => item.action.includes('كلمة مرور'))!;
     expect(Object.keys(resetAudit.newValues)).toEqual(['sessionsInvalidated']);
     expect(JSON.stringify(first)).not.toMatch(/passwordHash|github_pat|postgresql:\/\//);

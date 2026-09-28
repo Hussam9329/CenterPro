@@ -6,7 +6,7 @@ import { Camera, CameraOff, CheckCircle2, CircleAlert, Clock3, QrCode, RefreshCw
 import type { IScannerControls } from '@zxing/browser';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { Badge, Button, Card, Field, PageHeader, Select } from '@/components/ui';
-import { getLatenessSeconds, isExpected } from '@/lib/attendance';
+import { getLatenessSeconds, getOpenWorkday, isExpected } from '@/lib/attendance';
 import { DEMO_TODAY } from '@/lib/mock-data';
 import { duration, time } from '@/lib/format';
 import styles from '@/components/attendance/attendance.module.css';
@@ -27,7 +27,7 @@ export default function EmployeeScanPage() {
   const [scenario, setScenario] = useState<Scenario>('SUCCESS');
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const employee = data.employees.find(item => item.id === session?.employeeId);
-  const day = data.workdays.find(item => item.date === DEMO_TODAY && item.state === 'OPEN');
+  const day = getOpenWorkday(data.workdays);
   const attendance = data.attendance.find(item => item.employeeId === employee?.id && item.workdayId === day?.id);
   const release = () => {
     controls.current?.stop(); controls.current = null;
@@ -42,7 +42,7 @@ export default function EmployeeScanPage() {
     setCameraError('');
     if (selected === 'INVALID') { setOutcome({ kind: 'error', title: 'رمز QR غير صالح', message: 'امسح رمز CenterPro المعروض على شاشة الحضور.' }); return; }
     if (selected === 'EXPIRED') { setOutcome({ kind: 'warning', title: 'انتهت صلاحية رمز QR', message: 'امسح الرمز الجديد على شاشة الحضور.' }); return; }
-    if (selected === 'DUPLICATE') { setOutcome({ kind: 'warning', title: 'تم تسجيل حضورك مسبقاً اليوم', message: 'لا يمكن إنشاء تسجيل حضور إضافي لليوم نفسه.', timestamp: attendance?.checkIn || `${DEMO_TODAY}T14:17:43+03:00` }); return; }
+    if (selected === 'DUPLICATE') { setOutcome({ kind: 'warning', title: 'تم تسجيل حضورك مسبقاً اليوم', message: 'لا يمكن إنشاء تسجيل حضور إضافي لليوم نفسه.', timestamp: attendance?.checkIn || `${day?.date || DEMO_TODAY}T14:17:43+03:00` }); return; }
     if (selected === 'CLOSED') { setOutcome({ kind: 'warning', title: 'لا يوجد يوم حضور مفتوح حالياً', message: 'راجع الإدارة لفتح يوم الحضور.' }); return; }
     if (selected === 'EXEMPT') { setOutcome({ kind: 'warning', title: 'أنت مستثنى من دوام هذا اليوم', message: 'لن يُسجل حضور أو غياب أو خصم لهذا اليوم.' }); return; }
     if (selected === 'NETWORK' || !navigator.onLine) { setOutcome({ kind: 'error', title: 'تعذر الاتصال', message: 'تحقق من اتصال الإنترنت ثم أعد المحاولة. لم يُسجل حضور.' }); return; }
@@ -93,7 +93,7 @@ export default function EmployeeScanPage() {
   }
 
   return <div className={`page-stack ${styles.scannerPage}`}>
-    <PageHeader eyebrow="حضورك اليوم" title="تسجيل الحضور" description="وجّه كاميرا هاتفك نحو الرمز الموجود على شاشة الحضور في المركز." />
+    <PageHeader eyebrow="حضورك" title="تسجيل الحضور" description="وجّه كاميرا هاتفك نحو الرمز الموجود على شاشة الحضور في المركز." />
     <div className={styles.previewNotice}><Badge tone="brand">معاينة تجريبية</Badge><span>الكاميرا تقرأ الرمز فعلياً؛ النتيجة محاكاة محلية ولا تمثل حضوراً حقيقياً.</span></div>
     <div className={styles.scannerViewport}><video ref={video} muted autoPlay playsInline aria-label="معاينة الكاميرا لمسح رمز الحضور" className={cameraActive || starting ? styles.videoVisible : styles.videoHidden} /><div className={styles.scanTarget}>{(cameraActive || starting) && <><ScanLine size={36} /><span>{cameraActive ? 'ضع الرمز داخل الإطار' : 'جارٍ تشغيل الكاميرا'}</span></>}</div>{!cameraActive && !starting && <div className={styles.cameraPlaceholder}><QrCode size={52} /><p>الكاميرا متوقفة</p></div>}<div className={styles.cameraControls}>{cameraActive ? <Button variant="secondary" onClick={stopCamera}><CameraOff size={18} />إيقاف الكاميرا</Button> : <Button onClick={activateCamera} loading={starting}><Camera size={18} />{starting ? 'جارٍ تشغيل الكاميرا' : 'تشغيل الكاميرا'}</Button>}</div></div>
     {cameraError && <div className="notice notice-warning" role="alert"><CircleAlert size={20} /><span>{cameraError}</span></div>}

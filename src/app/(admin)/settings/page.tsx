@@ -15,7 +15,7 @@ const permissions: PermissionRow[] = [
   { label: 'إدارة اسم المستخدم وإعادة تعيين كلمة المرور', superAdmin: 'yes', admin: 'employees', employee: 'no' },
   { label: 'إنشاء حسابات الإدارة وتعديلها وتغيير الأدوار', superAdmin: 'yes', admin: 'no', employee: 'no' },
   { label: 'إدارة الأقسام وإعدادات الرواتب المحمية', superAdmin: 'yes', admin: 'no', employee: 'no' },
-  { label: 'فتح أيام العمل ومراجعة الحضور وتعديله', superAdmin: 'yes', admin: 'yes', employee: 'no' },
+  { label: 'إدارة أيام الحضور ومراجعته وتعديله', superAdmin: 'yes', admin: 'yes', employee: 'no' },
   { label: 'إدارة الخصومات والمكافآت', superAdmin: 'yes', admin: 'yes', employee: 'no' },
   { label: 'إدارة رواتب الشهر الحالي وتسجيل صرفها', superAdmin: 'yes', admin: 'yes', employee: 'no' },
   { label: 'إعادة فتح أشهر الرواتب المؤرشفة', superAdmin: 'yes', admin: 'no', employee: 'no' },
@@ -96,12 +96,12 @@ export default function SettingsPage() {
       <div className="notice">يسجل الموظف حضوره بنفسه من قارئ QR، ويطّلع على بياناته فقط. إدارة حسابات الإدارة والأدوار متاحة لـ Super Admin من ملف الموظف.</div>
     </Card>
     <Card title="حسابات الإدارة" description="افتح ملف الحساب لإدارة بياناته، دوره أو كلمة مروره." action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>
-      <div className="stack">{adminAccounts.map(account => <div className="list-row" key={account.id}><div className="inline"><Avatar name={account.name} src={account.photo} /><div><Link href={`/employees/${account.id}`} className="button-link">{account.name}</Link><div className="muted" dir="ltr">{account.code} · {account.username}</div></div></div><div className="inline"><Badge tone={account.active ? 'brand' : 'neutral'}>{account.active ? roleLabels[account.role] : 'غير نشط'}</Badge><Link href={`/employees/${account.id}`} className="button-link" aria-label={`إدارة حساب ${account.name}`}><ChevronLeft size={18} /></Link></div></div>)}</div>
+      <div className="stack"><div className="notice"><ShieldCheck size={20}/><div><strong>مدير النظام — حساب معاينة مستقل</strong><p>خارج قائمة الموظفين والأقسام والحضور والرواتب. يُستبدل بتهيئة المصادقة الفعلية في المرحلة الثانية.</p></div></div>{!adminAccounts.length && <EmptyState title="لم تُضف حسابات إدارة بعد" description="يمكنك تعيين دور إداري لحساب موظف تضيفه بنفسك."/>}{adminAccounts.map(account => <div className="list-row" key={account.id}><div className="inline"><Avatar name={account.name} src={account.photo} /><div><Link href={`/employees/${account.id}`} className="button-link">{account.name}</Link><div className="muted" dir="ltr">{account.code} · {account.username}</div></div></div><div className="inline"><Badge tone={account.active ? 'brand' : 'neutral'}>{account.active ? roleLabels[account.role] : 'غير نشط'}</Badge><Link href={`/employees/${account.id}`} className="button-link" aria-label={`إدارة حساب ${account.name}`}><ChevronLeft size={18} /></Link></div></div>)}</div>
     </Card>
-    <Card title="إعادة ضبط المعاينة" description="استرجع بيانات العرض الأصلية بعد تجربة الإضافة والتعديل.">
-      <div className="list-row"><p className="muted">تحذف إعادة الضبط كل تغييرات جلسة المعاينة وسجلها التجريبي، مع إبقاء الدور الحالي.</p><Button variant="danger" onClick={() => { setResetWord(''); setResetOpen(true); }}><RotateCcw size={17} />إعادة ضبط البيانات</Button></div>
+    <Card title="إعادة ضبط المعاينة" description="احذف بيانات جلسة المعاينة وابدأ من الصفر.">
+      <div className="list-row"><p className="muted">تُحذف كل الأقسام والموظفين وأيام الحضور والبيانات المالية والسجل. يبقى حساب مدير النظام المستقل متاحاً.</p><Button variant="danger" onClick={() => { setResetWord(''); setResetOpen(true); }}><RotateCcw size={17} />تصفير بيانات المعاينة</Button></div>
     </Card>
-    <Dialog open={resetOpen} onClose={() => setResetOpen(false)} title="إعادة ضبط جميع بيانات المعاينة؟" description="ستُحذف إضافاتك وتعديلاتك على الموظفين والحضور والرواتب والإعدادات وسجل العمليات في هذه الجلسة. ستعود البيانات التجريبية الأصلية، ولا يمكن التراجع عن هذا الإجراء.">
+    <Dialog open={resetOpen} onClose={() => setResetOpen(false)} title="إعادة ضبط جميع بيانات المعاينة؟" description="ستُحذف إضافاتك وتعديلاتك على الموظفين والحضور والرواتب والإعدادات وسجل العمليات في هذه الجلسة. ستعود إلى حالة فارغة تماماً، ولن تُضاف أي سجلات تجريبية. لا يمكن التراجع عن هذا الإجراء.">
       <div className="stack"><Field label="اكتب «إعادة ضبط» للتأكيد"><Input value={resetWord} onChange={event => setResetWord(event.target.value)} autoComplete="off" placeholder="إعادة ضبط" /></Field><div className="form-actions"><Button variant="danger" disabled={resetWord.trim() !== 'إعادة ضبط'} onClick={reset}>تأكيد إعادة ضبط المعاينة</Button><Button variant="secondary" onClick={() => setResetOpen(false)}>إلغاء</Button></div></div>
     </Dialog>
   </div>;

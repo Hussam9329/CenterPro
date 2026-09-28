@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, gotoPreview, loginPreview } from './helpers/preview';
 
 test('PWA installs an RTL manifest and provides a public-only offline fallback', async ({ page, context }) => {
-  await page.goto('/login');
+  await gotoPreview(page, '/login');
   const manifestUrl = await page.locator('link[rel="manifest"]').getAttribute('href');
   expect(manifestUrl).toBeTruthy();
   const manifestResponse = await page.request.get(manifestUrl!);
@@ -21,10 +21,8 @@ test('PWA installs an RTL manifest and provides a public-only offline fallback',
 
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL || '')).toContain('/sw.js');
-  await page.getByRole('button', { name: 'المدير العام', exact: true }).click();
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await page.goto('/payroll');
+  await loginPreview(page);
+  await gotoPreview(page, '/payroll');
   await expect(page.getByRole('heading', { name: 'الرواتب', exact: true })).toBeVisible();
 
   const cacheEntries = await page.evaluate(async () => {

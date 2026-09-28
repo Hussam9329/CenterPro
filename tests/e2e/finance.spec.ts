@@ -1,18 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect, loginPreview as login, gotoPreview as goto, seedPopulatedPreview, readPreviewData as data } from './helpers/preview';
 import ExcelJS from 'exceljs';
-import type { DemoData } from '../../src/lib/types';
-
-async function login(page: Page, role: 'المدير العام' | 'مدير العمليات' | 'موظف' = 'المدير العام') {
-  await page.goto('/login');
-  await page.getByRole('button', { name: role, exact: true }).click();
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
-  await expect(page).toHaveURL(role === 'موظف' ? /\/employee$/ : /\/dashboard$/);
-  await expect(page.locator('.brand-intro')).toBeHidden();
-}
-
-async function data(page: Page): Promise<DemoData> {
-  return page.evaluate(() => JSON.parse(sessionStorage.getItem('centerpro-ui-preview-v1') || '{}').data);
-}
 
 async function payrollDetail(page: Page, employeeName: string) {
   await page.locator('.desktop-table tbody tr').filter({ hasText: employeeName }).getByRole('button', { name: `تفاصيل راتب ${employeeName}`, exact: true }).click();
@@ -20,7 +8,7 @@ async function payrollDetail(page: Page, employeeName: string) {
 }
 
 async function addBonus(page: Page, amount: number, month = '2026-09', employeeId = 'CP-0002') {
-  await page.goto('/bonuses');
+  await goto(page, '/bonuses');
   if (month !== '2026-09') await page.getByLabel('الشهر', { exact: true }).fill(month);
   await page.getByRole('button', { name: 'إضافة مكافأة', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'إضافة مكافأة', exact: true });
@@ -34,14 +22,14 @@ async function addBonus(page: Page, amount: number, month = '2026-09', employeeI
 
 test.describe('Finance preview workflows', () => {
   test.use({ viewport: { width: 1366, height: 900 } });
+  test.beforeEach(async ({ page }) => { await seedPopulatedPreview(page); });
 
-  test('all four dashboard quick links open creation dialogs through client navigation', async ({ page }) => {
+  test('dashboard quick links open forms and route attendance to the existing open day', async ({ page }) => {
     await login(page);
     const shortcuts = [
       { link: 'إضافة خصم', url: /\/deductions\?add=1$/, dialog: 'إضافة خصم' },
       { link: 'إضافة مكافأة', url: /\/bonuses\?add=1$/, dialog: 'إضافة مكافأة' },
       { link: 'إضافة موظف', url: /\/employees\?add=1$/, dialog: 'إضافة موظف جديد' },
-      { link: 'فتح يوم حضور', url: /\/workdays\?open=new$/, dialog: 'فتح يوم حضور' },
     ];
     for (const shortcut of shortcuts) {
       await page.locator('.quick-actions').getByRole('link', { name: shortcut.link, exact: true }).click();
@@ -52,12 +40,20 @@ test.describe('Finance preview workflows', () => {
       await page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true }).getByRole('link', { name: 'الرئيسية', exact: true }).click();
       await expect(page).toHaveURL(/\/dashboard$/);
     }
+    await page.locator('.quick-actions').getByRole('link', { name: 'فتح يوم حضور', exact: true }).click();
+    await expect(page).toHaveURL(/\/attendance\?open=new$/);
+    await expect(page.getByText('يوجد يوم حضور مفتوح حالياً.', { exact: false }).first()).toBeVisible();
+    await page.getByRole('link', { name: 'الذهاب إلى اليوم المفتوح', exact: true }).first().click();
+    await expect(page).toHaveURL(/\/attendance\/wd-2026-09-28$/);
   });
 
   test('shows payment differences, updates open salary after bonus and keeps payment history', async ({ page }) => {
     await login(page);
-    await page.goto('/payroll');
+    await goto(page, '/payroll');
+    await expect(page.getByLabel('نوع الراتب', { exact: true })).toHaveText('جميع الأنواعغير قطعيقطعي');
     let dialog = await payrollDetail(page, 'مريم أحمد ناصر');
+    await expect(dialog.getByText('غير قطعي', { exact: true })).toBeVisible();
+    await expect(dialog).not.toContainText(/شرائح|شريحة/);
     await expect(dialog).toContainText('تغيّر الراتب بعد الصرف');
     await expect(dialog).toContainText('650,000 د.ع');
     await expect(dialog).toContainText('625,000 د.ع');
@@ -70,7 +66,7 @@ test.describe('Finance preview workflows', () => {
     expect(afterBonus.audit[0].employeeId).toBe('CP-0002');
     expect(afterBonus.audit[0].newValues.amount).toBe(20000);
     expect(afterBonus.payments).toEqual(originalPayments);
-    await page.goto('/payroll');
+    await goto(page, '/payroll');
     dialog = await payrollDetail(page, 'مريم أحمد ناصر');
     await expect(dialog).toContainText('645,000 د.ع');
     await expect(dialog).toContainText('-5,000 د.ع');
@@ -92,7 +88,7 @@ test.describe('Finance preview workflows', () => {
 
   test('blocks unresolved archive and keeps historical rules through explicit reopen and recalculation', async ({ page }) => {
     await login(page);
-    await page.goto('/payroll');
+    await goto(page, '/payroll');
     await page.getByRole('button', { name: 'إغلاق وأرشفة الشهر', exact: true }).click();
     let confirmation = page.getByRole('dialog', { name: 'إغلاق وأرشفة رواتب الشهر', exact: true });
     await expect(confirmation).toContainText('لا يمكن الأرشفة');
@@ -100,7 +96,7 @@ test.describe('Finance preview workflows', () => {
     await confirmation.getByRole('button', { name: 'إلغاء', exact: true }).click();
     const archived = (await data(page)).months.find(item => item.month === '2026-08')!;
     const originalSalary = archived.snapshots['CP-0001'].finalSalary;
-    await page.goto('/departments');
+    await goto(page, '/departments');
     await page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'التصحيح', exact: true }) }).getByRole('button', { name: 'إعدادات القسم', exact: true }).click();
     const departmentDialog = page.getByRole('dialog').first();
     await departmentDialog.getByLabel('قيمة اليومية', { exact: false }).fill('30000');
@@ -109,7 +105,7 @@ test.describe('Finance preview workflows', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
     const afterSettings = (await data(page)).months.find(item => item.month === '2026-08')!;
     expect(afterSettings).toEqual(archived);
-    await page.goto('/payroll');
+    await goto(page, '/payroll');
     await page.getByLabel('شهر الرواتب', { exact: true }).fill('2026-08');
     await page.getByRole('button', { name: 'إعادة فتح للتعديل', exact: true }).click();
     confirmation = page.getByRole('dialog', { name: 'إعادة فتح الشهر للتعديل', exact: true });
@@ -122,7 +118,7 @@ test.describe('Finance preview workflows', () => {
     expect(reopened.snapshots).toEqual(archived.snapshots);
     await addBonus(page, 10000, '2026-08', 'CP-0001');
     expect((await data(page)).months.find(item => item.month === '2026-08')!.snapshots['CP-0001'].finalSalary).toBe(originalSalary);
-    await page.goto('/payroll');
+    await goto(page, '/payroll');
     await page.getByLabel('شهر الرواتب', { exact: true }).fill('2026-08');
     await expect(page.getByText('توجد تعديلات على السجلات تنتظر إعادة الاحتساب.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'إعادة الاحتساب بالقواعد المؤرشفة', exact: true }).click();
@@ -138,11 +134,11 @@ test.describe('Finance preview workflows', () => {
 
   test('operations admin cannot reopen archives or edit archived adjustments', async ({ page }) => {
     await login(page, 'مدير العمليات');
-    await page.goto('/payroll');
+    await goto(page, '/payroll');
     await page.getByLabel('شهر الرواتب', { exact: true }).fill('2026-08');
     await expect(page.getByRole('button', { name: 'إعادة فتح للتعديل', exact: true })).toHaveCount(0);
     await expect(page.getByText('إعادة الفتح للمشرف العام فقط', { exact: false })).toBeVisible();
-    await page.goto('/deductions');
+    await goto(page, '/deductions');
     await page.getByLabel('الشهر', { exact: true }).fill('2026-08');
     await expect(page.getByRole('button', { name: 'إضافة خصم', exact: true }).first()).toBeDisabled();
     await expect(page.locator('.desktop-table').getByRole('button', { name: 'تعديل خصم علي محمد حسن', exact: true })).toBeDisabled();
@@ -150,20 +146,20 @@ test.describe('Finance preview workflows', () => {
 
   test('employee salary ignores another employee query and exposes no administrative controls', async ({ page }) => {
     await login(page, 'موظف');
-    await page.goto('/employee/salary?employee=CP-0002');
+    await goto(page, '/employee/salary?employee=CP-0002');
     await expect(page.getByRole('heading', { name: 'راتبي', exact: true })).toBeVisible();
     await expect(page.getByText('اعتراض على تصحيح السؤال رقم 4 بعد مراجعة الإجابة.', { exact: true })).toBeVisible();
     await expect(page.getByText('تعديل مالي بعد الصرف يحتاج إلى مراجعة الإدارة.', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /تسجيل.*صرف|إضافة مكافأة|إضافة خصم/ })).toHaveCount(0);
     await page.getByLabel('شهر راتبي', { exact: true }).fill('2026-08');
     await expect(page.getByText('اعتراض تصحيح معتمد للشهر السابق.', { exact: true })).toBeVisible();
-    await page.goto('/reports');
+    await goto(page, '/reports');
     await expect(page).toHaveURL(/\/employee$/);
   });
 
   test('report type changes clear irrelevant date filters and Excel preserves numeric and date cells', async ({ page }) => {
     await login(page);
-    await page.goto('/reports?type=attendance&employee=CP-0002');
+    await goto(page, '/reports?type=attendance&employee=CP-0002');
     await page.getByLabel('من تاريخ', { exact: false }).fill('2026-09-28');
     await page.getByLabel('إلى تاريخ', { exact: false }).fill('2026-09-20');
     await expect(page.getByRole('main').getByRole('alert')).toContainText('تاريخ البداية');
@@ -192,7 +188,7 @@ test.describe('Finance preview workflows', () => {
   test('generates actual branded PDF and print tables stay within A4 width', async ({ page, browserName }, testInfo) => {
     test.skip(browserName !== 'chromium', 'PDF generation requires Chromium.');
     await login(page);
-    await page.goto('/reports?type=payroll');
+    await goto(page, '/reports?type=payroll');
     await page.setViewportSize({ width: 1123, height: 794 });
     await page.emulateMedia({ media: 'print' });
     await page.evaluate(() => document.fonts.ready);
@@ -210,4 +206,28 @@ test.describe('Finance preview workflows', () => {
     await testInfo.attach('actual-report-pdf', { body: pdf, contentType: 'application/pdf' });
     await testInfo.attach('print-layout', { body: await report.screenshot(), contentType: 'image/png' });
   });
+});
+
+
+test('empty finance startup has useful prerequisites and never creates operational records', async ({ page }) => {
+  await login(page);
+  await goto(page, '/payroll');
+  await expect(page.getByText('لا توجد بيانات رواتب حتى الآن.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'إغلاق وأرشفة الشهر', exact: true })).toBeDisabled();
+  await expect(page.getByRole('link', { name: 'إضافة أول قسم', exact: true })).toHaveAttribute('href', '/departments');
+  for (const [route, action, title] of [['deductions', 'إضافة خصم', 'لا توجد خصومات.'], ['bonuses', 'إضافة مكافأة', 'لا توجد مكافآت.']]) {
+    await goto(page, `/${route}?add=1`);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: action, exact: true })).toBeDisabled();
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
+    await expect(page.getByText('أضف موظفاً أولاً.', { exact: false })).toBeVisible();
+  }
+  await goto(page, '/reports');
+  await expect(page.getByText('لا توجد بيانات للتقارير حتى الآن.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Excel', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'طباعة / حفظ PDF', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'قسيمة راتب', exact: true }).click();
+  await expect(page.getByLabel('الموظف', { exact: true })).toHaveText('لا يوجد موظفون');
+  const initial = await data(page);
+  for (const key of ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit'] as const) expect(initial[key]).toHaveLength(0);
 });

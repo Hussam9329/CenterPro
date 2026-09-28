@@ -9,6 +9,7 @@ The user's explicit frontend-first approval workflow takes precedence over the m
 
 ## Authoritative references
 - `MASTER_SPECIFICATION.txt`: supplied master prompt, preserved verbatim.
+- `PHASE1_REVISION_REQUEST.md`: later authoritative UI revision; empty operational startup, independent system administrator, unified attendance with one OPEN day, revised salary terminology and a five-second welcome. Populated data belongs only in test fixtures.
 - CenterPro Visual Identity: crimson #A51C30; white #FFFFFF; support ink #111318; Noto Sans Arabic + Inter. Light only, no gradients or decorative effects.
 
 ## Boundary

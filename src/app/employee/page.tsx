@@ -6,7 +6,7 @@ import { Avatar, Badge, Card, EmptyState, PageHeader, Skeleton, StatCard } from 
 import { useDemo } from '@/components/demo-provider';
 import { DEMO_MONTH, DEMO_TODAY } from '@/lib/mock-data';
 import { getEmployeePayroll } from '@/lib/payroll';
-import { isExpected, statusLabel } from '@/lib/attendance';
+import { getOpenWorkday, isExpected, statusLabel } from '@/lib/attendance';
 import { date, duration, money, monthLabel, time } from '@/lib/format';
 
 export default function EmployeeHomePage() {
@@ -16,7 +16,7 @@ export default function EmployeeHomePage() {
   if (!employee || session.role !== 'EMPLOYEE') return null;
   if (!employee.active) return <EmptyState title="حسابك غير فعال حالياً" description="يرجى مراجعة إدارة المركز بخصوص حالة حسابك." />;
   const result = getEmployeePayroll(data, employee.id, DEMO_MONTH);
-  const today = data.workdays.find(item => item.date === DEMO_TODAY);
+  const today = getOpenWorkday(data.workdays);
   const todayAttendance = data.attendance.find(item => item.employeeId === employee.id && item.workdayId === today?.id);
   const expected = today ? isExpected(employee, today) : false;
   const registered = todayAttendance?.status === 'PRESENT';
@@ -30,7 +30,7 @@ export default function EmployeeHomePage() {
     <PageHeader eyebrow="مساحتك الشخصية" title={`مرحباً بك، ${employee.name.split(' ')[0]}`} description="موظفنا المميز في CenterPro" actions={<Badge tone="brand">{monthLabel(DEMO_MONTH)}</Badge>} />
     <section className="employee-hero" aria-label="ملخص راتبك وحضورك">
       <div className="employee-hero-main"><div className="inline"><Avatar name={employee.name} src={employee.photo} size={52} /><div><strong>{employee.name}</strong><p>{department?.name} · <bdi>{employee.code}</bdi></p></div></div><div className="employee-salary"><span>صافي راتبك المتوقع</span><strong><bdi dir="ltr">{money(result.finalSalary)}</bdi></strong><span>بعد احتساب الغياب والخصومات والمكافآت</span></div><Link href="/employee/salary" className="button-link">عرض تفاصيل الراتب <ArrowLeft size={17} /></Link></div>
-      <div className="employee-hero-scan"><div className="employee-scan-icon"><QrCode size={38} strokeWidth={1.5} /></div><h2>{registered ? 'تم تسجيل حضورك اليوم' : 'سجّل حضورك بسهولة'}</h2><p>{registered ? `وقت الدخول: ${time(todayAttendance.checkIn ?? '')}` : today?.state === 'OPEN' && expected ? `دوام اليوم يبدأ ${time(today.startTime)}` : !today ? 'لم يتم فتح يوم حضور اليوم بعد.' : !expected ? 'أنت مستثنى من دوام هذا اليوم.' : 'يوم الحضور مغلق حالياً.'}</p><Link href="/employee/scan" className="btn btn-primary"><QrCode size={18} />{registered ? 'عرض حالة تسجيل الحضور' : 'تسجيل الحضور'}</Link><span className="muted">{date(DEMO_TODAY)} · بتوقيت بغداد</span></div>
+      <div className="employee-hero-scan"><div className="employee-scan-icon"><QrCode size={38} strokeWidth={1.5} /></div><h2>{registered ? 'تم تسجيل حضورك لهذا اليوم' : 'سجّل حضورك بسهولة'}</h2><p>{registered ? `وقت الدخول: ${time(todayAttendance.checkIn ?? '')}` : today?.state === 'OPEN' && expected ? `يبدأ الدوام المفتوح ${time(today.startTime)}` : !today ? 'لا يوجد يوم حضور مفتوح حالياً.' : !expected ? 'أنت مستثنى من دوام هذا اليوم.' : 'يوم الحضور مغلق حالياً.'}</p><Link href="/employee/scan" className="btn btn-primary"><QrCode size={18} />{registered ? 'عرض حالة تسجيل الحضور' : 'تسجيل الحضور'}</Link><span className="muted">{date(today?.date || DEMO_TODAY)} · بتوقيت بغداد</span></div>
     </section>
     {result.paymentStatus === 'REVIEW' && <div className="notice notice-warning" role="status"><strong>راتبك يحتاج إلى مراجعة بعد الصرف</strong><p>المصروف سابقاً <bdi dir="ltr">{money(result.paidAmount)}</bdi> · الفرق <bdi dir="ltr">{money(result.difference)}</bdi></p></div>}
     <div className="stats-grid">
@@ -40,7 +40,7 @@ export default function EmployeeHomePage() {
       <StatCard label="مرات التأخير" value={result.lateDays} icon={<Clock3 size={20} />} hint={`إجمالي التأخير: ${result.latenessSeconds ? duration(result.latenessSeconds) : '0 ثانية'}`} />
     </div>
     <div className="grid-3">
-      <StatCard label="راتبك الأساسي" value={money(result.baseSalary)} icon={<Wallet size={20} />} hint={result.salaryMode === 'FIXED' ? result.partialMonth ? 'راتب قطعي · شهر عمل جزئي' : 'راتب قطعي' : 'حسب شرائح قسمك'} />
+      <StatCard label="راتبك الأساسي" value={money(result.baseSalary)} icon={<Wallet size={20} />} hint={result.salaryMode === 'FIXED' ? result.partialMonth ? 'قطعي · شهر عمل جزئي' : 'قطعي' : 'حسب قوانين قسمك'} />
       <StatCard label="الخصومات الأخرى" value={money(result.otherDeductions)} icon={<CircleDollarSign size={20} />} hint="أسباب جميع الخصومات متاحة في كشفك" />
       <StatCard label="المكافآت" value={money(result.bonuses)} icon={<Gift size={20} />} hint="تُضاف إلى صافي راتبك" />
     </div>

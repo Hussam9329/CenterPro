@@ -8,6 +8,7 @@ import { useDemo } from '@/components/demo-provider';
 import { Brand } from '@/components/brand';
 import { Badge, Button, EmptyState, Skeleton } from '@/components/ui';
 import { date, time } from '@/lib/format';
+import { getOpenWorkday } from '@/lib/attendance';
 import { DEMO_TODAY } from '@/lib/mock-data';
 import styles from '@/components/attendance/attendance.module.css';
 
@@ -16,7 +17,7 @@ export default function AttendanceDisplay() {
   const interval = Math.min(60, Math.max(30, data.settings.qrInterval || 45));
   const [clock, setClock] = useState({ now: 0, issuedAt: 0 });
   const [fullscreenError, setFullscreenError] = useState('');
-  const day = data.workdays.find(item => item.date === DEMO_TODAY && item.state === 'OPEN');
+  const day = getOpenWorkday(data.workdays);
   useEffect(() => {
     const timer = window.setInterval(() => {
       const now = Date.now();
@@ -33,10 +34,10 @@ export default function AttendanceDisplay() {
   if (!ready) return <main className={styles.display}><Skeleton /></main>;
   if (!session || session.role === 'EMPLOYEE') return <main className={styles.display}><EmptyState title="شاشة الحضور مخصصة للإدارة" description="ادخل بحساب الإدارة التجريبي لعرض الرمز." action={<Link className="button-link" href="/login">تسجيل الدخول</Link>} /></main>;
   return <main className={styles.display}>
-    <header className={styles.displayHeader}><Link className="button-link" href="/workdays"><ArrowRight size={17} />أيام العمل</Link><Brand /><Button variant="secondary" onClick={fullscreen}><Expand size={17} /><span>ملء الشاشة</span></Button></header>
+    <header className={styles.displayHeader}><Link className="button-link" href="/attendance"><ArrowRight size={17} />الحضور</Link><Brand /><Button variant="secondary" onClick={fullscreen}><Expand size={17} /><span>ملء الشاشة</span></Button></header>
     <div className={styles.displayBody}><Badge tone="brand">معاينة الواجهة · حضور تجريبي</Badge><h1>تسجيل الحضور</h1><p className={styles.displaySubtitle}>افتح حساب CenterPro من هاتفك، ثم امسح الرمز.</p>
-      {day ? <><div className={styles.displayDetails}><span>{date(day.date)}</span><span>بداية الدوام <b dir="ltr">{time(day.startTime)}</b></span></div><div className={styles.qrFrame}>{clock.issuedAt ? <QRCodeSVG value={payload} size={360} level="M" marginSize={3} title="رمز تسجيل حضور تجريبي" /> : <div className={styles.qrLoading}><QrCode size={72} /><span>جارٍ تجهيز الرمز التجريبي</span></div>}</div><div className={styles.refreshIndicator}><span>يتجدد الرمز خلال <b>{remaining}</b> ثانية</span><progress aria-label="الوقت المتبقي للرمز" max={interval} value={remaining} /></div><div className={styles.displayNote}><ShieldCheck size={18} /><span>رمز معاينة يتجدد تلقائياً. لا يسجل حضوراً حقيقياً.</span></div></> : <div className={styles.noWorkday}><EmptyState title="لم يتم فتح يوم حضور اليوم" description="افتح يوم الحضور من لوحة الإدارة لعرض رمز المعاينة." action={<Link className="button-link" href="/workdays">فتح يوم حضور</Link>} /></div>}
+      {day ? <><div className={styles.displayDetails}><span>{date(day.date)}</span><span>بداية الدوام <b dir="ltr">{time(day.startTime)}</b></span></div><div className={styles.qrFrame}>{clock.issuedAt ? <QRCodeSVG value={payload} size={360} level="M" marginSize={3} title="رمز تسجيل حضور تجريبي" /> : <div className={styles.qrLoading}><QrCode size={72} /><span>جارٍ تجهيز الرمز التجريبي</span></div>}</div><div className={styles.refreshIndicator}><span>يتجدد الرمز خلال <b>{remaining}</b> ثانية</span><progress aria-label="الوقت المتبقي للرمز" max={interval} value={remaining} /></div><div className={styles.displayNote}><ShieldCheck size={18} /><span>رمز معاينة يتجدد تلقائياً. لا يسجل حضوراً حقيقياً.</span></div></> : <div className={styles.noWorkday}><EmptyState title="لا يوجد يوم حضور مفتوح حالياً." description="افتح يوم حضور من قسم الحضور لعرض رمز المعاينة." action={<Link className="button-link" href="/attendance">الحضور</Link>} /></div>}
       {fullscreenError && <p role="status" className="notice">{fullscreenError}</p>}
-    </div><footer className={styles.displayFooter}>{data.settings.centerName} <span>توقيت بغداد · {date(DEMO_TODAY)} تاريخ العرض التجريبي</span></footer>
+    </div><footer className={styles.displayFooter}>{data.settings.centerName} <span>توقيت بغداد · {date(day?.date || DEMO_TODAY)} تاريخ العرض التجريبي</span></footer>
   </main>;
 }

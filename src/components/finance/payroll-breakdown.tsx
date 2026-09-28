@@ -26,7 +26,7 @@ export function PayrollBreakdown({ result, data, details = true }: { result: Pay
   return <div className="stack">
     <div className={styles.summary}>
       <div><p className="muted">صافي راتب {monthLabel(result.month)}</p><div className={`${styles.heroAmount} ${result.finalSalary < 0 ? styles.amountNegative : ''}`}>{money(result.finalSalary)}</div></div>
-      <div className="stack"><PaymentBadge status={result.paymentStatus} /><Badge tone="brand">{result.salaryMode === 'FIXED' ? 'راتب قطعي' : 'نظام شرائح'}{result.partialMonth ? ' · شهر جزئي' : ''}</Badge></div>
+      <div className="stack"><PaymentBadge status={result.paymentStatus} /><Badge tone="brand">{result.salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</Badge>{result.partialMonth && <Badge>شهر جزئي</Badge>}</div>
     </div>
     {result.paymentStatus === 'REVIEW' && <div className={styles.review}><h3>تغيّر الراتب بعد الصرف — يحتاج مراجعة</h3><div className="detail-grid"><div>المصروف سابقاً <strong className="amount">{money(result.paidAmount)}</strong></div><div>الراتب الحالي <strong className="amount">{money(result.finalSalary)}</strong></div><div>الفرق <strong className="amount">{money(result.difference)}</strong></div></div><p className={styles.small}>سجل الصرف السابق محفوظ كما هو.</p></div>}
     {result.unresolvedDays > 0 && <div className="notice notice-warning"><CircleAlert size={17} /> توجد {result.unresolvedDays} حالة حضور غير محسومة. الراتب تقديري لحين مراجعتها.</div>}
