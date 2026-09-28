@@ -166,6 +166,14 @@ export function recalculateReopenedPayroll(data: DemoData, employeeId: string, m
   const payrollMonth = data.months.find((item) => item.month === month);
   const snapshot = payrollMonth?.snapshots[employeeId];
   if (payrollMonth?.state !== 'REOPENED' || !snapshot) throw new Error('أعد فتح الشهر المؤرشف قبل إعادة الاحتساب.');
-  const result = calculateEmployeePayroll(data, employeeId, month, snapshot.salaryConfig);
+  // Reopened operational changes must not import current employment dates or
+  // department membership into the preserved historical employment context.
+  const historicalEmployee = payrollMonth.sourceSnapshot?.employees.find((item) => item.id === employeeId);
+  const calculationData = historicalEmployee ? {
+    ...data,
+    employees: [...data.employees.filter((item) => item.id !== employeeId), historicalEmployee],
+    departments: payrollMonth.sourceSnapshot!.departments,
+  } : data;
+  const result = calculateEmployeePayroll(calculationData, employeeId, month, snapshot.salaryConfig);
   return { ...result, employeeName: snapshot.employeeName, employeeCode: snapshot.employeeCode, departmentName: snapshot.departmentName };
 }
