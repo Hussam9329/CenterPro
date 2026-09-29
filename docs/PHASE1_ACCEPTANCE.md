@@ -1,5 +1,7 @@
 # Revised Phase 1 UI approval handoff
 
+> This is the preceding Phase 1 revision. The latest owner-supplied patch and Preview are documented in [PATCH_ACCEPTANCE.md](PATCH_ACCEPTANCE.md).
+
 ## Current revision status
 
 Implementation follows the owner-approved [Phase 1 Revision Request](PHASE1_REVISION_REQUEST.md), preserved verbatim. The [original Master Specification](MASTER_SPECIFICATION.txt) remains untouched. The revision overrides its previous populated startup, salary wording, separate workday navigation, open-day assumptions and welcome duration. Other business rules remain in force.

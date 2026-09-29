@@ -37,3 +37,15 @@ The installation remains empty on first use, with the independent preview system
 - Browser suite: 68 of 69 passed on the full run; the remaining failure was an assertion expecting an undefined property that JSON omits. After correcting the assertion, all 6 people workflows passed on the focused rerun. The complete suite also runs on GitHub CI for the pushed application commit.
 - Coverage includes eight responsive sizes, empty and populated workflows, accessibility, PWA, attendance audit/confirmation behavior, numeric XLSX cells and an actual one-page branded PDF.
 - Temporary Chromium had to be restored in the local execution environment; no browser package was added to the application dependencies.
+
+## Published Preview
+
+- Application commit: `ae7623330e86878cf0551936bbd4670ae3281813`, pushed to `main` and `preview/ui-approval`.
+- Preview: https://centerpro-2al22y1ye-hussam9329s-projects.vercel.app/login
+- Vercel deployment: `dpl_CDFFGmgGvgD6rUpRFJVteK88kqvh`, READY, Preview (`target: null`).
+- A separate browser verified the live welcome, login, disabled uncreated roles, post-login welcome and empty system-admin dashboard. [Verified deployed dashboard](patch-preview-dashboard.jpg). No operational records were created in this smoke check.
+- CI run: https://github.com/Hussam9329/CenterPro/actions/runs/36601010200 — completed successfully. Every quality step passed: lint, strict typecheck, 114 domain tests, production build, browser installation and the full 69-test browser suite. Browser reports were uploaded by CI.
+
+This screenshot verifies the deployed build. The changed salary, employee and attendance workflows are covered by the automated populated scenarios; real-device review remains with the owner.
+
+The final handoff commit changes only documentation and the verified Preview screenshot. The Preview and passing CI both reference application commit `ae7623330e86878cf0551936bbd4670ae3281813`.
