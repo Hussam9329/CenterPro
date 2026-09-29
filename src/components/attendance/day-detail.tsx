@@ -50,7 +50,6 @@ export function AttendanceDayDetail({ dayId }: { dayId: string }) {
   function save(target: AttendanceStatus = editStatus) {
     if (!editing || locked) return;
     if (monthRecord?.state === 'REOPENED' && !monthRecord.snapshots[editing.employee.id]) { setError('لا توجد نسخة راتب مؤرشفة لهذا الموظف في الشهر المحدد. راجع بيانات الشهر قبل التعديل.'); return; }
-    if (!reason.trim()) { setError('اكتب سبب تعديل الحضور ليظهر في سجل العمليات.'); return; }
     if (target === 'PRESENT' && !/^\d{2}:\d{2}(:\d{2})?$/.test(checkIn)) { setError('حدد وقت الحضور بالدقائق والثواني.'); return; }
     const enteredTime = checkIn.length === 5 ? `${checkIn}:00` : checkIn;
     const timestamp = target === 'PRESENT' ? new Date(`${editing.day.date}T${enteredTime}+03:00`).toISOString() : null;
@@ -64,7 +63,7 @@ export function AttendanceDayDetail({ dayId }: { dayId: string }) {
         else if (day.overrides[changed.employeeId] === 'EXCLUDE') day.overrides[changed.employeeId] = 'INCLUDE';
       }
     }, { action: remove ? 'إزالة تسجيل حضور' : 'تعديل حالة الحضور', entity: 'الحضور', entityId: changed.id, employeeId: changed.employeeId, oldValues: { status: editing.record.status, checkIn: editing.record.checkIn, latenessSeconds: editing.record.latenessSeconds }, newValues: { status: changed.status, checkIn: changed.checkIn, latenessSeconds: changed.latenessSeconds, reason: changed.reason } });
-    setEditing(null); setRemove(false); toast('تم تحديث سجل الحضور التجريبي وتسجيل سبب التعديل.');
+    setEditing(null); setRemove(false); toast('تم تحديث سجل الحضور التجريبي.');
   }
 
   const resetFilters = () => { setStatus(''); setDepartment(''); setEmployeeFilter(''); setSearch(''); setLateOnly(false); setPage(1); };
@@ -92,18 +91,18 @@ export function AttendanceDayDetail({ dayId }: { dayId: string }) {
         <div className="detail-grid"><div className="detail-item"><span className="muted">الحالة الحالية</span><Badge tone={statusTone(editing.record.status)}>{statusLabel(editing.record.status)}</Badge></div><div className="detail-item"><span className="muted">بدء الدوام</span><b dir="ltr">{time(editing.day.startTime)}</b></div></div>
         {editing.record.reason && <div className="notice">سبب آخر تعديل: {editing.record.reason}</div>}
         {locked ? <div className="notice notice-warning">هذا السجل محمي ضمن الشهر المؤرشف. لا يمكن تعديله قبل إعادة فتح الشهر.</div> : <>
-          {editing.day.state === 'CLOSED' && <div className="notice notice-warning">هذا اليوم مغلق. سيُسجل هذا التعديل التاريخي وسببه في سجل العمليات.</div>}
+          {editing.day.state === 'CLOSED' && <div className="notice notice-warning">هذا اليوم مغلق. سيُسجل التعديل التاريخي في سجل العمليات، ويمكنك إضافة ملاحظة اختيارية.</div>}
           <label className={styles.checkChoice}><input type="checkbox" checked={editStatus === 'EXCUSED' || editStatus === 'UNEXCUSED'} onChange={event => setEditStatus(event.target.checked ? 'EXCUSED' : 'UNRESOLVED')} />غائب</label>
           {editStatus !== 'EXCUSED' && editStatus !== 'UNEXCUSED' && <Field label="الحالة الجديدة"><Select value={editStatus} onChange={event => setEditStatus(event.target.value as AttendanceStatus)}><option value="PRESENT">حاضر</option><option value="UNRESOLVED">غير محسوم</option><option value="EXEMPT">مستثنى / لا يوجد دوام</option></Select></Field>}
           {(editStatus === 'EXCUSED' || editStatus === 'UNEXCUSED') && <fieldset className={styles.fieldset}><legend>نوع الغياب</legend><div className={styles.departmentChoices}><label className={styles.checkChoice}><input type="radio" name="absence-type" checked={editStatus === 'EXCUSED'} onChange={() => setEditStatus('EXCUSED')} />غياب بعذر</label><label className={styles.checkChoice}><input type="radio" name="absence-type" checked={editStatus === 'UNEXCUSED'} onChange={() => setEditStatus('UNEXCUSED')} />غياب بدون عذر</label></div></fieldset>}
           {editStatus === 'PRESENT' && <Field label="وقت الحضور" required hint="توقيت بغداد. يُعاد احتساب التأخير بالثواني دون خصم تلقائي."><Input type="time" step="1" required value={checkIn} onChange={event => setCheckIn(event.target.value)} /></Field>}
-          <Field label="سبب التعديل" required><Textarea required value={reason} onChange={event => setReason(event.target.value)} placeholder="مثال: تصحيح وقت الدخول بعد المراجعة" /></Field>
+          <Field label="ملاحظة / سبب" hint="اختياري"><Textarea value={reason} onChange={event => setReason(event.target.value)} placeholder="يمكن إضافة ملاحظة توضيحية (اختياري)" /></Field>
           {monthRecord?.state === 'REOPENED' && <div className="notice notice-warning">الحفظ يعدّل سجل الحضور فقط. تطبيق التعديل على الرواتب والتقارير يتطلب إعادة الاحتساب الصريحة من صفحة الرواتب بالقواعد المؤرشفة.</div>}
           {error && <p role="alert" className="text-danger">{error}</p>}<div className="form-actions"><Button type="submit">حفظ التعديل</Button><Button variant="secondary" onClick={() => setEditing(null)}>إلغاء</Button></div>
-          {editing.record.status === 'PRESENT' && <Button variant="danger" onClick={() => { if (!reason.trim()) { setError('اكتب سبب إزالة الحضور أولاً.'); return; } setRemove(true); }}>إزالة تسجيل الحضور</Button>}
+          {editing.record.status === 'PRESENT' && <Button variant="danger" onClick={() => setRemove(true)}>إزالة تسجيل الحضور</Button>}
         </>}
       </form>}
     </Dialog>
-    <ConfirmDialog open={remove} onClose={() => setRemove(false)} onConfirm={() => save('UNRESOLVED')} title="إزالة تسجيل الحضور؟" description="سيُحذف وقت الحضور وتعود الحالة إلى غير محسوم. يتغير عدد أيام الحضور في الراتب ويُحفظ سبب الإزالة في سجل العمليات." confirmLabel="إزالة الحضور" danger />
+    <ConfirmDialog open={remove} onClose={() => setRemove(false)} onConfirm={() => save('UNRESOLVED')} title="إزالة تسجيل الحضور؟" description="سيُحذف وقت الحضور وتعود الحالة إلى غير محسوم. يتغير سجل الحضور ويُحفظ التعديل في سجل العمليات." confirmLabel="إزالة الحضور" danger />
   </div>;
 }

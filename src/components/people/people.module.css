@@ -58,3 +58,7 @@
 @media (max-width: 700px) { .departmentGrid { grid-template-columns: 1fr; } .directoryTools { gap: 10px; } .directoryTools > :first-child { grid-column: 1 / -1; } .directoryTools > :last-child { grid-column: 1 / -1; } .profileDetails { gap: 22px 14px; } .profileHero { align-items: flex-start; } .profileName { font-size: 20px; } .heroActions { width: 100%; } .heroActions > * { flex: 1; } .tierFields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .formSteps { gap: 5px; } .step { flex: 1; padding: 8px 6px; font-size: 11px; min-width: 58px; } .stepNumber { display: block; margin: 0 0 4px; } .photoUpload { flex-direction: column; align-items: flex-start; } }
 
 .salaryType { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 0 18px; margin-bottom: 18px; border-bottom: 1px solid #ece8eb; font-size: 13px; color: #6d6770; }
+
+.prefixedInput { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; direction: ltr; }
+.prefixedInput :global(.input) { border-start-start-radius: 0; border-end-start-radius: 0; min-width: 0; }
+.inputPrefix { display: grid; place-items: center; min-width: 48px; padding-inline: 12px; border: 1px solid #d9d5d8; border-inline-end: 0; border-start-start-radius: 9px; border-end-start-radius: 9px; background: #f7f6f7; color: #3f3b40; font-family: "Inter Variable", sans-serif; font-weight: 650; font-variant-numeric: tabular-nums; }

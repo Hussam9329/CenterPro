@@ -14,6 +14,8 @@ async function addAccount(page: Page, name: string, username: string, role: 'EMP
   const dialog = page.getByRole('dialog', { name: 'إضافة موظف جديد', exact: true });
   await dialog.getByLabel('الاسم الكامل', { exact: false }).fill(name);
   await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
+  await dialog.getByLabel('رقم الهاتف', { exact: true }).fill('712345678');
+  await dialog.getByLabel('رقم هاتف ولي الأمر', { exact: true }).fill('912345678');
   await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
   await dialog.getByLabel('القسم', { exact: false }).selectOption(departmentId);
   await dialog.getByRole('button', { name: 'التالي', exact: true }).click();

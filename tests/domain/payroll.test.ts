@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEMO_MONTH } from '../../src/lib/mock-data';
 import { createPopulatedTestData } from '../fixtures/populated-data';
 import { calculateEmployeePayroll, calculateFixedSalary, calculateTieredSalary, getEmployeePayroll, getMonthPayroll, isPartialEmploymentMonth, recalculateReopenedPayroll, validateSalaryConfig } from '../../src/lib/payroll';
-import type { SalaryConfig } from '../../src/lib/types';
+import type { PayrollResult, SalaryConfig } from '../../src/lib/types';
 
 const correctionConfig: SalaryConfig = {
   mode: 'TIERED', dailyRate: 25000, unexcusedRate: 50000, maximum: 600000, fixedSalary: 0, extraDaysStart: 17,
@@ -51,10 +51,10 @@ describe('configurable tier payroll', () => {
 });
 
 describe('fixed salary', () => {
-  it.each([0, 16, 24, 30, 31])('full-month %i attendance days stay at fixed 1,000,000', (days) => {
+  it.each([0, 16, 24, 30, 31])('full-month %i required days stay at fixed 1,000,000', (days) => {
     expect(calculateFixedSalary(days, 25000, 1000000, false)).toBe(1000000);
   });
-  it('partial employment pays actual attendance times daily rate, capped at fixed', () => {
+  it('partial employment pays required days times daily rate, capped at fixed', () => {
     expect(calculateFixedSalary(8, 25000, 1000000, true)).toBe(200000);
     expect(calculateFixedSalary(30, 50000, 1000000, true)).toBe(1000000);
   });
@@ -69,13 +69,39 @@ describe('fixed salary', () => {
 });
 
 describe('employee calculations', () => {
-  it('14 attendance days and 1 excused day produce 375,000 without increasing tier count', () => {
+  it('uses required days for the department law, then deducts excused absence separately', () => {
     const result = getEmployeePayroll(createPopulatedTestData(), 'CP-0003', DEMO_MONTH);
+    expect(result.requiredDays).toBe(15);
     expect(result.attendanceDays).toBe(14);
     expect(result.excusedDays).toBe(1);
     expect(result.baseSalary).toBe(400000);
     expect(result.excusedDeduction).toBe(25000);
     expect(result.finalSalary).toBe(375000);
+  });
+
+  it.each([
+    { required: 17, present: 15, excused: 2, base: 425000, final: 375000 },
+    { required: 7, present: 4, excused: 3, base: 200000, final: 125000 },
+    { required: 9, present: 8, excused: 1, base: 400000, final: 375000 },
+  ])('calculates $required required days with $present present and $excused excused correctly', ({ required, present, excused, base, final }) => {
+    const data = createPopulatedTestData();
+    const records = data.attendance
+      .filter((item) => item.employeeId === 'CP-0003' && item.workdayId.startsWith(`wd-${DEMO_MONTH}`))
+      .sort((a, b) => a.workdayId.localeCompare(b.workdayId));
+    records.forEach((record, index) => {
+      if (index < present) record.status = 'PRESENT';
+      else if (index < present + excused) record.status = 'EXCUSED';
+      else record.status = 'EXEMPT';
+      record.checkIn = record.status === 'PRESENT' ? record.checkIn ?? `${record.workdayId.slice(3)}T11:00:00.000Z` : null;
+      record.latenessSeconds = 0;
+    });
+    const result = getEmployeePayroll(data, 'CP-0003', DEMO_MONTH);
+    expect(result.requiredDays).toBe(required);
+    expect(result.attendanceDays).toBe(present);
+    expect(result.excusedDays).toBe(excused);
+    expect(result.baseSalary).toBe(base);
+    expect(result.excusedDeduction).toBe(excused * 25000);
+    expect(result.finalSalary).toBe(final);
   });
   it('keeps a negative salary visible', () => {
     const result = getEmployeePayroll(createPopulatedTestData(), 'CP-0011', DEMO_MONTH);
@@ -88,6 +114,7 @@ describe('employee calculations', () => {
     const result = getEmployeePayroll(data, 'CP-0009', DEMO_MONTH);
     expect(result.salaryMode).toBe('FIXED');
     expect(result.partialMonth).toBe(true);
+    expect(result.requiredDays).toBe(8);
     expect(result.attendanceDays).toBe(8);
     expect(result.baseSalary).toBe(200000);
     const fullFixed = getEmployeePayroll(data, 'CP-0005', DEMO_MONTH);
@@ -95,6 +122,45 @@ describe('employee calculations', () => {
     expect(fullFixed.dailyRate).toBe(30000);
     data.employees.find((item) => item.id === 'CP-0005')!.dailyRateOverride = 35000;
     expect(getEmployeePayroll(data, 'CP-0005', DEMO_MONTH).dailyRate).toBe(35000);
+  });
+  it('partial fixed salary counts excused and unexcused required days before their separate deductions', () => {
+    const data = createPopulatedTestData();
+    const records = data.attendance.filter(item => item.employeeId === 'CP-0009' && item.workdayId.startsWith(`wd-${DEMO_MONTH}`) && item.status === 'PRESENT');
+    records[0].status = 'EXCUSED'; records[0].checkIn = null; records[0].latenessSeconds = 0;
+    records[1].status = 'UNEXCUSED'; records[1].checkIn = null; records[1].latenessSeconds = 0;
+    const result = getEmployeePayroll(data, 'CP-0009', DEMO_MONTH);
+    expect(result).toMatchObject({
+      salaryMode: 'FIXED', partialMonth: true, requiredDays: 8, attendanceDays: 6,
+      excusedDays: 1, unexcusedDays: 1, baseSalary: 200000,
+      excusedDeduction: 25000, unexcusedDeduction: 50000, finalSalary: 125000,
+    });
+  });
+  it('unexcused required day crosses the law threshold before the department absence deduction', () => {
+    const data = createPopulatedTestData();
+    const records = data.attendance.filter(item => item.employeeId === 'CP-0003' && item.workdayId.startsWith(`wd-${DEMO_MONTH}`)).sort((a, b) => a.workdayId.localeCompare(b.workdayId));
+    records.forEach((record, index) => {
+      record.status = index < 8 ? 'PRESENT' : index === 8 ? 'UNEXCUSED' : 'EXEMPT';
+      if (record.status !== 'PRESENT') record.checkIn = null;
+      record.latenessSeconds = 0;
+    });
+    expect(getEmployeePayroll(data, 'CP-0003', DEMO_MONTH)).toMatchObject({
+      requiredDays: 9, attendanceDays: 8, unexcusedDays: 1, baseSalary: 400000,
+      unexcusedDeduction: 50000, finalSalary: 350000,
+    });
+  });
+  it.each(['recorded', 'missing'] as const)('%s unresolved required day affects the base without an automatic absence deduction', kind => {
+    const data = createPopulatedTestData();
+    const records = data.attendance.filter(item => item.employeeId === 'CP-0003' && item.workdayId.startsWith(`wd-${DEMO_MONTH}`)).sort((a, b) => a.workdayId.localeCompare(b.workdayId));
+    records.forEach((record, index) => {
+      record.status = index < 4 ? 'PRESENT' : index === 4 ? 'UNRESOLVED' : 'EXEMPT';
+      if (record.status !== 'PRESENT') record.checkIn = null;
+      record.latenessSeconds = 0;
+    });
+    if (kind === 'missing') data.attendance = data.attendance.filter(item => item.id !== records[4].id);
+    expect(getEmployeePayroll(data, 'CP-0003', DEMO_MONTH)).toMatchObject({
+      requiredDays: 5, attendanceDays: 4, unresolvedDays: 1, excusedDays: 0, unexcusedDays: 0,
+      baseSalary: 200000, excusedDeduction: 0, unexcusedDeduction: 0, finalSalary: 200000,
+    });
   });
   it('deducts department unexcused rate independently from effective daily rate', () => {
     const result = getEmployeePayroll(createPopulatedTestData(), 'CP-0007', DEMO_MONTH);
@@ -126,11 +192,43 @@ describe('employee calculations', () => {
     const result = getEmployeePayroll(data, 'CP-0001', DEMO_MONTH);
     expect(result.unresolvedDays).toBe(1);
     expect(result.unexcusedDays).toBe(0);
+    expect(result.requiredDays).toBeGreaterThanOrEqual(result.attendanceDays + result.excusedDays + result.unexcusedDays);
   });
   it('keeps attendance of inactive historical employees', () => {
     const result = getEmployeePayroll(createPopulatedTestData(), 'CP-0014', DEMO_MONTH);
     expect(result.attendanceDays).toBeGreaterThan(0);
     expect(result.unresolvedDays).toBe(0);
+  });
+  it('deactivation end date excludes a pre-existing future unresolved day without deleting history', () => {
+    const data = createPopulatedTestData();
+    const employee = data.employees.find(item => item.id === 'CP-0009')!;
+    for (const day of data.workdays) if (day.state === 'OPEN') day.state = 'CLOSED';
+    const futureDay = { ...data.workdays[0], id: 'future-day', date: '2026-09-29', overrides: {}, state: 'OPEN' as const };
+    data.workdays.push(futureDay);
+    data.attendance.push({ id: 'future-record', employeeId: employee.id, workdayId: futureDay.id, status: 'UNRESOLVED', checkIn: null, latenessSeconds: 0, source: null, reason: '', updatedAt: '2026-09-28T11:00:00Z' });
+    expect(getEmployeePayroll(data, employee.id, DEMO_MONTH)).toMatchObject({ requiredDays: 9, unresolvedDays: 1, baseSalary: 225000 });
+    const originalAttendance = structuredClone(data.attendance);
+    const originalDays = structuredClone(data.workdays);
+    const originalArchives = structuredClone(data.months.filter(item => item.state === 'ARCHIVED'));
+    employee.active = false;
+    employee.endDate = '2026-09-28';
+    expect(getEmployeePayroll(data, employee.id, DEMO_MONTH)).toMatchObject({ requiredDays: 8, attendanceDays: 8, unresolvedDays: 0, partialMonth: true, baseSalary: 200000, finalSalary: 200000 });
+    expect(data.attendance).toEqual(originalAttendance);
+    expect(data.workdays).toEqual(originalDays);
+    expect(data.months.filter(item => item.state === 'ARCHIVED')).toEqual(originalArchives);
+  });
+  it('counts records only inside employment dates, including both boundary dates', () => {
+    const data = createPopulatedTestData();
+    const employee = data.employees.find(item => item.id === 'CP-0003')!;
+    employee.startDate = '2026-09-02';
+    employee.endDate = '2026-09-03';
+    employee.active = false;
+    const before = structuredClone(data.attendance);
+    expect(getEmployeePayroll(data, employee.id, DEMO_MONTH)).toMatchObject({
+      requiredDays: 2, attendanceDays: 2, excusedDays: 0, unexcusedDays: 0,
+      unresolvedDays: 0, exemptDays: 0, baseSalary: 50000, finalSalary: 50000,
+    });
+    expect(data.attendance).toEqual(before);
   });
 });
 
@@ -183,6 +281,31 @@ describe('archive and payment', () => {
     result.salaryConfig.dailyRate = 1;
     expect(data.months[1].snapshots['CP-0001'].salaryConfig.dailyRate).toBe(25000);
   });
+  it.each(['ARCHIVED', 'REOPENED'] as const)('%s legacy snapshot derives required days only from frozen counts without repricing or mutation', state => {
+    const data = createPopulatedTestData();
+    const month = data.months.find(item => item.month === '2026-08')!;
+    month.state = state;
+    const snapshot = month.snapshots['CP-0001'];
+    delete (snapshot as Partial<PayrollResult>).requiredDays;
+    const originalSnapshot = structuredClone(snapshot);
+    const originalSource = structuredClone(month.sourceSnapshot);
+    const expectedRequiredDays = snapshot.attendanceDays + snapshot.excusedDays + snapshot.unexcusedDays + snapshot.unresolvedDays;
+    data.departments[0].salary.dailyRate = 99999;
+    for (const record of data.attendance.filter(item => item.employeeId === 'CP-0001')) record.status = 'EXEMPT';
+    const result = getEmployeePayroll(data, 'CP-0001', month.month);
+    expect(result.requiredDays).toBe(expectedRequiredDays);
+    expect(result.baseSalary).toBe(originalSnapshot.baseSalary);
+    expect(result.finalSalary).toBe(originalSnapshot.finalSalary);
+    expect(result.salaryConfig).toEqual(originalSnapshot.salaryConfig);
+    expect(month.snapshots['CP-0001']).toEqual(originalSnapshot);
+    expect(month.sourceSnapshot).toEqual(originalSource);
+    expect(month.snapshots['CP-0001']).not.toHaveProperty('requiredDays');
+  });
+  it('preserves a stored zero required-day count in an existing archive', () => {
+    const data = createPopulatedTestData();
+    data.months[1].snapshots['CP-0001'].requiredDays = 0;
+    expect(getEmployeePayroll(data, 'CP-0001', '2026-08').requiredDays).toBe(0);
+  });
   it('rejects missing historical snapshot rather than silently calculating with current rules', () => {
     expect(() => getEmployeePayroll(createPopulatedTestData(), 'CP-0011', '2026-08')).toThrow();
   });
@@ -200,6 +323,17 @@ describe('archive and payment', () => {
     expect(after.partialMonth).toBe(false);
     expect(after.employeeName).toBe(before.employeeName);
     expect(after.departmentName).toBe(before.departmentName);
+  });
+  it('current employment-date changes never filter or reprice archived snapshots', () => {
+    const data = createPopulatedTestData();
+    const before = getEmployeePayroll(data, 'CP-0001', '2026-08');
+    const archive = structuredClone(data.months.find(item => item.month === '2026-08'));
+    const employee = data.employees.find(item => item.id === 'CP-0001')!;
+    employee.startDate = '2026-09-01';
+    employee.endDate = '2026-09-28';
+    employee.active = false;
+    expect(getEmployeePayroll(data, employee.id, '2026-08')).toEqual(before);
+    expect(data.months.find(item => item.month === '2026-08')).toEqual(archive);
   });
   it('does not produce a full fixed salary before employee starts', () => {
     expect(calculateEmployeePayroll(createPopulatedTestData(), 'CP-0011', '2026-08').baseSalary).toBe(0);

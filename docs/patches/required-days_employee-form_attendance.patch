@@ -1,0 +1,643 @@
+diff --git a/src/app/(admin)/audit/page.tsx b/src/app/(admin)/audit/page.tsx
+index 3a3896d..1fa1bed 100644
+--- a/src/app/(admin)/audit/page.tsx
++++ b/src/app/(admin)/audit/page.tsx
+@@ -11,7 +11,7 @@ import type { AuditEntry, DemoData, Role } from '@/lib/types';
+ const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف' };
+ const entityLabels: Record<string, string> = { employee: 'الموظفون', department: 'الأقسام', workday: 'أيام الحضور', attendance: 'الحضور', deduction: 'الخصومات', bonus: 'المكافآت', payment: 'صرف الرواتب', payroll_month: 'رواتب الشهر', settings: 'إعدادات النظام' };
+ const valueLabels: Record<string, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف', OPEN: 'مفتوح', CLOSED: 'مغلق', ARCHIVED: 'مؤرشف', REOPENED: 'معاد فتحه', PAID: 'تم الصرف', UNPAID: 'لم يُصرف', REVIEW: 'تحتاج مراجعة', PRESENT: 'حاضر', UNRESOLVED: 'لم يُحسم', EXCUSED: 'غياب بعذر', UNEXCUSED: 'غياب بدون عذر', EXEMPT: 'معفى', QR: 'رمز QR', MANUAL: 'إداري', FIXED: 'قطعي', TIERED: 'غير قطعي', PER_DAY: 'عن كل يوم', INCLUDE: 'مشمول', EXCLUDE: 'مستثنى', MALE: 'ذكر', FEMALE: 'أنثى' };
+-const fieldLabels: Record<string, string> = { id: 'رقم السجل', code: 'الرقم الوظيفي', name: 'الاسم', date: 'التاريخ', startDate: 'تاريخ المباشرة', endDate: 'تاريخ إنهاء الخدمة', startTime: 'بداية الدوام', checkIn: 'وقت الحضور', month: 'الشهر', state: 'الحالة', status: 'حالة الحضور', paymentStatus: 'حالة الصرف', amount: 'المبلغ', finalSalary: 'صافي الراتب', salaryAtPayment: 'الراتب عند الصرف', paidAmount: 'المبلغ المصروف', active: 'نشط', role: 'الدور', username: 'اسم المستخدم', employeeId: 'الموظف', departmentId: 'القسم', departmentIds: 'الأقسام المشمولة', reason: 'السبب', type: 'النوع', customType: 'نوع الخصم', createdBy: 'أضيف بواسطة', paidBy: 'صرف بواسطة', createdAt: 'تاريخ الإنشاء', updatedAt: 'آخر تعديل', sessionsInvalidated: 'إنهاء الجلسات السابقة', simulated: 'محاكاة', preview: 'معاينة', latenessSeconds: 'مدة التأخير', centerName: 'اسم المركز', qrInterval: 'مدة تجديد QR بالثواني', salary: 'إعدادات الراتب', salaryConfig: 'إعدادات الراتب', mode: 'نوع الراتب', dailyRate: 'قيمة اليوم', unexcusedRate: 'خصم اليوم بدون عذر', maximum: 'سقف الراتب', fixedSalary: 'الراتب القطعي', extraDaysStart: 'بداية الأيام الإضافية', tiers: 'قوانين القسم', fromDays: 'من يوم', toDays: 'إلى يوم', fixedOverride: 'راتب قطعي خاص', dailyRateOverride: 'قيمة يوم خاصة', address: 'السكن', phone: 'رقم الهاتف', guardianPhone: 'هاتف ولي الأمر', gender: 'الجنس', birthDate: 'تاريخ الميلاد', notes: 'الملاحظات', qualification: 'المؤهل', email: 'البريد الإلكتروني', telegram: 'معرّف تليغرام', photo: 'الصورة', overrides: 'استثناءات الموظفين', explicitRecalculation: 'إعادة احتساب صريحة', salaryRules: 'قواعد الراتب', attendanceDays: 'أيام الحضور', excusedDays: 'غياب بعذر', unexcusedDays: 'غياب بدون عذر', exemptDays: 'أيام الإعفاء', unresolvedDays: 'أيام لم تُحسم', baseSalary: 'الراتب الأساسي', otherDeductions: 'الخصومات الأخرى', bonuses: 'المكافآت' };
++const fieldLabels: Record<string, string> = { id: 'رقم السجل', code: 'الرقم الوظيفي', name: 'الاسم', date: 'التاريخ', startDate: 'تاريخ المباشرة', endDate: 'تاريخ إنهاء الخدمة', startTime: 'بداية الدوام', checkIn: 'وقت الحضور', month: 'الشهر', state: 'الحالة', status: 'حالة الحضور', paymentStatus: 'حالة الصرف', amount: 'المبلغ', finalSalary: 'صافي الراتب', salaryAtPayment: 'الراتب عند الصرف', paidAmount: 'المبلغ المصروف', active: 'نشط', role: 'الدور', username: 'اسم المستخدم', employeeId: 'الموظف', departmentId: 'القسم', departmentIds: 'الأقسام المشمولة', reason: 'السبب', type: 'النوع', customType: 'نوع الخصم', createdBy: 'أضيف بواسطة', paidBy: 'صرف بواسطة', createdAt: 'تاريخ الإنشاء', updatedAt: 'آخر تعديل', sessionsInvalidated: 'إنهاء الجلسات السابقة', simulated: 'محاكاة', preview: 'معاينة', latenessSeconds: 'مدة التأخير', centerName: 'اسم المركز', qrInterval: 'مدة تجديد QR بالثواني', salary: 'إعدادات الراتب', salaryConfig: 'إعدادات الراتب', mode: 'نوع الراتب', dailyRate: 'قيمة اليوم', unexcusedRate: 'خصم اليوم بدون عذر', maximum: 'سقف الراتب', fixedSalary: 'الراتب القطعي', extraDaysStart: 'بداية الأيام الإضافية', tiers: 'قوانين القسم', fromDays: 'من يوم', toDays: 'إلى يوم', fixedOverride: 'راتب قطعي خاص', dailyRateOverride: 'قيمة يوم خاصة', address: 'السكن', phone: 'رقم الهاتف', guardianPhone: 'هاتف ولي الأمر', gender: 'الجنس', birthDate: 'تاريخ الميلاد', notes: 'الملاحظات', qualification: 'المؤهل', telegram: 'معرّف تليغرام', photo: 'الصورة', overrides: 'استثناءات الموظفين', explicitRecalculation: 'إعادة احتساب صريحة', salaryRules: 'قوانين القسم', requiredDays: 'الأيام المطلوبة', attendanceDays: 'أيام الحضور', excusedDays: 'غياب بعذر', unexcusedDays: 'غياب بدون عذر', exemptDays: 'أيام الإعفاء', unresolvedDays: 'أيام لم تُحسم', baseSalary: 'الراتب الأساسي', otherDeductions: 'الخصومات الأخرى', bonuses: 'المكافآت' };
+ const sensitiveField = /password|passphrase|hash|secret|token|credential|كلمة.?المرور|كلمة.?السر/i;
+ const financialFields = new Set(['amount', 'finalSalary', 'salaryAtPayment', 'paidAmount', 'dailyRate', 'unexcusedRate', 'maximum', 'fixedSalary', 'dailyRateOverride', 'baseSalary', 'otherDeductions', 'bonuses']);
+ 
+diff --git a/src/app/(admin)/employees/[id]/page.tsx b/src/app/(admin)/employees/[id]/page.tsx
+index ca174cc..7d2602e 100644
+--- a/src/app/(admin)/employees/[id]/page.tsx
++++ b/src/app/(admin)/employees/[id]/page.tsx
+@@ -8,7 +8,7 @@ import { useDemo, useToast } from '@/components/demo-provider';
+ import { Avatar, Badge, Button, Card, ConfirmDialog, EmptyState, PageHeader, Select, StatCard, Tabs } from '@/components/ui';
+ import { EmployeeForm, ResetPasswordDialog } from '@/components/people/employee-form';
+ import { date, duration, money, monthLabel, time } from '@/lib/format';
+-import { DEMO_MONTH } from '@/lib/mock-data';
++import { DEMO_MONTH, DEMO_TODAY } from '@/lib/mock-data';
+ import { getEmployeePayroll } from '@/lib/payroll';
+ import { statusLabel } from '@/lib/attendance';
+ import type { AttendanceStatus } from '@/lib/types';
+@@ -37,7 +37,7 @@ export default function EmployeeProfilePage() {
+   const months = Array.from(new Set([DEMO_MONTH, ...data.months.map(item => item.month)])).sort().reverse();
+   const toggle = () => {
+     if (!canModify) return;
+-    updateData(draft => { const item = draft.employees.find(person => person.id === employee.id); if (item) { item.active = !item.active; item.updatedAt = new Date().toISOString(); } }, { action: employee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: { active: employee.active }, newValues: { active: !employee.active } });
++    updateData(draft => { const item = draft.employees.find(person => person.id === employee.id); if (item) { const nextActive = !item.active; item.active = nextActive; item.endDate = nextActive ? undefined : DEMO_TODAY; item.updatedAt = new Date().toISOString(); } }, { action: employee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: { active: employee.active, endDate: employee.endDate }, newValues: { active: !employee.active, endDate: employee.active ? DEMO_TODAY : undefined } });
+     toast(employee.active ? 'تم إيقاف الموظف مع حفظ سجلاته.' : 'تم تفعيل الموظف.');
+     setConfirmToggle(false);
+   };
+@@ -45,16 +45,16 @@ export default function EmployeeProfilePage() {
+     <PageHeader eyebrow="الموظفون / ملف الموظف" title="ملف الموظف" actions={<Link href="/employees" className="button-link"><ArrowRight size={16} />العودة للموظفين</Link>} />
+     <Card><div className={styles.profileHero}><div className={styles.person}><Avatar name={employee.name} src={employee.photo} size={76} /><div><h2 className={styles.profileName}>{employee.name}</h2><div className={styles.profileMeta}><span dir="ltr">{employee.code}</span><span>{department?.name}</span><Badge tone={employee.active ? 'success' : 'neutral'}>{employee.active ? 'نشط' : 'غير نشط'}</Badge></div></div></div><div className={styles.heroActions}><Button variant="secondary" onClick={() => setEditing(true)} disabled={!canModify}><Pencil size={16} />تعديل الملف</Button><Button variant="ghost" onClick={() => setConfirmToggle(true)} disabled={!canModify}>{employee.active ? <UserX size={16} /> : <UserCheck size={16} />}{employee.active ? 'إيقاف الموظف' : 'تفعيل الموظف'}</Button></div></div></Card>
+     <Tabs value={tab} onChange={setTab} items={[{ value: 'profile', label: 'البيانات الشخصية' }, { value: 'attendance', label: 'سجل الحضور' }, { value: 'payroll', label: 'الراتب والمستحقات' }, { value: 'account', label: 'حساب الدخول' }]} />
+-    {tab === 'profile' && <div className="grid-2"><Card title="المعلومات الشخصية" description="بيانات الموظف الأساسية ومعلومات التواصل"><dl className={styles.profileDetails}><Detail title="الاسم الكامل">{employee.name}</Detail><Detail title="الجنس">{employee.gender === 'MALE' ? 'ذكر' : 'أنثى'}</Detail><Detail title="تاريخ الميلاد">{employee.birthDate && date(employee.birthDate)}</Detail><Detail title="التحصيل الدراسي">{employee.qualification}</Detail><Detail title="رقم الهاتف" ltr>{employee.phone}</Detail><Detail title="رقم ولي الأمر" ltr>{employee.guardianPhone}</Detail><Detail title="البريد الإلكتروني" ltr>{employee.email}</Detail><Detail title="معرف تيليغرام" ltr>{employee.telegram}</Detail><div className={styles.fullWidth}><Detail title="العنوان / محل السكن">{employee.address}</Detail></div></dl></Card><div className="stack"><Card title="معلومات العمل"><dl className={styles.profileDetails}><Detail title="القسم">{department?.name}</Detail><Detail title="الرقم الوظيفي" ltr>{employee.code}</Detail><Detail title="تاريخ المباشرة">{date(employee.startDate)}</Detail><Detail title="تاريخ انتهاء العمل">{employee.endDate && date(employee.endDate)}</Detail><Detail title="تاريخ إضافة الملف">{date(employee.createdAt)}</Detail><Detail title="آخر تحديث">{date(employee.updatedAt)}</Detail></dl></Card><Card title="ملاحظات إدارية"><p className={styles.mutedNote}>{employee.notes || 'لا توجد ملاحظات إدارية لهذا الموظف.'}</p></Card></div></div>}
++    {tab === 'profile' && <div className="grid-2"><Card title="المعلومات الشخصية" description="بيانات الموظف الأساسية ومعلومات التواصل"><dl className={styles.profileDetails}><Detail title="الاسم الكامل">{employee.name}</Detail><Detail title="الجنس">{employee.gender === 'MALE' ? 'ذكر' : 'أنثى'}</Detail><Detail title="تاريخ الميلاد">{employee.birthDate && date(employee.birthDate)}</Detail><Detail title="التحصيل الدراسي">{employee.qualification}</Detail><Detail title="رقم الهاتف" ltr>{employee.phone}</Detail><Detail title="رقم ولي الأمر" ltr>{employee.guardianPhone}</Detail><Detail title="معرف تيليغرام" ltr>{employee.telegram ? `@${employee.telegram.replace(/^@+/, '')}` : ''}</Detail><div className={styles.fullWidth}><Detail title="العنوان / محل السكن">{employee.address}</Detail></div></dl></Card><div className="stack"><Card title="معلومات العمل"><dl className={styles.profileDetails}><Detail title="القسم">{department?.name}</Detail><Detail title="الرقم الوظيفي" ltr>{employee.code}</Detail><Detail title="تاريخ المباشرة">{date(employee.startDate)}</Detail><Detail title="تاريخ انتهاء العمل">{employee.endDate && date(employee.endDate)}</Detail><Detail title="تاريخ إضافة الملف">{date(employee.createdAt)}</Detail><Detail title="آخر تحديث">{date(employee.updatedAt)}</Detail></dl></Card><Card title="ملاحظات إدارية"><p className={styles.mutedNote}>{employee.notes || 'لا توجد ملاحظات إدارية لهذا الموظف.'}</p></Card></div></div>}
+     {(tab === 'attendance' || tab === 'payroll') && <div className="toolbar"><h2 style={{ fontSize: 18, margin: 0 }}>{tab === 'attendance' ? 'حضور الموظف' : 'تفاصيل الراتب'}</h2><Select aria-label="الشهر" value={month} onChange={event => setMonth(event.target.value)} style={{ maxWidth: 220 }}>{months.map(item => <option key={item} value={item}>{monthLabel(item)}</option>)}</Select></div>}
+     {tab === 'attendance' && <>
+-      <div className="stats-grid"><StatCard label="أيام الحضور" value={String(payroll?.attendanceDays ?? 0)} icon={<CalendarDays size={20} />} accent /><StatCard label="غياب بعذر" value={String(payroll?.excusedDays ?? 0)} /><StatCard label="غياب بدون عذر" value={String(payroll?.unexcusedDays ?? 0)} /><StatCard label="أيام التأخير" value={String(payroll?.lateDays ?? 0)} hint="التأخير لا يخصم تلقائياً" /></div>
++      <div className="stats-grid"><StatCard label="الأيام المطلوبة" value={String(payroll?.requiredDays ?? 0)} icon={<CalendarDays size={20} />} accent /><StatCard label="أيام الحضور" value={String(payroll?.attendanceDays ?? 0)} /><StatCard label="غياب بعذر" value={String(payroll?.excusedDays ?? 0)} /><StatCard label="غياب بدون عذر" value={String(payroll?.unexcusedDays ?? 0)} hint={`التأخير: ${payroll?.lateDays ?? 0} يوم`} /></div>
+       <Card>{attendance.length ? <><div className="desktop-table table-wrap"><table className="data-table"><thead><tr><th>اليوم</th><th>الحالة</th><th>وقت الحضور</th><th>التأخير</th><th>المصدر</th><th>الملاحظة</th></tr></thead><tbody>{attendance.map(item => { const day = historical.workdays.find(workday => workday.id === item.workdayId); return <tr key={item.id}><td>{day && date(day.date)}</td><td><Badge tone={attendanceTone[item.status]}>{statusLabel(item.status)}</Badge></td><td dir="ltr">{item.checkIn ? time(item.checkIn) : '—'}</td><td>{item.latenessSeconds ? duration(item.latenessSeconds) : '—'}</td><td>{item.source === 'QR' ? 'QR' : item.source === 'MANUAL' ? 'يدوي' : '—'}</td><td>{item.reason || '—'}</td></tr>; })}</tbody></table></div><div className="mobile-cards">{attendance.map(item => { const day = historical.workdays.find(workday => workday.id === item.workdayId); return <article key={item.id} className={styles.mobilePerson}><div className={styles.mobileTop}><strong>{day && date(day.date)}</strong><Badge tone={attendanceTone[item.status]}>{statusLabel(item.status)}</Badge></div><div className={styles.mobileMeta}><span>{item.checkIn ? time(item.checkIn) : 'لا يوجد وقت حضور'}</span><span>{item.latenessSeconds ? `تأخير ${duration(item.latenessSeconds)}` : 'بلا تأخير'}</span></div>{item.reason && <span className={styles.mutedNote}>{item.reason}</span>}</article>; })}</div></> : <EmptyState title="لا توجد سجلات حضور لهذا الشهر" description="تظهر سجلات الموظف هنا بعد فتح أيام الحضور وتسجيل الحضور." />}</Card>
+     </>}
+-    {tab === 'payroll' && (payroll ? <><div className="stats-grid"><StatCard label="صافي الراتب" value={money(payroll.finalSalary)} icon={<Wallet size={20} />} accent hint={payroll.finalSalary < 0 ? 'الرصيد سالب' : monthLabel(month)} /><StatCard label="نوع الراتب" value={payroll.salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'} hint={employee.fixedOverride ? 'تخصيص لهذا الموظف' : 'بحسب إعدادات القسم'} /><StatCard label="قيمة اليومية" value={money(payroll.dailyRate)} /><StatCard label="حالة الصرف" value={payroll.paymentStatus === 'PAID' ? 'مصروف' : payroll.paymentStatus === 'REVIEW' ? 'يحتاج مراجعة' : 'غير مصروف'} hint={payroll.partialMonth ? 'شهر توظيف غير مكتمل' : 'شهر توظيف كامل'} /></div><div className="grid-2"><Card title="كشف الراتب" description="تفصيل واضح لكل مبلغ يدخل في صافي الراتب"><div className={styles.balance}><span>الراتب الأساسي</span><span className={styles.amount}>{money(payroll.baseSalary)}</span></div><div className={styles.balance}><span>غياب بعذر ({payroll.excusedDays})</span><span>{money(-payroll.excusedDeduction)}</span></div><div className={styles.balance}><span>غياب بدون عذر ({payroll.unexcusedDays})</span><span>{money(-payroll.unexcusedDeduction)}</span></div><div className={styles.balance}><span>خصومات أخرى</span><span>{money(-payroll.otherDeductions)}</span></div><div className={styles.balance}><span>المكافآت</span><span>{money(payroll.bonuses)}</span></div><div className={styles.balance}><span>صافي الراتب</span><span className={styles.amount}>{money(payroll.finalSalary)}</span></div></Card><div className="stack"><Card title="الخصومات والمكافآت">{historical.deductions.filter(item => item.employeeId === employee.id && item.date.startsWith(month)).map(item => <div className={styles.historyCard} key={item.id}><div><strong>{item.type === 'أخرى' ? item.customType || item.type : item.type}</strong><p className={styles.mutedNote}>{item.reason} · {date(item.date)}</p></div><span className="text-danger">{money(-item.amount)}</span></div>)}{historical.bonuses.filter(item => item.employeeId === employee.id && item.date.startsWith(month)).map(item => <div className={styles.historyCard} key={item.id}><div><strong>مكافأة</strong><p className={styles.mutedNote}>{item.reason} · {date(item.date)}</p></div><span>{money(item.amount)}</span></div>)}{!historical.deductions.some(item => item.employeeId === employee.id && item.date.startsWith(month)) && !historical.bonuses.some(item => item.employeeId === employee.id && item.date.startsWith(month)) && <p className={styles.mutedNote}>لا توجد خصومات إضافية أو مكافآت لهذا الشهر.</p>}</Card><Card title="سجل الصرف">{data.payments.filter(item => item.employeeId === employee.id && item.month === month).length ? data.payments.filter(item => item.employeeId === employee.id && item.month === month).map(item => <div key={item.id} className={styles.historyCard}><div><strong>{money(item.amount)}</strong><p className={styles.mutedNote}>{date(item.date)} · {item.paidBy}</p></div><Badge tone="success">مصروف</Badge></div>) : <p className={styles.mutedNote}>لم يتم تسجيل صرف لهذا الشهر.</p>}{payroll.paymentStatus === 'REVIEW' && <div className="notice notice-warning">تغير الراتب بعد الصرف. الفرق الحالي: {money(payroll.difference)}</div>}</Card></div></div></> : <Card><EmptyState title="لا يوجد كشف راتب لهذا الشهر" /></Card>)}
++    {tab === 'payroll' && (payroll ? <><div className="stats-grid"><StatCard label="صافي الراتب" value={money(payroll.finalSalary)} icon={<Wallet size={20} />} accent hint={payroll.finalSalary < 0 ? 'الرصيد سالب' : monthLabel(month)} /><StatCard label="نوع الراتب" value={payroll.salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'} hint={employee.fixedOverride ? 'تخصيص لهذا الموظف' : 'بحسب إعدادات القسم'} /><StatCard label="قيمة اليومية" value={money(payroll.dailyRate)} /><StatCard label="حالة الصرف" value={payroll.paymentStatus === 'PAID' ? 'مصروف' : payroll.paymentStatus === 'REVIEW' ? 'يحتاج مراجعة' : 'غير مصروف'} hint={payroll.partialMonth ? 'شهر توظيف غير مكتمل' : 'شهر توظيف كامل'} /></div><div className="grid-2"><Card title="كشف الراتب" description={`الراتب الأساسي محسوب على ${payroll.requiredDays} يوم مطلوب، ثم تطبق الخصومات والمكافآت.`}><div className={styles.balance}><span>الراتب الأساسي</span><span className={styles.amount}>{money(payroll.baseSalary)}</span></div><div className={styles.balance}><span>غياب بعذر ({payroll.excusedDays})</span><span>{money(-payroll.excusedDeduction)}</span></div><div className={styles.balance}><span>غياب بدون عذر ({payroll.unexcusedDays})</span><span>{money(-payroll.unexcusedDeduction)}</span></div><div className={styles.balance}><span>خصومات أخرى</span><span>{money(-payroll.otherDeductions)}</span></div><div className={styles.balance}><span>المكافآت</span><span>{money(payroll.bonuses)}</span></div><div className={styles.balance}><span>صافي الراتب</span><span className={styles.amount}>{money(payroll.finalSalary)}</span></div></Card><div className="stack"><Card title="الخصومات والمكافآت">{historical.deductions.filter(item => item.employeeId === employee.id && item.date.startsWith(month)).map(item => <div className={styles.historyCard} key={item.id}><div><strong>{item.type === 'أخرى' ? item.customType || item.type : item.type}</strong><p className={styles.mutedNote}>{item.reason} · {date(item.date)}</p></div><span className="text-danger">{money(-item.amount)}</span></div>)}{historical.bonuses.filter(item => item.employeeId === employee.id && item.date.startsWith(month)).map(item => <div className={styles.historyCard} key={item.id}><div><strong>مكافأة</strong><p className={styles.mutedNote}>{item.reason} · {date(item.date)}</p></div><span>{money(item.amount)}</span></div>)}{!historical.deductions.some(item => item.employeeId === employee.id && item.date.startsWith(month)) && !historical.bonuses.some(item => item.employeeId === employee.id && item.date.startsWith(month)) && <p className={styles.mutedNote}>لا توجد خصومات إضافية أو مكافآت لهذا الشهر.</p>}</Card><Card title="سجل الصرف">{data.payments.filter(item => item.employeeId === employee.id && item.month === month).length ? data.payments.filter(item => item.employeeId === employee.id && item.month === month).map(item => <div key={item.id} className={styles.historyCard}><div><strong>{money(item.amount)}</strong><p className={styles.mutedNote}>{date(item.date)} · {item.paidBy}</p></div><Badge tone="success">مصروف</Badge></div>) : <p className={styles.mutedNote}>لم يتم تسجيل صرف لهذا الشهر.</p>}{payroll.paymentStatus === 'REVIEW' && <div className="notice notice-warning">تغير الراتب بعد الصرف. الفرق الحالي: {money(payroll.difference)}</div>}</Card></div></div></> : <Card><EmptyState title="لا يوجد كشف راتب لهذا الشهر" /></Card>)}
+     {tab === 'account' && <div className="grid-2"><Card title="حساب الدخول" description="اسم المستخدم والصلاحية المرتبطة بالموظف"><dl className={styles.profileDetails}><Detail title="اسم المستخدم" ltr>{employee.username}</Detail><Detail title="الصلاحية">{employee.role === 'SUPER_ADMIN' ? 'مشرف عام' : employee.role === 'ADMIN' ? 'مدير' : 'موظف'}</Detail><Detail title="حالة الحساب"><Badge tone={employee.active ? 'success' : 'neutral'}>{employee.active ? 'نشط' : 'غير نشط'}</Badge></Detail><Detail title="كلمة المرور">لا يتم عرض كلمة المرور</Detail></dl><div className="form-actions"><Button variant="secondary" disabled={!canModify} onClick={() => setPassword(true)}><KeyRound size={17} />تغيير كلمة المرور</Button></div></Card><Card title="صلاحيات الحساب"><div className="notice"><ShieldCheck size={20} /><span>{employee.role === 'EMPLOYEE' ? 'يستطيع الموظف الاطلاع على ملفه وحضوره وراتبه، وتسجيل حضوره. لا يستطيع تعديل بياناته أو كلمة مروره.' : employee.role === 'ADMIN' ? 'يدير العمليات اليومية والموظفين والحضور والرواتب الحالية. إعدادات الرواتب المحمية والأرشيف والصلاحيات للمشرف العام.' : 'يمتلك المشرف العام صلاحيات الإدارة الكاملة، بما فيها إعدادات الرواتب والأقسام والأرشيف وسجل العمليات.'}</span></div><p className={styles.mutedNote}>إدارة حسابات المديرين والمشرفين متاحة للمشرف العام فقط.</p></Card></div>}
+     {editing && <EmployeeForm key={employee.id} employee={employee} open onClose={() => setEditing(false)} />}
+     <ResetPasswordDialog employee={password ? employee : null} onClose={() => setPassword(false)} />
+-    <ConfirmDialog open={confirmToggle} onClose={() => setConfirmToggle(false)} onConfirm={toggle} title={employee.active ? 'تأكيد إيقاف الموظف' : 'تفعيل الموظف'} description={employee.active ? 'سيتم إيقاف الموظف واستبعاده من أيام الحضور الجديدة، مع الاحتفاظ بملفه وسجلاته السابقة كاملة.' : 'سيتم تفعيل الموظف مع الاحتفاظ برقمه الوظيفي وسجلاته السابقة.'} confirmLabel={employee.active ? 'إيقاف الموظف' : 'تفعيل الموظف'} danger={employee.active} />
++    <ConfirmDialog open={confirmToggle} onClose={() => setConfirmToggle(false)} onConfirm={toggle} title={employee.active ? 'تأكيد إيقاف الموظف' : 'تفعيل الموظف'} description={employee.active ? 'سيتم إيقاف الموظف وتسجيل تاريخ انتهاء العمل بتاريخ اليوم، مع الاحتفاظ بملفه وسجلاته السابقة كاملة.' : 'سيتم تفعيل الموظف وإلغاء تاريخ انتهاء العمل الحالي مع الاحتفاظ برقمه الوظيفي وسجلاته السابقة.'} confirmLabel={employee.active ? 'إيقاف الموظف' : 'تفعيل الموظف'} danger={employee.active} />
+   </div>;
+ }
+diff --git a/src/app/(admin)/employees/page.tsx b/src/app/(admin)/employees/page.tsx
+index 1251345..4dc9ffb 100644
+--- a/src/app/(admin)/employees/page.tsx
++++ b/src/app/(admin)/employees/page.tsx
+@@ -9,6 +9,7 @@ import { Avatar, Badge, Button, Card, ConfirmDialog, EmptyState, Field, PageHead
+ import { EmployeeForm, ResetPasswordDialog } from '@/components/people/employee-form';
+ import type { Employee } from '@/lib/types';
+ import { date, money } from '@/lib/format';
++import { DEMO_TODAY } from '@/lib/mock-data';
+ import styles from '@/components/people/people.module.css';
+ 
+ export default function EmployeesPage() {
+@@ -48,7 +49,7 @@ export default function EmployeesPage() {
+   const setFilter = (set: (value: string) => void, value: string) => { set(value); setPage(1); };
+   const toggle = () => {
+     if (!toggleEmployee || (!isSuper && toggleEmployee.role !== 'EMPLOYEE')) return;
+-    updateData(draft => { const employee = draft.employees.find(item => item.id === toggleEmployee.id); if (employee) { employee.active = !employee.active; employee.updatedAt = new Date().toISOString(); } }, { action: toggleEmployee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: toggleEmployee.id, employeeId: toggleEmployee.id, oldValues: { active: toggleEmployee.active }, newValues: { active: !toggleEmployee.active } });
++    updateData(draft => { const employee = draft.employees.find(item => item.id === toggleEmployee.id); if (employee) { const nextActive = !employee.active; employee.active = nextActive; employee.endDate = nextActive ? undefined : DEMO_TODAY; employee.updatedAt = new Date().toISOString(); } }, { action: toggleEmployee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: toggleEmployee.id, employeeId: toggleEmployee.id, oldValues: { active: toggleEmployee.active, endDate: toggleEmployee.endDate }, newValues: { active: !toggleEmployee.active, endDate: toggleEmployee.active ? DEMO_TODAY : undefined } });
+     toast(toggleEmployee.active ? 'تم إيقاف الموظف مع الاحتفاظ بسجلاته.' : 'تم تفعيل الموظف.');
+     setToggleEmployee(null);
+   };
+@@ -69,6 +70,6 @@ export default function EmployeesPage() {
+     </Card>}
+     {editing && (editing !== 'new' || hasActiveDepartment) && <EmployeeForm key={editing === 'new' ? 'new' : editing.id} open onClose={() => setEditing(null)} employee={editing === 'new' ? undefined : editing} />}
+     <ResetPasswordDialog employee={passwordEmployee} onClose={() => setPasswordEmployee(null)} />
+-    <ConfirmDialog open={Boolean(toggleEmployee)} onClose={() => setToggleEmployee(null)} onConfirm={toggle} title={toggleEmployee?.active ? 'إيقاف الموظف؟' : 'تفعيل الموظف؟'} description={toggleEmployee?.active ? `سيصبح ${toggleEmployee.name} غير نشط، ولن يكون متوقعاً في أيام الحضور الجديدة. تبقى بياناته وحضوره ورواتبه السابقة محفوظة.` : `سيعود ${toggleEmployee?.name ?? ''} إلى قائمة الموظفين النشطين مع بقاء رقمه الوظيفي وسجلاته.`} confirmLabel={toggleEmployee?.active ? 'تأكيد إيقاف الموظف' : 'تفعيل الموظف'} danger={toggleEmployee?.active} />
++    <ConfirmDialog open={Boolean(toggleEmployee)} onClose={() => setToggleEmployee(null)} onConfirm={toggle} title={toggleEmployee?.active ? 'إيقاف الموظف؟' : 'تفعيل الموظف؟'} description={toggleEmployee?.active ? `سيصبح ${toggleEmployee.name} غير نشط، وسيُسجل تاريخ انتهاء العمل بتاريخ اليوم. تبقى بياناته وحضوره ورواتبه السابقة محفوظة.` : `سيعود ${toggleEmployee?.name ?? ''} إلى قائمة الموظفين النشطين، ويُلغى تاريخ انتهاء العمل الحالي مع بقاء رقمه الوظيفي وسجلاته.`} confirmLabel={toggleEmployee?.active ? 'تأكيد إيقاف الموظف' : 'تفعيل الموظف'} danger={toggleEmployee?.active} />
+   </div>;
+ }
+diff --git a/src/app/(admin)/payroll/page.tsx b/src/app/(admin)/payroll/page.tsx
+index 1784af9..2122926 100644
+--- a/src/app/(admin)/payroll/page.tsx
++++ b/src/app/(admin)/payroll/page.tsx
+@@ -86,10 +86,10 @@ export default function PayrollPage() {
+     {monthState === 'ARCHIVED' && <div className="notice"><LockKeyhole size={18} /><span>نسخة ثابتة{period?.archivedAt ? ` — أُرشفت في ${date(period.archivedAt)}` : ''}. تغييرات إعدادات الأقسام لا تؤثر في هذا الشهر.</span></div>}
+     <div className="stats-grid"><StatCard label="صافي رواتب الشهر" value={money(total)} icon={<Wallet size={20} />} accent /><StatCard label="رواتب غير مصروفة" value={String(results.filter(item => item.paymentStatus === 'UNPAID').length)} hint={`من أصل ${results.length} موظف`} icon={<Banknote size={20} />} /><StatCard label="تحتاج مراجعة" value={String(results.filter(item => item.paymentStatus === 'REVIEW').length)} hint="تغيّر الراتب بعد الصرف" icon={<CircleAlert size={20} />} /><StatCard label="حضور غير محسوم" value={String(unresolved)} hint="يجب حسمه قبل الأرشفة" icon={<Calculator size={20} />} /></div>
+     <Card title={`كشف ${monthLabel(month)}`} description={`${filtered.length} موظف في النتائج`}><div className="filter-row"><SearchInput value={query} onChange={value => { setQuery(value); setPage(1); }} placeholder="اسم الموظف أو رقمه" /><Select aria-label="القسم" value={department} onChange={e => { setDepartment(e.target.value); setPage(1); }}><option value="">كل الأقسام</option>{Array.from(new Set(results.map(item => item.departmentName))).map(name => <option key={name}>{name}</option>)}</Select><Select aria-label="حالة الصرف" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="">كل حالات الصرف</option>{Object.entries(paymentLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</Select><Select aria-label="نوع الراتب" value={mode} onChange={e => { setMode(e.target.value); setPage(1); }}><option value="">جميع الأنواع</option><option value="TIERED">غير قطعي</option><option value="FIXED">قطعي</option></Select></div>
+-      {!filtered.length ? <EmptyState title={!data.employees.length ? "لا توجد بيانات رواتب حتى الآن." : !results.length ? "لا توجد رواتب لهذا الشهر." : "لا توجد رواتب تطابق اختياراتك"} description={!data.employees.length ? "ابدأ بإضافة فريقك وتحديد قوانين الرواتب. ستظهر كشوف الموظفين هنا مع تفاصيل الاحتساب." : "جرّب شهراً آخر أو غيّر خيارات البحث."} action={!data.employees.length ? <Link className="button-link" href={data.departments.length ? "/employees?add=1" : "/departments"}>{data.departments.length ? "إضافة أول موظف" : "إضافة أول قسم"}</Link> : undefined} /> : <><div className="table-wrap desktop-table"><table className="data-table"><thead><tr><th>الموظف</th><th>القسم / نوع الراتب</th><th>حضور</th><th>غياب بعذر / بدونه</th><th>الأساسي</th><th>خصومات أخرى</th><th>مكافآت</th><th>الصافي</th><th>الصرف</th><th aria-label="الإجراءات" /></tr></thead><tbody>{visible.map(item => <tr key={item.employeeId}><td><button className={styles.rowName} onClick={() => setSelectedId(item.employeeId)}>{item.employeeName}<small>{item.employeeCode}</small></button></td><td>{item.departmentName}<div className={styles.small}>{item.salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</div></td><td>{item.attendanceDays}</td><td>{item.excusedDays} / {item.unexcusedDays}</td><td className="amount">{money(item.baseSalary)}</td><td className="amount">{money(item.otherDeductions)}</td><td className="amount">{money(item.bonuses)}</td><td className={`amount ${item.finalSalary < 0 ? 'text-danger' : ''}`}><strong>{money(item.finalSalary)}</strong></td><td><PaymentBadge status={item.paymentStatus} /></td><td><Button variant="ghost" onClick={() => setSelectedId(item.employeeId)} aria-label={`تفاصيل راتب ${item.employeeName}`}><ArrowUpRight size={17} /></Button></td></tr>)}</tbody></table></div><div className="mobile-cards">{visible.map(item => <Card key={item.employeeId}><div className={styles.recordHead}><button className={styles.rowName} onClick={() => setSelectedId(item.employeeId)}>{item.employeeName}<small>{item.employeeCode} · {item.departmentName}</small></button><PaymentBadge status={item.paymentStatus} /></div><div className={styles.compactMetrics}><div><span>الحضور</span><strong>{item.attendanceDays}</strong></div><div><span>بعذر</span><strong>{item.excusedDays}</strong></div><div><span>بدون عذر</span><strong>{item.unexcusedDays}</strong></div></div><div className={styles.recordHead}><span>صافي الراتب</span><strong className={`amount ${item.finalSalary < 0 ? 'text-danger' : ''}`}>{money(item.finalSalary)}</strong></div><div className={styles.cardActions}><Button variant="secondary" onClick={() => setSelectedId(item.employeeId)}>التفاصيل</Button><Button variant="ghost" onClick={() => beginPayment(item)}>{item.paymentStatus === 'UNPAID' ? 'تسجيل الصرف' : 'صرف جديد'}</Button></div></Card>)}</div><Pagination page={page} total={filtered.length} pageSize={pageSize} onChange={setPage} /></>}
++      {!filtered.length ? <EmptyState title={!data.employees.length ? "لا توجد بيانات رواتب حتى الآن." : !results.length ? "لا توجد رواتب لهذا الشهر." : "لا توجد رواتب تطابق اختياراتك"} description={!data.employees.length ? "ابدأ بإضافة فريقك وتحديد قوانين القسم. ستظهر كشوف الموظفين هنا مع تفاصيل الاحتساب." : "جرّب شهراً آخر أو غيّر خيارات البحث."} action={!data.employees.length ? <Link className="button-link" href={data.departments.length ? "/employees?add=1" : "/departments"}>{data.departments.length ? "إضافة أول موظف" : "إضافة أول قسم"}</Link> : undefined} /> : <><div className="table-wrap desktop-table"><table className="data-table"><thead><tr><th>الموظف</th><th>القسم / نوع الراتب</th><th>مطلوب</th><th>حضور</th><th>غياب بعذر / بدونه</th><th>الأساسي</th><th>خصومات أخرى</th><th>مكافآت</th><th>الصافي</th><th>الصرف</th><th aria-label="الإجراءات" /></tr></thead><tbody>{visible.map(item => <tr key={item.employeeId}><td><button className={styles.rowName} onClick={() => setSelectedId(item.employeeId)}>{item.employeeName}<small>{item.employeeCode}</small></button></td><td>{item.departmentName}<div className={styles.small}>{item.salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</div></td><td>{item.requiredDays}</td><td>{item.attendanceDays}</td><td>{item.excusedDays} / {item.unexcusedDays}</td><td className="amount">{money(item.baseSalary)}</td><td className="amount">{money(item.otherDeductions)}</td><td className="amount">{money(item.bonuses)}</td><td className={`amount ${item.finalSalary < 0 ? 'text-danger' : ''}`}><strong>{money(item.finalSalary)}</strong></td><td><PaymentBadge status={item.paymentStatus} /></td><td><Button variant="ghost" onClick={() => setSelectedId(item.employeeId)} aria-label={`تفاصيل راتب ${item.employeeName}`}><ArrowUpRight size={17} /></Button></td></tr>)}</tbody></table></div><div className="mobile-cards">{visible.map(item => <Card key={item.employeeId}><div className={styles.recordHead}><button className={styles.rowName} onClick={() => setSelectedId(item.employeeId)}>{item.employeeName}<small>{item.employeeCode} · {item.departmentName}</small></button><PaymentBadge status={item.paymentStatus} /></div><div className={styles.compactMetrics}><div><span>المطلوب</span><strong>{item.requiredDays}</strong></div><div><span>الحضور</span><strong>{item.attendanceDays}</strong></div><div><span>بعذر</span><strong>{item.excusedDays}</strong></div><div><span>بدون عذر</span><strong>{item.unexcusedDays}</strong></div></div><div className={styles.recordHead}><span>صافي الراتب</span><strong className={`amount ${item.finalSalary < 0 ? 'text-danger' : ''}`}>{money(item.finalSalary)}</strong></div><div className={styles.cardActions}><Button variant="secondary" onClick={() => setSelectedId(item.employeeId)}>التفاصيل</Button><Button variant="ghost" onClick={() => beginPayment(item)}>{item.paymentStatus === 'UNPAID' ? 'تسجيل الصرف' : 'صرف جديد'}</Button></div></Card>)}</div><Pagination page={page} total={filtered.length} pageSize={pageSize} onChange={setPage} /></>}
+     </Card>
+     <Dialog open={Boolean(selected)} onClose={() => setSelectedId(null)} title={selected?.employeeName ?? 'تفاصيل الراتب'} description={selected ? `${selected.employeeCode} · ${selected.departmentName}` : ''} wide>{selected && <><PayrollBreakdown result={selected} data={source} /><div className="form-actions"><Link href={`/reports?type=payslip&employee=${selected.employeeId}&month=${month}`} className="button-link"><FileText size={16} /> قسيمة راتب</Link><Button onClick={() => beginPayment(selected)}><Banknote size={17} />{selected.paymentStatus === 'UNPAID' ? 'تسجيل صرف الراتب' : 'تسجيل عملية صرف جديدة'}</Button></div></>}</Dialog>
+     <Dialog open={Boolean(paymentFor)} onClose={() => setPaymentFor(null)} title="تسجيل صرف الراتب" description={`${paymentFor?.employeeName ?? ''} · ${monthLabel(month)}`}><form onSubmit={savePayment} className="stack"><div className={styles.confirmDetails}><div><span>صافي الراتب الحالي</span><strong className="amount">{money(paymentFor?.finalSalary ?? 0)}</strong></div>{paymentFor && paymentFor.paymentStatus !== 'UNPAID' && <div><span>آخر مبلغ مصروف</span><strong className="amount">{money(paymentFor.paidAmount)}</strong></div>}</div>{paymentFor && paymentFor.paymentStatus !== 'UNPAID' && <div className="notice notice-warning">ستُضاف عملية جديدة إلى سجل الصرف. العملية السابقة تبقى محفوظة، وهذا ليس تعديلاً عليها.</div>}<Field label="المبلغ المصروف (د.ع)" required><Input type="number" min="0" step="1" required value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} /></Field><Field label="تاريخ الصرف" required><Input type="date" required value={paymentDate} onChange={e => setPaymentDate(e.target.value)} /></Field>{paymentError && <p role="alert" className="text-danger">{paymentError}</p>}<div className="form-actions"><Button variant="secondary" type="button" onClick={() => setPaymentFor(null)}>إلغاء</Button><Button type="submit">تأكيد تسجيل الصرف</Button></div></form></Dialog>
+-    <Dialog open={Boolean(action)} onClose={() => setAction(null)} title={action === 'archive' ? 'إغلاق وأرشفة رواتب الشهر' : action === 'reopen' ? 'إعادة فتح الشهر للتعديل' : 'إعادة احتساب الشهر المؤرشف'} description={monthLabel(month)}><div className="stack"><div className="notice notice-warning"><CircleAlert size={20} /><span>{action === 'archive' ? 'سيتم تثبيت بيانات الرواتب والحضور والخصومات والمكافآت لهذا الشهر وإنشاء نسخة أرشيفية كاملة.' : action === 'reopen' ? 'ستصبح السجلات التاريخية قابلة للتعديل بإذن المشرف العام. تبقى الرواتب وقواعدها المؤرشفة كما هي حتى إعادة الاحتساب الصريحة.' : 'سيتم احتساب الحضور والخصومات والمكافآت المعدلة باستخدام قواعد الراتب المؤرشفة، وتسجيل القيم السابقة والجديدة في سجل العمليات.'}</span></div><div className={styles.confirmDetails}><div><span>الشهر</span><strong>{monthLabel(month)}</strong></div><div><span>عدد الموظفين</span><strong>{results.length}</strong></div><div><span>الصافي الحالي</span><strong className="amount">{money(total)}</strong></div></div>{action === 'archive' && pendingHistoricalEdits ? <div className="notice notice-warning">نفّذ إعادة الاحتساب الصريحة أولاً حتى تشمل النسخة الجديدة تعديلات السجلات.</div> : action === 'archive' && unresolved > 0 ? <div className="notice notice-warning">لا يمكن الأرشفة: توجد {unresolved} حالة غير محسومة. <Link href="/attendance">مراجعة الحضور</Link></div> : <Field label={`للتأكيد، اكتب ${month}`} required><Input value={confirmText} onChange={e => setConfirmText(e.target.value)} dir="ltr" placeholder={month} autoComplete="off" /></Field>}<div className="form-actions"><Button variant="secondary" onClick={() => setAction(null)}>إلغاء</Button><Button disabled={confirmText !== month || (action === 'archive' && (unresolved > 0 || pendingHistoricalEdits)) || results.length === 0} onClick={performMonthAction}>{action === 'archive' ? 'تأكيد الأرشفة' : action === 'reopen' ? 'تأكيد إعادة الفتح' : 'تأكيد إعادة الاحتساب'}</Button></div></div></Dialog>
++    <Dialog open={Boolean(action)} onClose={() => setAction(null)} title={action === 'archive' ? 'إغلاق وأرشفة رواتب الشهر' : action === 'reopen' ? 'إعادة فتح الشهر للتعديل' : 'إعادة احتساب الشهر المؤرشف'} description={monthLabel(month)}><div className="stack"><div className="notice notice-warning"><CircleAlert size={20} /><span>{action === 'archive' ? 'سيتم تثبيت بيانات الرواتب والحضور والخصومات والمكافآت لهذا الشهر وإنشاء نسخة أرشيفية كاملة.' : action === 'reopen' ? 'ستصبح السجلات التاريخية قابلة للتعديل بإذن المشرف العام. تبقى الرواتب وقوانين القسم المؤرشفة كما هي حتى إعادة الاحتساب الصريحة.' : 'سيتم احتساب الحضور والخصومات والمكافآت المعدلة باستخدام قوانين القسم المؤرشفة، وتسجيل القيم السابقة والجديدة في سجل العمليات.'}</span></div><div className={styles.confirmDetails}><div><span>الشهر</span><strong>{monthLabel(month)}</strong></div><div><span>عدد الموظفين</span><strong>{results.length}</strong></div><div><span>الصافي الحالي</span><strong className="amount">{money(total)}</strong></div></div>{action === 'archive' && pendingHistoricalEdits ? <div className="notice notice-warning">نفّذ إعادة الاحتساب الصريحة أولاً حتى تشمل النسخة الجديدة تعديلات السجلات.</div> : action === 'archive' && unresolved > 0 ? <div className="notice notice-warning">لا يمكن الأرشفة: توجد {unresolved} حالة غير محسومة. <Link href="/attendance">مراجعة الحضور</Link></div> : <Field label={`للتأكيد، اكتب ${month}`} required><Input value={confirmText} onChange={e => setConfirmText(e.target.value)} dir="ltr" placeholder={month} autoComplete="off" /></Field>}<div className="form-actions"><Button variant="secondary" onClick={() => setAction(null)}>إلغاء</Button><Button disabled={confirmText !== month || (action === 'archive' && (unresolved > 0 || pendingHistoricalEdits)) || results.length === 0} onClick={performMonthAction}>{action === 'archive' ? 'تأكيد الأرشفة' : action === 'reopen' ? 'تأكيد إعادة الفتح' : 'تأكيد إعادة الاحتساب'}</Button></div></div></Dialog>
+   </div>;
+ }
+diff --git a/src/app/employee/attendance/page.tsx b/src/app/employee/attendance/page.tsx
+index d48a910..5f8086b 100644
+--- a/src/app/employee/attendance/page.tsx
++++ b/src/app/employee/attendance/page.tsx
+@@ -33,7 +33,7 @@ export default function EmployeeAttendancePage() {
+   const financialEffect = (recordStatus: AttendanceStatus) => recordStatus === 'EXCUSED' ? <bdi dir="ltr" className="amount">−{money(result?.dailyRate ?? 0)}</bdi> : recordStatus === 'UNEXCUSED' ? <bdi dir="ltr" className="amount">−{money(result?.salaryConfig.unexcusedRate ?? 0)}</bdi> : recordStatus === 'PRESENT' ? 'يُحتسب ضمن الحضور' : 'بدون خصم';
+   return <div className="page-stack">
+     <PageHeader eyebrow="مساحتك الشخصية" title="سجل حضوري" description="راجع أيام حضورك وغيابك ووقت الدخول والأثر المالي لكل غياب." actions={<Badge tone={period?.state === 'ARCHIVED' ? 'success' : 'brand'}>{period?.state === 'ARCHIVED' ? 'سجل مؤرشف' : monthLabel(month)}</Badge>} />
+-    <div className="grid-3"><StatCard label="أيام الحضور" value={result?.attendanceDays ?? 0} icon={<CalendarCheck size={20} />} /><StatCard label="أيام الغياب" value={(result?.excusedDays ?? 0) + (result?.unexcusedDays ?? 0)} icon={<UserRoundX size={20} />} hint={`${result?.excusedDays ?? 0} بعذر · ${result?.unexcusedDays ?? 0} بدون عذر`} /><StatCard label="إجمالي التأخير" value={result?.latenessSeconds ? duration(result.latenessSeconds) : '0 ثانية'} icon={<Clock3 size={20} />} hint={`${result?.lateDays ?? 0} مرات · لا يوجد خصم تلقائي على التأخير`} /></div>
++    <div className="grid-3"><StatCard label="الأيام المطلوبة" value={result?.requiredDays ?? 0} icon={<CalendarCheck size={20} />} /><StatCard label="أيام الحضور" value={result?.attendanceDays ?? 0} /><StatCard label="أيام الغياب" value={(result?.excusedDays ?? 0) + (result?.unexcusedDays ?? 0)} icon={<UserRoundX size={20} />} hint={`${result?.excusedDays ?? 0} بعذر · ${result?.unexcusedDays ?? 0} بدون عذر`} /><StatCard label="إجمالي التأخير" value={result?.latenessSeconds ? duration(result.latenessSeconds) : '0 ثانية'} icon={<Clock3 size={20} />} hint={`${result?.lateDays ?? 0} مرات · لا يوجد خصم تلقائي على التأخير`} /></div>
+     <Card>
+       <div className="filter-row"><Field label="الشهر"><Input type="month" aria-label="شهر سجل الحضور" value={month} onChange={event => { if (event.target.value) { setMonth(event.target.value); setPage(1); } }} /></Field><Field label="حالة الحضور"><Select value={status} onChange={event => { setStatus(event.target.value); setPage(1); }}><option value="ALL">كل الحالات</option>{statuses.map(item => <option key={item} value={item}>{statusLabel(item)}</option>)}</Select></Field></div>
+       {rows.length === 0 ? <EmptyState title={data.attendance.some(item => item.employeeId === session.employeeId) ? "لا توجد سجلات تطابق اختياراتك" : "لا توجد سجلات حضور حتى الآن."} description={data.attendance.some(item => item.employeeId === session.employeeId) ? "جرّب اختيار شهر آخر أو عرض جميع حالات الحضور." : "ستظهر أيام حضورك ووقت دخولك هنا بعد تسجيل أول حضور لك."} /> : <>
+diff --git a/src/app/employee/page.tsx b/src/app/employee/page.tsx
+index bdc7c12..2d8de6f 100644
+--- a/src/app/employee/page.tsx
++++ b/src/app/employee/page.tsx
+@@ -34,7 +34,7 @@ export default function EmployeeHomePage() {
+     </section>
+     {result.paymentStatus === 'REVIEW' && <div className="notice notice-warning" role="status"><strong>راتبك يحتاج إلى مراجعة بعد الصرف</strong><p>المصروف سابقاً <bdi dir="ltr">{money(result.paidAmount)}</bdi> · الفرق <bdi dir="ltr">{money(result.difference)}</bdi></p></div>}
+     <div className="stats-grid">
+-      <StatCard label="أيام الحضور" value={result.attendanceDays} icon={<CalendarCheck size={20} />} hint="الحضور المسجّل هذا الشهر" />
++      <StatCard label="الأيام المطلوبة" value={result.requiredDays} icon={<CalendarCheck size={20} />} hint="الأيام التي كنت مطلوباً فيها للدوام" /><StatCard label="أيام الحضور" value={result.attendanceDays} hint="الحضور المسجّل هذا الشهر" />
+       <StatCard label="غياب بعذر" value={result.excusedDays} icon={<UserRoundCheck size={20} />} hint={`الأثر المالي ${money(result.excusedDeduction)}`} />
+       <StatCard label="غياب بدون عذر" value={result.unexcusedDays} icon={<ReceiptText size={20} />} hint={`الأثر المالي ${money(result.unexcusedDeduction)}`} />
+       <StatCard label="مرات التأخير" value={result.lateDays} icon={<Clock3 size={20} />} hint={`إجمالي التأخير: ${result.latenessSeconds ? duration(result.latenessSeconds) : '0 ثانية'}`} />
+diff --git a/src/app/employee/profile/page.tsx b/src/app/employee/profile/page.tsx
+index 03f5956..103c4c4 100644
+--- a/src/app/employee/profile/page.tsx
++++ b/src/app/employee/profile/page.tsx
+@@ -13,7 +13,7 @@ export default function EmployeeProfilePage() {
+   if (!employee.active) return <EmptyState title="حسابك غير فعال حالياً" description="يرجى مراجعة إدارة المركز." />;
+   const department = data.departments.find(item => item.id === employee.departmentId);
+   const personalFields = [{ label: 'الاسم الكامل', value: employee.name }, { label: 'الجنس', value: employee.gender === 'MALE' ? 'ذكر' : 'أنثى' }, { label: 'تاريخ الميلاد', value: date(employee.birthDate), ltr: true }, { label: 'التحصيل الدراسي', value: employee.qualification }, { label: 'العنوان / السكن', value: employee.address }];
+-  const contactFields = [{ label: 'رقم الهاتف', value: employee.phone }, { label: 'رقم هاتف ولي الأمر', value: employee.guardianPhone }, { label: 'البريد الإلكتروني', value: employee.email }, { label: 'معرف تليغرام', value: employee.telegram }];
++  const contactFields = [{ label: 'رقم الهاتف', value: employee.phone }, { label: 'رقم هاتف ولي الأمر', value: employee.guardianPhone }, { label: 'معرف تيليغرام', value: employee.telegram ? `@${employee.telegram.replace(/^@+/, '')}` : '' }];
+   const workFields = [{ label: 'رقم الموظف', value: employee.code, ltr: true }, { label: 'القسم', value: department?.name }, { label: 'تاريخ المباشرة', value: date(employee.startDate), ltr: true }, { label: 'الحالة', value: 'فعال' }, { label: 'اسم المستخدم', value: employee.username, ltr: true }, { label: 'نوع الحساب', value: 'موظف' }, { label: 'تاريخ إنشاء الحساب', value: `${date(employee.createdAt)} · ${time(employee.createdAt)}`, ltr: true }, { label: 'آخر تحديث', value: `${date(employee.updatedAt)} · ${time(employee.updatedAt)}`, ltr: true }];
+   return <div className="page-stack">
+     <PageHeader eyebrow="مساحتك الشخصية" title="حسابي" description="بياناتك المسجلة لدى المركز. لتحديث أي معلومة، تواصل مع الإدارة." />
+diff --git a/src/components/attendance/day-detail.tsx b/src/components/attendance/day-detail.tsx
+index 2da9af3..225218d 100644
+--- a/src/components/attendance/day-detail.tsx
++++ b/src/components/attendance/day-detail.tsx
+@@ -50,7 +50,6 @@ export function AttendanceDayDetail({ dayId }: { dayId: string }) {
+   function save(target: AttendanceStatus = editStatus) {
+     if (!editing || locked) return;
+     if (monthRecord?.state === 'REOPENED' && !monthRecord.snapshots[editing.employee.id]) { setError('لا توجد نسخة راتب مؤرشفة لهذا الموظف في الشهر المحدد. راجع بيانات الشهر قبل التعديل.'); return; }
+-    if (!reason.trim()) { setError('اكتب سبب تعديل الحضور ليظهر في سجل العمليات.'); return; }
+     if (target === 'PRESENT' && !/^\d{2}:\d{2}(:\d{2})?$/.test(checkIn)) { setError('حدد وقت الحضور بالدقائق والثواني.'); return; }
+     const enteredTime = checkIn.length === 5 ? `${checkIn}:00` : checkIn;
+     const timestamp = target === 'PRESENT' ? new Date(`${editing.day.date}T${enteredTime}+03:00`).toISOString() : null;
+@@ -64,7 +63,7 @@ export function AttendanceDayDetail({ dayId }: { dayId: string }) {
+         else if (day.overrides[changed.employeeId] === 'EXCLUDE') day.overrides[changed.employeeId] = 'INCLUDE';
+       }
+     }, { action: remove ? 'إزالة تسجيل حضور' : 'تعديل حالة الحضور', entity: 'الحضور', entityId: changed.id, employeeId: changed.employeeId, oldValues: { status: editing.record.status, checkIn: editing.record.checkIn, latenessSeconds: editing.record.latenessSeconds }, newValues: { status: changed.status, checkIn: changed.checkIn, latenessSeconds: changed.latenessSeconds, reason: changed.reason } });
+-    setEditing(null); setRemove(false); toast('تم تحديث سجل الحضور التجريبي وتسجيل سبب التعديل.');
++    setEditing(null); setRemove(false); toast('تم تحديث سجل الحضور التجريبي.');
+   }
+ 
+   const resetFilters = () => { setStatus(''); setDepartment(''); setEmployeeFilter(''); setSearch(''); setLateOnly(false); setPage(1); };
+@@ -92,18 +91,18 @@ export function AttendanceDayDetail({ dayId }: { dayId: string }) {
+         <div className="detail-grid"><div className="detail-item"><span className="muted">الحالة الحالية</span><Badge tone={statusTone(editing.record.status)}>{statusLabel(editing.record.status)}</Badge></div><div className="detail-item"><span className="muted">بدء الدوام</span><b dir="ltr">{time(editing.day.startTime)}</b></div></div>
+         {editing.record.reason && <div className="notice">سبب آخر تعديل: {editing.record.reason}</div>}
+         {locked ? <div className="notice notice-warning">هذا السجل محمي ضمن الشهر المؤرشف. لا يمكن تعديله قبل إعادة فتح الشهر.</div> : <>
+-          {editing.day.state === 'CLOSED' && <div className="notice notice-warning">هذا اليوم مغلق. سيُسجل هذا التعديل التاريخي وسببه في سجل العمليات.</div>}
++          {editing.day.state === 'CLOSED' && <div className="notice notice-warning">هذا اليوم مغلق. سيُسجل التعديل التاريخي في سجل العمليات، ويمكنك إضافة ملاحظة اختيارية.</div>}
+           <label className={styles.checkChoice}><input type="checkbox" checked={editStatus === 'EXCUSED' || editStatus === 'UNEXCUSED'} onChange={event => setEditStatus(event.target.checked ? 'EXCUSED' : 'UNRESOLVED')} />غائب</label>
+           {editStatus !== 'EXCUSED' && editStatus !== 'UNEXCUSED' && <Field label="الحالة الجديدة"><Select value={editStatus} onChange={event => setEditStatus(event.target.value as AttendanceStatus)}><option value="PRESENT">حاضر</option><option value="UNRESOLVED">غير محسوم</option><option value="EXEMPT">مستثنى / لا يوجد دوام</option></Select></Field>}
+           {(editStatus === 'EXCUSED' || editStatus === 'UNEXCUSED') && <fieldset className={styles.fieldset}><legend>نوع الغياب</legend><div className={styles.departmentChoices}><label className={styles.checkChoice}><input type="radio" name="absence-type" checked={editStatus === 'EXCUSED'} onChange={() => setEditStatus('EXCUSED')} />غياب بعذر</label><label className={styles.checkChoice}><input type="radio" name="absence-type" checked={editStatus === 'UNEXCUSED'} onChange={() => setEditStatus('UNEXCUSED')} />غياب بدون عذر</label></div></fieldset>}
+           {editStatus === 'PRESENT' && <Field label="وقت الحضور" required hint="توقيت بغداد. يُعاد احتساب التأخير بالثواني دون خصم تلقائي."><Input type="time" step="1" required value={checkIn} onChange={event => setCheckIn(event.target.value)} /></Field>}
+-          <Field label="سبب التعديل" required><Textarea required value={reason} onChange={event => setReason(event.target.value)} placeholder="مثال: تصحيح وقت الدخول بعد المراجعة" /></Field>
++          <Field label="ملاحظة / سبب" hint="اختياري"><Textarea value={reason} onChange={event => setReason(event.target.value)} placeholder="يمكن إضافة ملاحظة توضيحية (اختياري)" /></Field>
+           {monthRecord?.state === 'REOPENED' && <div className="notice notice-warning">الحفظ يعدّل سجل الحضور فقط. تطبيق التعديل على الرواتب والتقارير يتطلب إعادة الاحتساب الصريحة من صفحة الرواتب بالقواعد المؤرشفة.</div>}
+           {error && <p role="alert" className="text-danger">{error}</p>}<div className="form-actions"><Button type="submit">حفظ التعديل</Button><Button variant="secondary" onClick={() => setEditing(null)}>إلغاء</Button></div>
+-          {editing.record.status === 'PRESENT' && <Button variant="danger" onClick={() => { if (!reason.trim()) { setError('اكتب سبب إزالة الحضور أولاً.'); return; } setRemove(true); }}>إزالة تسجيل الحضور</Button>}
++          {editing.record.status === 'PRESENT' && <Button variant="danger" onClick={() => setRemove(true)}>إزالة تسجيل الحضور</Button>}
+         </>}
+       </form>}
+     </Dialog>
+-    <ConfirmDialog open={remove} onClose={() => setRemove(false)} onConfirm={() => save('UNRESOLVED')} title="إزالة تسجيل الحضور؟" description="سيُحذف وقت الحضور وتعود الحالة إلى غير محسوم. يتغير عدد أيام الحضور في الراتب ويُحفظ سبب الإزالة في سجل العمليات." confirmLabel="إزالة الحضور" danger />
++    <ConfirmDialog open={remove} onClose={() => setRemove(false)} onConfirm={() => save('UNRESOLVED')} title="إزالة تسجيل الحضور؟" description="سيُحذف وقت الحضور وتعود الحالة إلى غير محسوم. يتغير سجل الحضور ويُحفظ التعديل في سجل العمليات." confirmLabel="إزالة الحضور" danger />
+   </div>;
+ }
+diff --git a/src/components/finance/payroll-breakdown.tsx b/src/components/finance/payroll-breakdown.tsx
+index 29f43bf..30b7472 100644
+--- a/src/components/finance/payroll-breakdown.tsx
++++ b/src/components/finance/payroll-breakdown.tsx
+@@ -32,7 +32,7 @@ export function PayrollBreakdown({ result, data, details = true }: { result: Pay
+     {result.unresolvedDays > 0 && <div className="notice notice-warning"><CircleAlert size={17} /> توجد {result.unresolvedDays} حالة حضور غير محسومة. الراتب تقديري لحين مراجعتها.</div>}
+     <div className="grid-2">
+       <Card title="تفاصيل الاحتساب"><div className={styles.breakdown}>{items.map(([label, amount]) => <div className={styles.breakdownRow} key={label}><span>{label}</span><strong className={`amount ${amount < 0 ? styles.amountNegative : ''}`}>{amount > 0 && label === 'المكافآت' ? '+' : ''}{money(amount)}</strong></div>)}</div></Card>
+-      <Card title="الحضور وقواعد الراتب"><div className={styles.compactMetrics}><div><span>أيام الحضور</span><strong>{result.attendanceDays}</strong></div><div><span>أيام الاستثناء</span><strong>{result.exemptDays}</strong></div><div><span>مرات التأخير</span><strong>{result.lateDays}</strong></div></div><div className={styles.breakdown}><div className={styles.breakdownRow}><span>قيمة اليومية</span><span className="amount">{money(result.dailyRate)}</span></div><div className={styles.breakdownRow}><span>خصم الغياب بدون عذر / يوم</span><span className="amount">{money(result.salaryConfig.unexcusedRate)}</span></div><div className={styles.breakdownRow}><span>إجمالي التأخير</span><span>{duration(result.latenessSeconds)}</span></div></div><p className={styles.small}>التأخير للمراجعة فقط ولا يخصم تلقائياً من الراتب.</p><details className={styles.salaryRules}><summary>عرض قواعد الراتب المستخدمة</summary>{result.salaryMode === 'FIXED' ? <p>الراتب القطعي الكامل: <strong className="amount">{money(result.salaryConfig.fixedSalary)}</strong></p> : <div className={styles.breakdown}>{result.salaryConfig.tiers.map(tier => <div className={styles.breakdownRow} key={tier.id}><span>{tier.fromDays}–{tier.toDays} يوم</span><span>{tier.type === 'PER_DAY' ? 'الحضور × اليومية' : money(tier.amount)}</span></div>)}<div className={styles.breakdownRow}><span>الأيام الإضافية من اليوم {result.salaryConfig.extraDaysStart}</span><span className="amount">+{money(result.dailyRate)} / يوم</span></div><div className={styles.breakdownRow}><span>الحد الأعلى للأساسي</span><strong className="amount">{money(result.salaryConfig.maximum)}</strong></div></div>}</details>{result.partialMonth && result.salaryMode === 'FIXED' && <p className={styles.small}>شهر مباشرة أو انتهاء خدمة جزئي: الحضور × اليومية، بحد أقصى الراتب القطعي.</p>}</Card>
++      <Card title="الحضور وقوانين القسم"><div className={styles.compactMetrics}><div><span>الأيام المطلوبة</span><strong>{result.requiredDays}</strong></div><div><span>أيام الحضور</span><strong>{result.attendanceDays}</strong></div><div><span>أيام الاستثناء</span><strong>{result.exemptDays}</strong></div></div><div className={styles.breakdown}><div className={styles.breakdownRow}><span>قيمة اليومية</span><span className="amount">{money(result.dailyRate)}</span></div><div className={styles.breakdownRow}><span>خصم الغياب بدون عذر / يوم</span><span className="amount">{money(result.salaryConfig.unexcusedRate)}</span></div><div className={styles.breakdownRow}><span>مرات التأخير</span><span>{result.lateDays}</span></div><div className={styles.breakdownRow}><span>إجمالي التأخير</span><span>{duration(result.latenessSeconds)}</span></div></div><p className={styles.small}>التأخير للمراجعة فقط ولا يخصم تلقائياً من الراتب.</p><details className={styles.salaryRules}><summary>عرض قوانين القسم المستخدمة</summary>{result.salaryMode === 'FIXED' ? <p>الراتب القطعي الكامل: <strong className="amount">{money(result.salaryConfig.fixedSalary)}</strong></p> : <div className={styles.breakdown}>{result.salaryConfig.tiers.map(tier => <div className={styles.breakdownRow} key={tier.id}><span>{tier.fromDays}–{tier.toDays} يوم</span><span>{tier.type === 'PER_DAY' ? 'الأيام المطلوبة × اليومية' : money(tier.amount)}</span></div>)}<div className={styles.breakdownRow}><span>الأيام المطلوبة الإضافية من اليوم {result.salaryConfig.extraDaysStart}</span><span className="amount">+{money(result.dailyRate)} / يوم</span></div><div className={styles.breakdownRow}><span>الحد الأعلى للأساسي</span><strong className="amount">{money(result.salaryConfig.maximum)}</strong></div></div>}</details>{result.partialMonth && result.salaryMode === 'FIXED' && <p className={styles.small}>شهر مباشرة أو انتهاء خدمة جزئي: الأيام المطلوبة × اليومية، بحد أقصى الراتب القطعي.</p>}</Card>
+     </div>
+     {details && <div className="grid-2"><Card title="الخصومات وأسبابها">{deductions.length ? deductions.map(item => <div key={item.id} className={styles.record}><div className={styles.recordHead}><Badge tone="danger">{item.type === 'أخرى' ? item.customType : item.type}</Badge><strong className="amount text-danger">−{money(item.amount)}</strong></div><p>{item.reason}</p><small>{date(item.date)}</small></div>) : <EmptyState title="لا توجد خصومات لهذا الشهر" />}</Card><Card title="المكافآت وأسبابها">{bonuses.length ? bonuses.map(item => <div key={item.id} className={styles.record}><div className={styles.recordHead}><span>مكافأة</span><strong className="amount">+{money(item.amount)}</strong></div><p>{item.reason}</p><small>{date(item.date)}</small></div>) : <EmptyState title="لا توجد مكافآت لهذا الشهر" />}</Card></div>}
+     <Card title="سجل الصرف" description="يبقى الراتب وقت الصرف والمبلغ المصروف محفوظين مع كل عملية.">{payments.length ? payments.map(item => <div key={item.id} className={styles.record}><div className={styles.recordHead}><span className="inline"><CircleCheck size={17} /> {date(item.date)}</span><strong className="amount">{money(item.amount)}</strong></div><small>الراتب وقت الصرف: {money(item.salaryAtPayment)} · بواسطة: {item.paidBy}</small></div>) : <EmptyState title="لم يُصرف راتب هذا الشهر بعد" />}</Card>
+diff --git a/src/components/finance/reports-page.tsx b/src/components/finance/reports-page.tsx
+index 06739c0..ef195c9 100644
+--- a/src/components/finance/reports-page.tsx
++++ b/src/components/finance/reports-page.tsx
+@@ -34,7 +34,7 @@ const dateColumn = (key: string, label: string): ReportColumn => ({ key, label,
+ const nativeDate = (value: string) => new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
+ 
+ function payrollSection(results: PayrollResult[]): ReportSection {
+-  return { title: 'كشف الرواتب', columns: [textColumn('code', 'رقم الموظف'), textColumn('name', 'الموظف'), textColumn('department', 'القسم'), textColumn('mode', 'نوع الراتب'), numberColumn('attendance', 'حضور'), numberColumn('excused', 'بعذر'), numberColumn('unexcused', 'بدون عذر'), moneyColumn('base', 'الأساسي'), moneyColumn('absence', 'خصم الغياب'), moneyColumn('deductions', 'خصومات أخرى'), moneyColumn('bonuses', 'المكافآت'), moneyColumn('final', 'الصافي'), textColumn('payment', 'الصرف')], rows: results.map(item => ({ code: item.employeeCode, name: item.employeeName, department: item.departmentName, mode: item.salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي', attendance: item.attendanceDays, excused: item.excusedDays, unexcused: item.unexcusedDays, base: item.baseSalary, absence: item.excusedDeduction + item.unexcusedDeduction, deductions: item.otherDeductions, bonuses: item.bonuses, final: item.finalSalary, payment: paymentLabels[item.paymentStatus] })) };
++  return { title: 'كشف الرواتب', columns: [textColumn('code', 'رقم الموظف'), textColumn('name', 'الموظف'), textColumn('department', 'القسم'), textColumn('mode', 'نوع الراتب'), numberColumn('required', 'الأيام المطلوبة'), numberColumn('attendance', 'حضور'), numberColumn('excused', 'بعذر'), numberColumn('unexcused', 'بدون عذر'), moneyColumn('base', 'الأساسي'), moneyColumn('absence', 'خصم الغياب'), moneyColumn('deductions', 'خصومات أخرى'), moneyColumn('bonuses', 'المكافآت'), moneyColumn('final', 'الصافي'), textColumn('payment', 'الصرف')], rows: results.map(item => ({ code: item.employeeCode, name: item.employeeName, department: item.departmentName, mode: item.salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي', required: item.requiredDays, attendance: item.attendanceDays, excused: item.excusedDays, unexcused: item.unexcusedDays, base: item.baseSalary, absence: item.excusedDeduction + item.unexcusedDeduction, deductions: item.otherDeductions, bonuses: item.bonuses, final: item.finalSalary, payment: paymentLabels[item.paymentStatus] })) };
+ }
+ 
+ function payslipSections(result: PayrollResult, data: DemoData): ReportSection[] {
+@@ -100,7 +100,7 @@ export function ReportsPage() {
+     <div className="notice">لحفظ PDF: افتح «طباعة / حفظ PDF» ثم اختر «حفظ كملف PDF». التقرير مهيأ للطباعة على A4، وجميع بيانات هذه النسخة تجريبية.</div>
+     <article className={styles.report} aria-label="معاينة التقرير"><header className={styles.reportHeader}><div><Image className={styles.reportLogo} src="/brand/logo.svg" width={175} height={51} alt="CenterPro" unoptimized priority /><h2>{report.title}</h2><div className="muted">{report.subtitle}</div></div><div className="stack"><strong>{monthLabel(month)}</strong><span className={styles.reportsPreviewOnly}>بيانات تجريبية للمعاينة — غير معتمدة مالياً</span><Badge tone={data.months.find(item => item.month === month)?.state === 'ARCHIVED' ? 'success' : 'neutral'}>{data.months.find(item => item.month === month)?.state === 'ARCHIVED' ? 'نسخة أرشيفية ثابتة' : 'نسخة للمراجعة'}</Badge></div></header>
+     {dateRangeAvailable && (from || to) && <p className={styles.small}>الفترة: {from ? date(from) : 'بداية الشهر'} — {to ? date(to) : 'نهاية الشهر'}</p>}
+-    {personReport && results[0] && <div className={styles.compactMetrics}><div><span>أيام الحضور</span><strong>{results[0].attendanceDays}</strong></div><div><span>نوع الراتب</span><strong style={{ fontFamily: 'inherit', fontSize: 14 }}>{results[0].salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</strong></div><div><span>حالة الصرف</span><strong style={{ fontFamily: 'inherit', fontSize: 14 }}>{paymentLabels[results[0].paymentStatus]}</strong></div></div>}
++    {personReport && results[0] && <div className={styles.compactMetrics}><div><span>الأيام المطلوبة</span><strong>{results[0].requiredDays}</strong></div><div><span>أيام الحضور</span><strong>{results[0].attendanceDays}</strong></div><div><span>نوع الراتب</span><strong style={{ fontFamily: 'inherit', fontSize: 14 }}>{results[0].salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</strong></div><div><span>حالة الصرف</span><strong style={{ fontFamily: 'inherit', fontSize: 14 }}>{paymentLabels[results[0].paymentStatus]}</strong></div></div>}
+     {!hasRows ? <EmptyState title={!data.employees.length ? "لا توجد بيانات للتقارير حتى الآن." : "لا توجد بيانات لهذا التقرير"} description={!data.employees.length ? "أضف أقسام المركز وفريقك للبدء. ستصبح كشوف الرواتب والحضور والتقارير متاحة بعد تسجيل بياناتها." : "غيّر الفترة أو الفلاتر لإظهار النتائج."} action={!data.employees.length ? <Link className="button-link" href={data.departments.length ? "/employees?add=1" : "/departments"}>{data.departments.length ? "إضافة أول موظف" : "إضافة أول قسم"}</Link> : undefined} /> : report.sections.map(section => <section key={section.title} className={styles.reportSection}><h3 style={{ fontSize: 14 }}>{section.title}</h3>{section.rows.length ? <div className={styles.reportScroll}><table className={styles.reportTable}><thead><tr>{section.columns.map(column => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>{section.rows.map((row, index) => <tr key={index}>{section.columns.map(column => <td className={column.type === 'money' || column.type === 'number' ? 'amount' : ''} key={column.key}>{column.type === 'money' || column.type === 'number' ? <bdi dir="ltr">{displayCell(row[column.key], column)}</bdi> : displayCell(row[column.key], column)}</td>)}</tr>)}</tbody></table></div> : <p className={styles.small}>لا توجد سجلات في هذا القسم.</p>}</section>)}
+     {type === 'payroll' && hasRows && <div className={`${styles.breakdownRow} ${styles.reportTotal}`}><strong>إجمالي صافي الرواتب</strong><strong className="amount"><bdi dir="ltr">{money(results.reduce((sum, item) => sum + item.finalSalary, 0))}</bdi></strong></div>}
+     <footer className={styles.reportFooter}><span>CenterPro · {data.settings.centerName}</span><span>بيانات محاكاة لغرض مراجعة الواجهات فقط</span></footer></article>
+diff --git a/src/components/people/department-form.tsx b/src/components/people/department-form.tsx
+index 5880526..9e92fb8 100644
+--- a/src/components/people/department-form.tsx
++++ b/src/components/people/department-form.tsx
+@@ -51,13 +51,13 @@ export function DepartmentForm({ department, onClose }: { department?: Departmen
+         <hr className={styles.sectionRule} />
+         <div className={styles.sectionTitle}><h3 className="inline"><SlidersHorizontal size={17} />إعدادات الراتب</h3><span className={styles.mutedNote}>المبالغ بالدينار العراقي</span></div>
+         <div className="form-grid"><Field label="قيمة اليومية" required hint="تستخدم لخصم الغياب بعذر والأيام الإضافية."><Input type="number" min={0} step={1000} value={salary.dailyRate} onChange={event => change('dailyRate', Number(event.target.value))} /></Field><Field label="خصم الغياب بدون عذر" required hint="المبلغ الذي يخصم عن كل يوم غياب بدون عذر."><Input type="number" min={0} step={1000} value={salary.unexcusedRate} onChange={event => change('unexcusedRate', Number(event.target.value))} /></Field>{salary.mode === 'FIXED' ? <Field label="الراتب القطعي" required hint="لا يزيد الأساسي بزيادة الحضور في الشهر الكامل."><Input type="number" min={0} step={1000} value={salary.fixedSalary} onChange={event => change('fixedSalary', Number(event.target.value))} /></Field> : <><Field label="الحد الأعلى للراتب" required><Input type="number" min={0} step={1000} value={salary.maximum} onChange={event => change('maximum', Number(event.target.value))} /></Field><Field label="تبدأ الأيام الإضافية من اليوم" required hint="رقم أول يوم حضور يحتسب بعد نهاية القوانين."><Input type="number" min={1} step={1} value={salary.extraDaysStart} onChange={event => change('extraDaysStart', Number(event.target.value))} /></Field></>}</div>
+-        {salary.mode === 'TIERED' && <><div className={styles.sectionTitle}><h3>قوانين القسم</h3><Button variant="secondary" type="button" onClick={addTier}><Plus size={15} />إضافة قانون</Button></div><p className={styles.mutedNote}>تعتمد القوانين على أيام الحضور فقط. رتبها من 0 تصاعدياً؛ ثم تضاف اليومية لكل يوم إضافي حتى الحد الأعلى.</p>{salary.tiers.map((tier, index) => <div className={styles.tier} key={tier.id}><div className={styles.tierTitle}><span>القانون {index + 1}</span><Button variant="ghost" type="button" aria-label={`حذف القانون ${index + 1}`} onClick={() => change('tiers', salary.tiers.filter(item => item.id !== tier.id))}><Trash2 size={16} /></Button></div><div className={styles.tierFields}><Field label="من يوم"><Input type="number" min={0} step={1} value={tier.fromDays} onChange={event => updateTier(tier.id, 'fromDays', Number(event.target.value))} /></Field><Field label="إلى يوم"><Input type="number" min={0} step={1} value={tier.toDays} onChange={event => updateTier(tier.id, 'toDays', Number(event.target.value))} /></Field><Field label="طريقة الحساب"><Select value={tier.type} onChange={event => updateTier(tier.id, 'type', event.target.value as SalaryTier['type'])}><option value="PER_DAY">حسب اليومية</option><option value="FIXED">مبلغ ثابت</option></Select></Field><Field label={tier.type === 'FIXED' ? 'المبلغ الثابت' : 'طريقة الحساب'}>{tier.type === 'FIXED' ? <Input type="number" min={0} step={1000} value={tier.amount} onChange={event => updateTier(tier.id, 'amount', Number(event.target.value))} /> : <Input value="الحضور × اليومية" readOnly />}</Field></div></div>)}</>}
+-        {salary.mode === 'FIXED' && <p className={styles.mutedNote}>الشهر الأول أو الأخير غير المكتمل: أيام الحضور × قيمة اليومية، ضمن سقف الراتب القطعي. تطبق بعدها الخصومات والمكافآت.</p>}
++        {salary.mode === 'TIERED' && <><div className={styles.sectionTitle}><h3>قوانين القسم</h3><Button variant="secondary" type="button" onClick={addTier}><Plus size={15} />إضافة قانون</Button></div><p className={styles.mutedNote}>تعتمد قوانين القسم على عدد الأيام المطلوبة من الموظف. رتبها من 0 تصاعدياً؛ ثم تضاف اليومية لكل يوم مطلوب إضافي حتى الحد الأعلى.</p>{salary.tiers.map((tier, index) => <div className={styles.tier} key={tier.id}><div className={styles.tierTitle}><span>القانون {index + 1}</span><Button variant="ghost" type="button" aria-label={`حذف القانون ${index + 1}`} onClick={() => change('tiers', salary.tiers.filter(item => item.id !== tier.id))}><Trash2 size={16} /></Button></div><div className={styles.tierFields}><Field label="من يوم"><Input type="number" min={0} step={1} value={tier.fromDays} onChange={event => updateTier(tier.id, 'fromDays', Number(event.target.value))} /></Field><Field label="إلى يوم"><Input type="number" min={0} step={1} value={tier.toDays} onChange={event => updateTier(tier.id, 'toDays', Number(event.target.value))} /></Field><Field label="طريقة الحساب"><Select value={tier.type} onChange={event => updateTier(tier.id, 'type', event.target.value as SalaryTier['type'])}><option value="PER_DAY">حسب اليومية</option><option value="FIXED">مبلغ ثابت</option></Select></Field><Field label={tier.type === 'FIXED' ? 'المبلغ الثابت' : 'طريقة الحساب'}>{tier.type === 'FIXED' ? <Input type="number" min={0} step={1000} value={tier.amount} onChange={event => updateTier(tier.id, 'amount', Number(event.target.value))} /> : <Input value="الأيام المطلوبة × اليومية" readOnly />}</Field></div></div>)}</>}
++        {salary.mode === 'FIXED' && <p className={styles.mutedNote}>الشهر الأول أو الأخير غير المكتمل: الأيام المطلوبة × قيمة اليومية، ضمن سقف الراتب القطعي. تطبق بعدها خصومات الغياب وبقية الخصومات والمكافآت.</p>}
+         {department && <div className="notice notice-warning"><AlertCircle size={18} /><span>سيتم تطبيق تعديل إعدادات الراتب على الشهر المفتوح حالياً وإعادة احتساب الرواتب. الأشهر المؤرشفة تبقى ثابتة.</span></div>}
+         {error && <p className={styles.error} role="alert">{error}</p>}
+         <div className="form-actions"><Button type="submit" disabled={session?.role !== 'SUPER_ADMIN'}>{department ? 'حفظ الإعدادات' : 'إضافة القسم'}</Button><Button type="button" variant="secondary" onClick={onClose}>إلغاء</Button></div>
+       </form>
+     </Dialog>
+-    <ConfirmDialog open={confirmation} onClose={() => setConfirmation(false)} onConfirm={save} title="تأكيد تعديل قواعد الراتب" description="سيتم تطبيق هذا التعديل على الشهر المفتوح حالياً وإعادة احتساب رواتب موظفي القسم. إذا تغير راتب مصروف ستظهر حالته «يحتاج مراجعة». تبقى النسخ المؤرشفة محفوظة." confirmLabel="حفظ وإعادة الاحتساب" />
++    <ConfirmDialog open={confirmation} onClose={() => setConfirmation(false)} onConfirm={save} title="تأكيد تعديل قوانين القسم" description="سيتم تطبيق هذا التعديل على الشهر المفتوح حالياً وإعادة احتساب رواتب موظفي القسم. إذا تغير راتب مصروف ستظهر حالته «يحتاج مراجعة». تبقى النسخ المؤرشفة محفوظة." confirmLabel="حفظ وإعادة الاحتساب" />
+   </>;
+ }
+diff --git a/src/components/people/employee-form.tsx b/src/components/people/employee-form.tsx
+index feb3260..d92a81c 100644
+--- a/src/components/people/employee-form.tsx
++++ b/src/components/people/employee-form.tsx
+@@ -10,9 +10,16 @@ import styles from './people.module.css';
+ 
+ const steps = ['المعلومات الشخصية', 'معلومات الاتصال', 'معلومات العمل', 'حساب الدخول', 'إعدادات الراتب'];
+ 
+-type DraftEmployee = Omit<Employee, 'id' | 'code' | 'createdAt' | 'updatedAt'>;
++type DraftEmployee = Omit<Employee, 'id' | 'code' | 'createdAt' | 'updatedAt' | 'endDate'>;
++const phoneSuffix = (value: string) => value.replace(/\D/g, '').replace(/^07/, '').slice(0, 9);
++const fullPhone = (value: string) => `07${phoneSuffix(value)}`;
++const telegramUsername = (value: string) => value.replace(/^@+/, '').replace(/[^A-Za-z0-9_]/g, '');
+ function initialEmployee(employee?: Employee): DraftEmployee {
+-  return employee ? { ...employee } : { name: '', address: '', phone: '', guardianPhone: '', departmentId: '', startDate: DEMO_TODAY, active: true, gender: 'MALE', birthDate: '', notes: '', qualification: '', email: '', telegram: '', username: '', role: 'EMPLOYEE', fixedOverride: false, fixedSalary: 0, dailyRateOverride: null };
++  if (employee) {
++    const { id: _id, code: _code, createdAt: _createdAt, updatedAt: _updatedAt, endDate: _endDate, ...editable } = employee;
++    return { ...editable, telegram: telegramUsername(employee.telegram) };
++  }
++  return { name: '', address: '', phone: '07', guardianPhone: '07', departmentId: '', startDate: DEMO_TODAY, active: true, gender: 'MALE', birthDate: '', notes: '', qualification: '', telegram: '', username: '', role: 'EMPLOYEE', fixedOverride: false, fixedSalary: 0, dailyRateOverride: null };
+ }
+ 
+ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClose: () => void; employee?: Employee }) {
+@@ -31,10 +38,11 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
+   const validateStep = (current: number) => {
+     if (current === 0 && !draft.name.trim()) return 'اكتب الاسم الكامل للموظف.';
+     if (current === 0 && draft.birthDate && draft.birthDate > DEMO_TODAY) return 'تاريخ الميلاد يجب أن يكون في الماضي.';
+-    if (current === 1 && draft.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) return 'تحقق من كتابة البريد الإلكتروني.';
++    if (current === 1 && !/^07\d{9}$/.test(draft.phone)) return 'رقم الهاتف مطلوب ويجب أن يتكون من 11 رقماً ويبدأ بـ 07.';
++    if (current === 1 && !/^07\d{9}$/.test(draft.guardianPhone)) return 'رقم هاتف ولي الأمر مطلوب ويجب أن يتكون من 11 رقماً ويبدأ بـ 07.';
++    if (current === 1 && draft.telegram && !/^[A-Za-z0-9_]+$/.test(draft.telegram)) return 'معرف تيليغرام يقبل الأحرف الإنجليزية والأرقام والشرطة السفلية فقط.';
+     if (current === 2 && !data.departments.some(item => item.id === draft.departmentId && (item.active || item.id === employee?.departmentId))) return 'اختر قسماً نشطاً للموظف.';
+     if (current === 2 && !draft.startDate) return 'حدد تاريخ مباشرة الموظف.';
+-    if (current === 2 && draft.endDate && draft.endDate < draft.startDate) return 'تاريخ انتهاء العمل لا يمكن أن يسبق تاريخ المباشرة.';
+     if (current === 3 && !draft.username.trim()) return 'اكتب اسم المستخدم الخاص بحساب الموظف.';
+     if (current === 3 && /\s/.test(draft.username.trim())) return 'اسم المستخدم لا يحتوي على مسافات.';
+     if (current === 3 && data.employees.some(item => item.id !== employee?.id && item.username.toLocaleLowerCase() === draft.username.trim().toLocaleLowerCase())) return 'اسم المستخدم مستخدم مسبقاً. اختر اسماً آخر.';
+@@ -50,7 +58,8 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
+     const id = employee?.id ?? `employee-${crypto.randomUUID()}`;
+     const nextCode = Math.max(0, ...data.employees.map(item => Number(item.code.replace('CP-', '')) || 0)) + 1;
+     const updated: Employee = {
+-      ...draft, name: draft.name.trim(), username: draft.username.trim(), id,
++      ...draft, name: draft.name.trim(), phone: fullPhone(draft.phone), guardianPhone: fullPhone(draft.guardianPhone), telegram: telegramUsername(draft.telegram), username: draft.username.trim(), id,
++      endDate: employee?.endDate,
+       code: employee?.code ?? `CP-${String(nextCode).padStart(4, '0')}`,
+       createdAt: employee?.createdAt ?? stamp, updatedAt: stamp,
+       role: isSuper ? draft.role : employee?.role ?? 'EMPLOYEE',
+@@ -101,10 +110,10 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
+           <div className={styles.photoUpload}><Avatar name={draft.name || 'موظف'} src={draft.photo} size={64} /><div className="stack"><label className="inline"><ImagePlus size={16} /> صورة الموظف<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="صورة الموظف" onChange={event => uploadPhoto(event.target.files?.[0])} /></label><span className={styles.mutedNote}>صورة اختيارية · JPG / PNG / WebP · حتى 1 MB</span>{draft.photo && <Button type="button" variant="ghost" onClick={() => update('photo', undefined)}>إزالة الصورة</Button>}</div></div>
+           <div className="form-grid"><Field label="الاسم الكامل" required><Input value={draft.name} onChange={event => update('name', event.target.value)} autoFocus placeholder="اسم الموظف الكامل" autoComplete="name" /></Field><Field label="الجنس"><Select value={draft.gender} onChange={event => update('gender', event.target.value as Employee['gender'])}><option value="MALE">ذكر</option><option value="FEMALE">أنثى</option></Select></Field><Field label="تاريخ الميلاد"><Input type="date" value={draft.birthDate} max={DEMO_TODAY} onChange={event => update('birthDate', event.target.value)} /></Field><Field label="التحصيل الدراسي"><Input value={draft.qualification} onChange={event => update('qualification', event.target.value)} placeholder="مثال: بكالوريوس علوم" /></Field></div>
+         </>}
+-        {step === 1 && <div className="form-grid"><Field label="رقم الهاتف"><Input dir="ltr" type="tel" value={draft.phone} onChange={event => update('phone', event.target.value)} autoComplete="tel" placeholder="07xxxxxxxxx" /></Field><Field label="رقم هاتف ولي الأمر"><Input dir="ltr" type="tel" value={draft.guardianPhone} onChange={event => update('guardianPhone', event.target.value)} placeholder="07xxxxxxxxx" /></Field><Field label="البريد الإلكتروني"><Input dir="ltr" type="email" value={draft.email} onChange={event => update('email', event.target.value)} autoComplete="email" placeholder="name@example.com" /></Field><Field label="معرف تيليغرام"><Input dir="ltr" value={draft.telegram} onChange={event => update('telegram', event.target.value)} placeholder="@username" /></Field><div className="field-span-2"><Field label="العنوان / محل السكن"><Input value={draft.address} onChange={event => update('address', event.target.value)} placeholder="المحافظة، المنطقة" autoComplete="street-address" /></Field></div></div>}
+-        {step === 2 && <div className="form-grid"><Field label="القسم" required><Select value={draft.departmentId} onChange={event => update('departmentId', event.target.value)}><option value="">اختر القسم</option>{data.departments.filter(item => item.active || item.id === employee?.departmentId).map(item => <option key={item.id} value={item.id}>{item.name}{!item.active ? ' (غير نشط)' : ''}</option>)}</Select></Field><Field label="تاريخ المباشرة" required><Input type="date" value={draft.startDate} onChange={event => update('startDate', event.target.value)} /></Field><Field label="تاريخ انتهاء العمل" hint="اختياري؛ يساعد في احتساب الشهر الأخير."><Input type="date" value={draft.endDate ?? ''} min={draft.startDate} onChange={event => update('endDate', event.target.value || undefined)} /></Field><Field label="الرقم الوظيفي"><Input value={employee?.code ?? 'يُنشأ تلقائياً عند الحفظ'} readOnly /></Field><div className="field-span-2"><Field label="ملاحظات"><Textarea value={draft.notes} onChange={event => update('notes', event.target.value)} rows={3} placeholder="ملاحظات إدارية عن الموظف" /></Field></div></div>}
++        {step === 1 && <div className="form-grid"><Field label="رقم الهاتف" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.phone)} onChange={event => update('phone', fullPhone(event.target.value))} autoComplete="tel" placeholder="xxxxxxxxx" /></div></Field><Field label="رقم هاتف ولي الأمر" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.guardianPhone)} onChange={event => update('guardianPhone', fullPhone(event.target.value))} placeholder="xxxxxxxxx" /></div></Field><Field label="معرف تيليغرام" hint="اكتب المعرف فقط من دون @."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>@</span><Input dir="ltr" value={draft.telegram} onChange={event => update('telegram', telegramUsername(event.target.value))} placeholder="username" /></div></Field><div className="field-span-2"><Field label="العنوان / محل السكن"><Input value={draft.address} onChange={event => update('address', event.target.value)} placeholder="المحافظة، المنطقة" autoComplete="street-address" /></Field></div></div>}
++        {step === 2 && <div className="form-grid"><Field label="القسم" required><Select value={draft.departmentId} onChange={event => update('departmentId', event.target.value)}><option value="">اختر القسم</option>{data.departments.filter(item => item.active || item.id === employee?.departmentId).map(item => <option key={item.id} value={item.id}>{item.name}{!item.active ? ' (غير نشط)' : ''}</option>)}</Select></Field><Field label="تاريخ المباشرة" required><Input type="date" value={draft.startDate} onChange={event => update('startDate', event.target.value)} /></Field><Field label="الرقم الوظيفي"><Input value={employee?.code ?? 'يُنشأ تلقائياً عند الحفظ'} readOnly /></Field><div className="field-span-2"><Field label="ملاحظات" hint="اختياري"><Textarea value={draft.notes} onChange={event => update('notes', event.target.value)} rows={3} placeholder="ملاحظات إدارية عن الموظف (اختياري)" /></Field></div></div>}
+         {step === 3 && <><div className="form-grid"><Field label="اسم المستخدم" required hint="فريد، وتسجيل الدخول لا يفرق بين الحروف الكبيرة والصغيرة."><Input dir="ltr" value={draft.username} onChange={event => update('username', event.target.value)} autoComplete="off" placeholder="AHMED21" /></Field><Field label="الصلاحية"><Select value={draft.role} disabled={!isSuper} onChange={event => update('role', event.target.value as Role)}><option value="EMPLOYEE">موظف</option>{isSuper && <><option value="ADMIN">مدير</option><option value="SUPER_ADMIN">مشرف عام</option></>}</Select></Field>{!employee && <div className="field-span-2"><Field label="كلمة المرور الأولية" required hint="هذه معاينة؛ لن تُحفظ كلمة المرور أو تُستخدم لتسجيل دخول حقيقي."><Input type="password" ref={passwordRef} autoComplete="new-password" onChange={event => { passwordProvided.current = Boolean(event.target.value); }} /></Field></div>}</div><div className="notice" style={{ marginTop: 20 }}><ShieldCheck size={18} /><span>{employee ? 'يمكن تغيير كلمة المرور من تبويب «حساب الدخول» داخل ملف الموظف.' : 'تتم إضافة الملف وحساب المعاينة معاً. يستطيع الموظف الاطلاع على بياناته فقط.'}</span></div></>}
+-        {step === 4 && <><div className={styles.salaryType}><span>نوع الراتب</span><Badge tone="brand">{draft.fixedOverride || data.departments.find(item => item.id === draft.departmentId)?.salary.mode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</Badge></div><div className="notice"><ShieldCheck size={18} /><span>{isSuper ? 'تخصيص الراتب متاح للمشرف العام. اترك اليومية فارغة لاستخدام قيمة القسم.' : 'إعدادات الراتب محمية؛ يتولى المشرف العام تعديلها.'}</span></div><label className={styles.checkLabel}><input type="checkbox" checked={draft.fixedOverride} disabled={!isSuper} onChange={event => update('fixedOverride', event.target.checked)} />هذا الموظف راتبه قطعي</label>{draft.fixedOverride ? <div className="form-grid"><Field label="الراتب القطعي (د.ع)" required><Input type="number" min={0} step={1000} value={draft.fixedSalary} disabled={!isSuper} onChange={event => update('fixedSalary', Number(event.target.value))} /></Field><Field label="قيمة اليومية الخاصة (د.ع)" hint="اختياري — تُستخدم يومية القسم عند تركه فارغاً."><Input type="number" min={0} step={1000} value={draft.dailyRateOverride ?? ''} disabled={!isSuper} placeholder="يومية القسم" onChange={event => update('dailyRateOverride', event.target.value === '' ? null : Number(event.target.value))} /></Field></div> : <p className={styles.mutedNote}>سيطبق نوع الراتب المعتمد لقسم {data.departments.find(item => item.id === draft.departmentId)?.name || 'الموظف'} تلقائياً.</p>}<p className={styles.mutedNote}>في أول أو آخر شهر غير مكتمل للراتب القطعي، يعتمد الأساسي على أيام الحضور × اليومية. ثم تطبق الخصومات والمكافآت.</p></>}
++        {step === 4 && <><div className={styles.salaryType}><span>نوع الراتب</span><Badge tone="brand">{draft.fixedOverride || data.departments.find(item => item.id === draft.departmentId)?.salary.mode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</Badge></div><div className="notice"><ShieldCheck size={18} /><span>{isSuper ? 'تخصيص الراتب متاح للمشرف العام. اترك اليومية فارغة لاستخدام قيمة القسم.' : 'إعدادات الراتب محمية؛ يتولى المشرف العام تعديلها.'}</span></div><label className={styles.checkLabel}><input type="checkbox" checked={draft.fixedOverride} disabled={!isSuper} onChange={event => update('fixedOverride', event.target.checked)} />هذا الموظف راتبه قطعي</label>{draft.fixedOverride ? <div className="form-grid"><Field label="الراتب القطعي (د.ع)" required><Input type="number" min={0} step={1000} value={draft.fixedSalary} disabled={!isSuper} onChange={event => update('fixedSalary', Number(event.target.value))} /></Field><Field label="قيمة اليومية الخاصة (د.ع)" hint="اختياري — تُستخدم يومية القسم عند تركه فارغاً."><Input type="number" min={0} step={1000} value={draft.dailyRateOverride ?? ''} disabled={!isSuper} placeholder="يومية القسم" onChange={event => update('dailyRateOverride', event.target.value === '' ? null : Number(event.target.value))} /></Field></div> : <p className={styles.mutedNote}>سيطبق نوع الراتب المعتمد لقسم {data.departments.find(item => item.id === draft.departmentId)?.name || 'الموظف'} تلقائياً.</p>}<p className={styles.mutedNote}>في أول أو آخر شهر غير مكتمل للراتب القطعي، يعتمد الأساسي على الأيام المطلوبة × اليومية. ثم تطبق الخصومات والمكافآت.</p></>}
+         {error && <p role="alert" className={styles.error}>{error}</p>}
+         <div className="form-actions"><Button type="submit" disabled={!canModify}>{step < steps.length - 1 ? <>التالي<ArrowLeft size={16} /></> : <><Check size={16} />{employee ? 'حفظ التعديلات' : 'إضافة الموظف'}</>}</Button><Button type="button" variant="secondary" onClick={() => { if (step) { setStep(step - 1); setError(''); } else onClose(); }}>{step ? <><ArrowRight size={16} />السابق</> : 'إلغاء'}</Button></div>
+       </form>
+diff --git a/src/components/people/people.module.css b/src/components/people/people.module.css
+index 886cc8a..1c5739b 100644
+--- a/src/components/people/people.module.css
++++ b/src/components/people/people.module.css
+@@ -58,3 +58,7 @@
+ @media (max-width: 700px) { .departmentGrid { grid-template-columns: 1fr; } .directoryTools { gap: 10px; } .directoryTools > :first-child { grid-column: 1 / -1; } .directoryTools > :last-child { grid-column: 1 / -1; } .profileDetails { gap: 22px 14px; } .profileHero { align-items: flex-start; } .profileName { font-size: 20px; } .heroActions { width: 100%; } .heroActions > * { flex: 1; } .tierFields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .formSteps { gap: 5px; } .step { flex: 1; padding: 8px 6px; font-size: 11px; min-width: 58px; } .stepNumber { display: block; margin: 0 0 4px; } .photoUpload { flex-direction: column; align-items: flex-start; } }
+ 
+ .salaryType { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 0 18px; margin-bottom: 18px; border-bottom: 1px solid #ece8eb; font-size: 13px; color: #6d6770; }
++
++.prefixedInput { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; direction: ltr; }
++.prefixedInput :global(.input) { border-start-start-radius: 0; border-end-start-radius: 0; min-width: 0; }
++.inputPrefix { display: grid; place-items: center; min-width: 48px; padding-inline: 12px; border: 1px solid #d9d5d8; border-inline-end: 0; border-start-start-radius: 9px; border-end-start-radius: 9px; background: #f7f6f7; color: #3f3b40; font-family: "Inter Variable", sans-serif; font-weight: 650; font-variant-numeric: tabular-nums; }
+diff --git a/src/lib/payroll.ts b/src/lib/payroll.ts
+index ba74302..358bbdf 100644
+--- a/src/lib/payroll.ts
++++ b/src/lib/payroll.ts
+@@ -20,14 +20,14 @@ export function validateSalaryConfig(config: SalaryConfig): void {
+     integer(tier.amount, 'مبلغ القانون');
+     if (tier.fromDays > tier.toDays) throw new Error('بداية القانون يجب ألا تتجاوز نهايته.');
+     if (tier.fromDays <= previousEnd) throw new Error('يجب ترتيب قوانين القسم دون تداخل.');
+-    if (tier.fromDays !== previousEnd + 1) throw new Error('يجب أن تغطي قوانين القسم جميع أعداد أيام الحضور بدءاً من 0 دون فجوات.');
++    if (tier.fromDays !== previousEnd + 1) throw new Error('يجب أن تغطي قوانين القسم جميع أعداد الأيام المطلوبة بدءاً من 0 دون فجوات.');
+     previousEnd = tier.toDays;
+   }
+   if (config.extraDaysStart <= previousEnd) throw new Error('الأيام الإضافية يجب أن تبدأ بعد نهاية آخر قانون.');
+ }
+ 
+ export function calculateTieredSalary(days: number, config: SalaryConfig): number {
+-  integer(days, 'أيام الحضور');
++  integer(days, 'الأيام المطلوبة');
+   validateSalaryConfig(config);
+   const tier = config.tiers.find((item) => days >= item.fromDays && days <= item.toDays);
+   if (tier) return Math.min(config.maximum, tier.type === 'PER_DAY' ? days * config.dailyRate : tier.amount);
+@@ -38,11 +38,11 @@ export function calculateTieredSalary(days: number, config: SalaryConfig): numbe
+     const extraDays = Math.max(0, days - config.extraDaysStart + 1);
+     return Math.min(config.maximum, base + extraDays * config.dailyRate);
+   }
+-  throw new Error('عدد أيام الحضور غير مغطى بقوانين القسم.');
++  throw new Error('عدد الأيام المطلوبة غير مغطى بقوانين القسم.');
+ }
+ 
+ export function calculateFixedSalary(days: number, rate: number, fixed: number, partial: boolean): number {
+-  integer(days, 'أيام الحضور');
++  integer(days, 'الأيام المطلوبة');
+   integer(rate, 'قيمة اليومية');
+   integer(fixed, 'الراتب القطعي');
+   return partial ? Math.min(days * rate, fixed) : fixed;
+@@ -99,13 +99,16 @@ export function calculateEmployeePayroll(data: DemoData, employeeId: string, mon
+   const expectedMissing = workdays.filter((item) => !recorded.has(item.id) && isExpected(employee, item)).length;
+   const count = (status: (typeof records)[number]['status']) => records.filter((item) => item.status === status).length;
+   const attendanceDays = count('PRESENT');
++  const excusedDays = count('EXCUSED');
++  const unexcusedDays = count('UNEXCUSED');
++  // Salary law selection is based on days the employee was required to work, not only days actually attended.
++  // Exempt / no-work days never count as required. Missing expected records remain required and unresolved.
++  const requiredDays = records.filter((item) => item.status !== 'EXEMPT').length + expectedMissing;
+   const partialMonth = isPartialEmploymentMonth(employee, month);
+   const employedInMonth = employee.startDate <= last && (!employee.endDate || employee.endDate >= first);
+   const baseSalary = !employedInMonth ? 0 : config.mode === 'FIXED'
+-    ? calculateFixedSalary(attendanceDays, config.dailyRate, config.fixedSalary, partialMonth)
+-    : calculateTieredSalary(attendanceDays, config);
+-  const excusedDays = count('EXCUSED');
+-  const unexcusedDays = count('UNEXCUSED');
++    ? calculateFixedSalary(requiredDays, config.dailyRate, config.fixedSalary, partialMonth)
++    : calculateTieredSalary(requiredDays, config);
+   const excusedDeduction = excusedDays * config.dailyRate;
+   const unexcusedDeduction = unexcusedDays * config.unexcusedRate;
+   const otherDeductions = data.deductions.filter((item) => item.employeeId === employeeId && item.date >= first && item.date <= last).reduce((sum, item) => sum + item.amount, 0);
+@@ -119,6 +122,7 @@ export function calculateEmployeePayroll(data: DemoData, employeeId: string, mon
+     month,
+     salaryMode: config.mode,
+     dailyRate: config.dailyRate,
++    requiredDays,
+     attendanceDays,
+     excusedDays,
+     unexcusedDays,
+diff --git a/src/lib/types.ts b/src/lib/types.ts
+index b9a4d54..3a86d84 100644
+--- a/src/lib/types.ts
++++ b/src/lib/types.ts
+@@ -4,12 +4,12 @@ export type SalaryMode = 'TIERED' | 'FIXED';
+ export interface SalaryTier { id: string; fromDays: number; toDays: number; type: 'PER_DAY' | 'FIXED'; amount: number }
+ export interface SalaryConfig { mode: SalaryMode; dailyRate: number; unexcusedRate: number; maximum: number; fixedSalary: number; extraDaysStart: number; tiers: SalaryTier[] }
+ export interface Department { id: string; name: string; active: boolean; description: string; salary: SalaryConfig }
+-export interface Employee { id: string; code: string; name: string; photo?: string; address: string; phone: string; guardianPhone: string; departmentId: string; startDate: string; endDate?: string; active: boolean; gender: 'MALE' | 'FEMALE'; birthDate: string; notes: string; qualification: string; email: string; telegram: string; username: string; role: Role; fixedOverride: boolean; fixedSalary: number; dailyRateOverride: number | null; createdAt: string; updatedAt: string }
++export interface Employee { id: string; code: string; name: string; photo?: string; address: string; phone: string; guardianPhone: string; departmentId: string; startDate: string; endDate?: string; active: boolean; gender: 'MALE' | 'FEMALE'; birthDate: string; notes: string; qualification: string; telegram: string; username: string; role: Role; fixedOverride: boolean; fixedSalary: number; dailyRateOverride: number | null; createdAt: string; updatedAt: string }
+ export interface Workday { id: string; date: string; startTime: string; departmentIds: string[]; overrides: Record<string, 'INCLUDE' | 'EXCLUDE'>; state: 'OPEN' | 'CLOSED'; createdBy?: string; createdAt?: string }
+ export interface AttendanceRecord { id: string; employeeId: string; workdayId: string; status: AttendanceStatus; checkIn: string | null; latenessSeconds: number; source: 'QR' | 'MANUAL' | null; reason: string; updatedAt: string }
+ export interface Deduction { id: string; employeeId: string; amount: number; date: string; type: 'اعتراض' | 'خصم إداري' | 'أخرى'; customType: string; reason: string; createdBy: string; createdAt: string }
+ export interface Bonus { id: string; employeeId: string; amount: number; date: string; reason: string; createdBy: string; createdAt: string }
+-export interface PayrollResult { employeeId: string; employeeName: string; employeeCode: string; departmentName: string; month: string; salaryMode: SalaryMode; dailyRate: number; attendanceDays: number; excusedDays: number; unexcusedDays: number; exemptDays: number; unresolvedDays: number; lateDays: number; latenessSeconds: number; baseSalary: number; excusedDeduction: number; unexcusedDeduction: number; otherDeductions: number; bonuses: number; finalSalary: number; partialMonth: boolean; paymentStatus: 'UNPAID' | 'PAID' | 'REVIEW'; paidAmount: number; difference: number; salaryConfig: SalaryConfig }
++export interface PayrollResult { employeeId: string; employeeName: string; employeeCode: string; departmentName: string; month: string; salaryMode: SalaryMode; dailyRate: number; requiredDays: number; attendanceDays: number; excusedDays: number; unexcusedDays: number; exemptDays: number; unresolvedDays: number; lateDays: number; latenessSeconds: number; baseSalary: number; excusedDeduction: number; unexcusedDeduction: number; otherDeductions: number; bonuses: number; finalSalary: number; partialMonth: boolean; paymentStatus: 'UNPAID' | 'PAID' | 'REVIEW'; paidAmount: number; difference: number; salaryConfig: SalaryConfig }
+ export interface PayrollMonth { id: string; month: string; state: 'OPEN' | 'ARCHIVED' | 'REOPENED'; archivedAt?: string; snapshots: Record<string, PayrollResult>; sourceSnapshot?: Pick<DemoData, 'attendance' | 'workdays' | 'deductions' | 'bonuses' | 'employees' | 'departments'> }
+ export interface Payment { id: string; employeeId: string; month: string; salaryAtPayment: number; amount: number; date: string; paidBy: string; createdAt: string }
+ export interface AuditEntry { id: string; actor: string; role: Role; action: string; entity: string; entityId: string; employeeId?: string; oldValues: Record<string, unknown>; newValues: Record<string, unknown>; timestamp: string; ip?: string; userAgent?: string }
+diff --git a/tests/domain/payroll.test.ts b/tests/domain/payroll.test.ts
+index 4b62bd3..8cb5e3d 100644
+--- a/tests/domain/payroll.test.ts
++++ b/tests/domain/payroll.test.ts
+@@ -51,10 +51,10 @@ describe('configurable tier payroll', () => {
+ });
+ 
+ describe('fixed salary', () => {
+-  it.each([0, 16, 24, 30, 31])('full-month %i attendance days stay at fixed 1,000,000', (days) => {
++  it.each([0, 16, 24, 30, 31])('full-month %i required days stay at fixed 1,000,000', (days) => {
+     expect(calculateFixedSalary(days, 25000, 1000000, false)).toBe(1000000);
+   });
+-  it('partial employment pays actual attendance times daily rate, capped at fixed', () => {
++  it('partial employment pays required days times daily rate, capped at fixed', () => {
+     expect(calculateFixedSalary(8, 25000, 1000000, true)).toBe(200000);
+     expect(calculateFixedSalary(30, 50000, 1000000, true)).toBe(1000000);
+   });
+@@ -69,14 +69,40 @@ describe('fixed salary', () => {
+ });
+ 
+ describe('employee calculations', () => {
+-  it('14 attendance days and 1 excused day produce 375,000 without increasing tier count', () => {
++  it('uses required days for the department law, then deducts excused absence separately', () => {
+     const result = getEmployeePayroll(createPopulatedTestData(), 'CP-0003', DEMO_MONTH);
++    expect(result.requiredDays).toBe(15);
+     expect(result.attendanceDays).toBe(14);
+     expect(result.excusedDays).toBe(1);
+     expect(result.baseSalary).toBe(400000);
+     expect(result.excusedDeduction).toBe(25000);
+     expect(result.finalSalary).toBe(375000);
+   });
++
++  it.each([
++    { required: 17, present: 15, excused: 2, base: 425000, final: 375000 },
++    { required: 7, present: 4, excused: 3, base: 200000, final: 125000 },
++    { required: 9, present: 8, excused: 1, base: 400000, final: 375000 },
++  ])('calculates $required required days with $present present and $excused excused correctly', ({ required, present, excused, base, final }) => {
++    const data = createPopulatedTestData();
++    const records = data.attendance
++      .filter((item) => item.employeeId === 'CP-0003' && item.workdayId.startsWith(`wd-${DEMO_MONTH}`))
++      .sort((a, b) => a.workdayId.localeCompare(b.workdayId));
++    records.forEach((record, index) => {
++      if (index < present) record.status = 'PRESENT';
++      else if (index < present + excused) record.status = 'EXCUSED';
++      else record.status = 'EXEMPT';
++      record.checkIn = record.status === 'PRESENT' ? record.checkIn ?? `${record.workdayId.slice(3)}T11:00:00.000Z` : null;
++      record.latenessSeconds = 0;
++    });
++    const result = getEmployeePayroll(data, 'CP-0003', DEMO_MONTH);
++    expect(result.requiredDays).toBe(required);
++    expect(result.attendanceDays).toBe(present);
++    expect(result.excusedDays).toBe(excused);
++    expect(result.baseSalary).toBe(base);
++    expect(result.excusedDeduction).toBe(excused * 25000);
++    expect(result.finalSalary).toBe(final);
++  });
+   it('keeps a negative salary visible', () => {
+     const result = getEmployeePayroll(createPopulatedTestData(), 'CP-0011', DEMO_MONTH);
+     expect(result.baseSalary).toBe(75000);
+@@ -88,6 +114,7 @@ describe('employee calculations', () => {
+     const result = getEmployeePayroll(data, 'CP-0009', DEMO_MONTH);
+     expect(result.salaryMode).toBe('FIXED');
+     expect(result.partialMonth).toBe(true);
++    expect(result.requiredDays).toBe(8);
+     expect(result.attendanceDays).toBe(8);
+     expect(result.baseSalary).toBe(200000);
+     const fullFixed = getEmployeePayroll(data, 'CP-0005', DEMO_MONTH);
+@@ -126,6 +153,7 @@ describe('employee calculations', () => {
+     const result = getEmployeePayroll(data, 'CP-0001', DEMO_MONTH);
+     expect(result.unresolvedDays).toBe(1);
+     expect(result.unexcusedDays).toBe(0);
++    expect(result.requiredDays).toBeGreaterThanOrEqual(result.attendanceDays + result.excusedDays + result.unexcusedDays);
+   });
+   it('keeps attendance of inactive historical employees', () => {
+     const result = getEmployeePayroll(createPopulatedTestData(), 'CP-0014', DEMO_MONTH);
+diff --git a/tests/e2e/attendance.spec.ts b/tests/e2e/attendance.spec.ts
+index 0f4b480..2036777 100644
+--- a/tests/e2e/attendance.spec.ts
++++ b/tests/e2e/attendance.spec.ts
+@@ -53,7 +53,7 @@ test.describe('Attendance preview workflows', () => {
+     for (const name of ['علي محمد حسن', 'حسين فاضل سالم']) {
+       const review = await reviewEmployee(page, name);
+       await review.getByLabel('الحالة الجديدة', { exact: true }).selectOption('PRESENT');
+-      await review.getByLabel('سبب التعديل', { exact: true }).fill('إثبات الحضور بعد مراجعة الإدارة');
++      await review.getByLabel('ملاحظة / سبب', { exact: true }).fill('إثبات الحضور بعد مراجعة الإدارة');
+       await review.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+       await expect(review).toBeHidden();
+     }
+@@ -95,19 +95,20 @@ test.describe('Attendance preview workflows', () => {
+     let dialog = await reviewEmployee(page, 'علي محمد حسن');
+     await dialog.getByLabel('الحالة الجديدة', { exact: true }).selectOption('PRESENT');
+     await dialog.getByLabel('وقت الحضور', { exact: false }).fill('14:00:01');
+-    await dialog.getByLabel('سبب التعديل', { exact: false }).fill('مراجعة وقت الدخول بالثواني');
++    await expect(dialog.getByLabel('ملاحظة / سبب', { exact: false })).not.toHaveAttribute('required', '');
+     await dialog.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+     await expect(dialog).toBeHidden();
+     let row = page.locator('.desktop-table tbody tr').filter({ hasText: 'علي محمد حسن' });
+     await expect(row).toContainText('02:00:01 PM');
+     await expect(row).toContainText('1 ثانية');
+     await expect(row).toContainText('يدوي');
++    expect((await readPreviewData(page)).audit[0].newValues.reason).toBe('');
+     dialog = await reviewEmployee(page, 'علي محمد حسن');
+     await dialog.getByRole('checkbox', { name: 'غائب', exact: true }).check();
+     await expect(dialog.getByRole('radio', { name: 'غياب بعذر', exact: true })).toBeChecked();
+     await dialog.getByRole('radio', { name: 'غياب بدون عذر', exact: true }).check();
+     await expect(dialog.getByRole('radio', { name: 'غياب بعذر', exact: true })).not.toBeChecked();
+-    await dialog.getByLabel('سبب التعديل', { exact: false }).fill('تصحيح الحالة بعد مراجعة الإدارة');
++    await dialog.getByLabel('ملاحظة / سبب', { exact: false }).fill('تصحيح الحالة بعد مراجعة الإدارة');
+     await dialog.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+     await expect(dialog).toBeHidden();
+     row = page.locator('.desktop-table tbody tr').filter({ hasText: 'علي محمد حسن' });
+@@ -140,13 +141,11 @@ test.describe('Attendance preview workflows', () => {
+     expect(data.audit[0].newValues.reason).toBe('تصحيح وقت بدء الدوام بعد مراجعة السجل');
+   });
+ 
+-  test('requires reason and explicit confirmation when removing attendance', async ({ page }) => {
++  test('allows an optional note and still requires explicit confirmation when removing attendance', async ({ page }) => {
+     await login(page);
+     await gotoPreview(page, '/attendance/wd-2026-09-28');
+     const dialog = await reviewEmployee(page, 'مريم أحمد ناصر');
+-    await dialog.getByRole('button', { name: 'إزالة تسجيل الحضور', exact: true }).click();
+-    await expect(dialog.getByRole('alert')).toContainText('اكتب سبب إزالة الحضور');
+-    await dialog.getByLabel('سبب التعديل', { exact: false }).fill('إلغاء إدخال يدوي غير صحيح');
++    await expect(dialog.getByLabel('ملاحظة / سبب', { exact: false })).toBeVisible();
+     await dialog.getByRole('button', { name: 'إزالة تسجيل الحضور', exact: true }).click();
+     const confirm = page.getByRole('dialog', { name: 'إزالة تسجيل الحضور؟', exact: true });
+     await expect(confirm).toBeVisible();
+@@ -168,7 +167,7 @@ test.describe('Attendance preview workflows', () => {
+     const dialog = page.getByRole('dialog', { name: 'مراجعة سجل الحضور', exact: true });
+     await expect(dialog).toContainText('هذا السجل محمي');
+     await expect(dialog.getByRole('button', { name: 'حفظ التعديل', exact: true })).toHaveCount(0);
+-    await expect(dialog.getByLabel('سبب التعديل')).toHaveCount(0);
++    await expect(dialog.getByLabel('ملاحظة / سبب')).toHaveCount(0);
+   });
+ 
+   test('reopened attendance waits for explicit payroll recalculation without replacing history', async ({ page }) => {
+@@ -190,7 +189,7 @@ test.describe('Attendance preview workflows', () => {
+     await gotoPreview(page, '/attendance/wd-2026-08-27');
+     const review = await reviewEmployee(page, 'علي محمد حسن');
+     await review.getByRole('checkbox', { name: 'غائب', exact: true }).check();
+-    await review.getByLabel('سبب التعديل', { exact: true }).fill('تثبيت عذر موثق بعد مراجعة الحضور التاريخي');
++    await review.getByLabel('ملاحظة / سبب', { exact: true }).fill('تثبيت عذر موثق بعد مراجعة الحضور التاريخي');
+     await expect(review).toContainText('يتطلب إعادة الاحتساب الصريحة');
+     await review.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+     await expect(review).toBeHidden();
+diff --git a/tests/e2e/finance.spec.ts b/tests/e2e/finance.spec.ts
+index c6cf714..2ab8b9a 100644
+--- a/tests/e2e/finance.spec.ts
++++ b/tests/e2e/finance.spec.ts
+@@ -101,7 +101,7 @@ test.describe('Finance preview workflows', () => {
+     const departmentDialog = page.getByRole('dialog').first();
+     await departmentDialog.getByLabel('قيمة اليومية', { exact: false }).fill('30000');
+     await departmentDialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+-    await page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true }).getByRole('button', { name: 'حفظ وإعادة الاحتساب' }).click();
++    await page.getByRole('dialog', { name: 'تأكيد تعديل قوانين القسم', exact: true }).getByRole('button', { name: 'حفظ وإعادة الاحتساب' }).click();
+     await expect(page.getByRole('dialog')).toHaveCount(0);
+     const afterSettings = (await data(page)).months.find(item => item.month === '2026-08')!;
+     expect(afterSettings).toEqual(archived);
+diff --git a/tests/e2e/people.spec.ts b/tests/e2e/people.spec.ts
+index ebd09a0..2a47969 100644
+--- a/tests/e2e/people.spec.ts
++++ b/tests/e2e/people.spec.ts
+@@ -16,13 +16,17 @@ test.describe('Employee and department preview workflows', () => {
+     await dialog.getByLabel('تاريخ الميلاد', { exact: true }).fill('1998-02-18');
+     await dialog.getByLabel('التحصيل الدراسي', { exact: true }).fill('بكالوريوس علوم');
+     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
+-    await dialog.getByLabel('رقم الهاتف', { exact: true }).fill('07000001234');
+-    await dialog.getByLabel('رقم هاتف ولي الأمر', { exact: true }).fill('07000005678');
+-    await dialog.getByLabel('البريد الإلكتروني', { exact: true }).fill('test@example.invalid');
++    await expect(dialog.getByLabel('البريد الإلكتروني', { exact: true })).toHaveCount(0);
++    await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
++    await expect(dialog.getByRole('alert')).toContainText('رقم الهاتف مطلوب');
++    await dialog.getByLabel('رقم الهاتف', { exact: true }).fill('000001234');
++    await dialog.getByLabel('رقم هاتف ولي الأمر', { exact: true }).fill('000005678');
++    await dialog.getByLabel('معرّف تليغرام', { exact: false }).fill('@centerpro_new_1');
+     await dialog.getByLabel('العنوان / محل السكن', { exact: true }).fill('بغداد — عنوان تجريبي');
+     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
+     await dialog.getByLabel('القسم', { exact: false }).selectOption('dept-correction');
+     await dialog.getByLabel('تاريخ المباشرة', { exact: false }).fill('2026-09-20');
++    await expect(dialog.getByLabel('تاريخ انتهاء العمل', { exact: false })).toHaveCount(0);
+     await expect(dialog.getByLabel('الرقم الوظيفي', { exact: true })).toHaveValue('يُنشأ تلقائياً عند الحفظ');
+     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
+     const password = 'Preview-Create-Secret-438';
+@@ -45,7 +49,7 @@ test.describe('Employee and department preview workflows', () => {
+     await expect(row).toContainText('قطعي');
+     const state = await readPreviewData(page);
+     const created = state.employees.find(item => item.username === 'TEST100')!;
+-    expect(created).toMatchObject({ code: 'CP-0015', name: 'اختبار موظف جديد', gender: 'FEMALE', departmentId: 'dept-correction', startDate: '2026-09-20', fixedOverride: true, fixedSalary: 1000000, dailyRateOverride: 25000 });
++    expect(created).toMatchObject({ code: 'CP-0015', name: 'اختبار موظف جديد', gender: 'FEMALE', departmentId: 'dept-correction', startDate: '2026-09-20', phone: '07000001234', guardianPhone: '07000005678', telegram: 'centerpro_new_1', fixedOverride: true, fixedSalary: 1000000, dailyRateOverride: 25000 });
+     expect(created.photo).toBeUndefined();
+     expect(state.audit[0]).toMatchObject({ action: 'إضافة موظف وحساب دخول', employeeId: created.id });
+     expect(await page.evaluate(key => sessionStorage.getItem(key), PREVIEW_STORAGE_KEY)).not.toContain(password);
+@@ -73,14 +77,14 @@ test.describe('Employee and department preview workflows', () => {
+     await confirm.getByRole('button', { name: 'إيقاف الموظف', exact: true }).click();
+     await expect(confirm).toBeHidden();
+     const inactive = await readPreviewData(page);
+-    expect(inactive.employees.find(item => item.id === 'CP-0001')).toMatchObject({ active: false, code: 'CP-0001' });
++    expect(inactive.employees.find(item => item.id === 'CP-0001')).toMatchObject({ active: false, code: 'CP-0001', endDate: '2026-09-28' });
+     expect(inactive.attendance.filter(item => item.employeeId === 'CP-0001')).toEqual(history);
+     expect(inactive.months).toEqual(before.months);
+     await page.getByRole('button', { name: 'تفعيل الموظف', exact: true }).click();
+     confirm = page.getByRole('dialog', { name: 'تفعيل الموظف', exact: true });
+     await confirm.getByRole('button', { name: 'تفعيل الموظف', exact: true }).click();
+     await expect(confirm).toBeHidden();
+-    expect((await readPreviewData(page)).employees.find(item => item.id === 'CP-0001')).toMatchObject({ active: true, code: 'CP-0001', name: 'علي محمد حسن المعدّل' });
++    expect((await readPreviewData(page)).employees.find(item => item.id === 'CP-0001')).toMatchObject({ active: true, code: 'CP-0001', name: 'علي محمد حسن المعدّل', endDate: undefined });
+   });
+ 
+   test('password reset saves directly without old password, confirmation or stored secret', async ({ page }) => {
+@@ -111,12 +115,12 @@ test.describe('Employee and department preview workflows', () => {
+     await dialog.getByLabel('الراتب القطعي', { exact: false }).fill('950000');
+     await dialog.getByLabel('قيمة اليومية', { exact: false }).fill('35000');
+     await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+-    let confirmation = page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true });
++    let confirmation = page.getByRole('dialog', { name: 'تأكيد تعديل قوانين القسم', exact: true });
+     await expect(confirmation).toContainText('الشهر المفتوح حالياً');
+     expect((await readPreviewData(page)).departments[0].salary).toEqual(before.departments[0].salary);
+     await confirmation.getByRole('button', { name: 'إلغاء', exact: true }).click();
+     await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+-    await page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true }).getByRole('button', { name: 'حفظ وإعادة الاحتساب', exact: true }).click();
++    await page.getByRole('dialog', { name: 'تأكيد تعديل قوانين القسم', exact: true }).getByRole('button', { name: 'حفظ وإعادة الاحتساب', exact: true }).click();
+     await expect(page.getByRole('dialog')).toHaveCount(0);
+     let state = await readPreviewData(page);
+     expect(state.departments[0].salary).toMatchObject({ mode: 'FIXED', fixedSalary: 950000, dailyRate: 35000 });
+@@ -129,7 +133,7 @@ test.describe('Employee and department preview workflows', () => {
+     await expect(dialog.getByRole('alert')).toContainText('دون تداخل');
+     await dialog.getByLabel('من يوم', { exact: true }).nth(1).fill('5');
+     await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+-    confirmation = page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true });
++    confirmation = page.getByRole('dialog', { name: 'تأكيد تعديل قوانين القسم', exact: true });
+     await confirmation.getByRole('button', { name: 'حفظ وإعادة الاحتساب', exact: true }).click();
+     await expect(page.getByRole('dialog')).toHaveCount(0);
+     state = await readPreviewData(page);
+diff --git a/tests/fixtures/populated-data.ts b/tests/fixtures/populated-data.ts
+index f737f1b..4578f41 100644
+--- a/tests/fixtures/populated-data.ts
++++ b/tests/fixtures/populated-data.ts
+@@ -54,7 +54,7 @@ function employees(): Employee[] {
+       phone: `0700000${String(index + 1).padStart(4, '0')}`, guardianPhone: `0701000${String(index + 1).padStart(4, '0')}`,
+       startDate: '2026-01-05', active: true, birthDate: `${1993 + index % 9}-05-${String(10 + index).padStart(2, '0')}`,
+       notes: 'سجل افتراضي مخصص لمراجعة واجهات CenterPro.', qualification: index % 3 === 0 ? 'بكالوريوس علوم' : 'بكالوريوس تربية',
+-      email: `employee${index + 1}@example.invalid`, telegram: `@centerpro_demo_${index + 1}`, username: `EMP${String(index + 1).padStart(3, '0')}`,
++      telegram: `centerpro_demo_${index + 1}`, username: `EMP${String(index + 1).padStart(3, '0')}`,
+       role: 'EMPLOYEE', fixedOverride: false, fixedSalary: 0, dailyRateOverride: null,
+       createdAt: '2026-01-04T09:00:00.000Z', updatedAt: '2026-09-27T11:00:00.000Z', ...person,
+     };

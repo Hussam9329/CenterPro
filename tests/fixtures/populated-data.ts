@@ -54,7 +54,7 @@ function employees(): Employee[] {
       phone: `0700000${String(index + 1).padStart(4, '0')}`, guardianPhone: `0701000${String(index + 1).padStart(4, '0')}`,
       startDate: '2026-01-05', active: true, birthDate: `${1993 + index % 9}-05-${String(10 + index).padStart(2, '0')}`,
       notes: 'سجل افتراضي مخصص لمراجعة واجهات CenterPro.', qualification: index % 3 === 0 ? 'بكالوريوس علوم' : 'بكالوريوس تربية',
-      email: `employee${index + 1}@example.invalid`, telegram: `@centerpro_demo_${index + 1}`, username: `EMP${String(index + 1).padStart(3, '0')}`,
+      telegram: `centerpro_demo_${index + 1}`, username: `EMP${String(index + 1).padStart(3, '0')}`,
       role: 'EMPLOYEE', fixedOverride: false, fixedSalary: 0, dailyRateOverride: null,
       createdAt: '2026-01-04T09:00:00.000Z', updatedAt: '2026-09-27T11:00:00.000Z', ...person,
     };

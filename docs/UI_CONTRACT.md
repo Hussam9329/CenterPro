@@ -2,7 +2,7 @@
 
 ## Authoritative revision
 
-`MASTER_SPECIFICATION.txt` remains the unchanged original specification. `PHASE1_REVISION_REQUEST.md` is the later owner-approved addendum and takes precedence for startup data, preview administrator, salary terminology, attendance architecture, the single-open-day rule and the five-second welcome. Other payroll and attendance rules remain unchanged. No Phase 2 work is authorized.
+`MASTER_SPECIFICATION.txt` remains the unchanged original specification. `PHASE1_REVISION_REQUEST.md` is the later owner-approved addendum and takes precedence for startup data, preview administrator, salary terminology, attendance architecture, the single-open-day rule and the five-second welcome. The later owner-supplied `patches/required-days_employee-form_attendance.patch` overrides salary-basis, employee-form and attendance-note requirements as described below. No Phase 2 work is authorized.
 
 ## Preview state and identity
 
@@ -41,7 +41,17 @@ The initial full page load is covered before its destination appears. After succ
 | Add salary rule | إضافة قانون |
 | Numbered rule | القانون 1، القانون 2… |
 
-All visible validation errors, badges, filters, profiles and reports follow these labels. Internal names such as `SalaryTier`, `tiers` and `calculateTieredSalary()` stay stable. Do not change financial formulas for terminology work.
+All visible validation errors, badges, filters, profiles and reports follow these labels. Internal names such as `SalaryTier`, `tiers` and `calculateTieredSalary()` stay stable. Do not change financial formulas for terminology-only work; the required-days formula below is explicitly authorized by the later patch.
+
+## Required-days patch
+
+`PayrollResult.requiredDays` counts PRESENT, EXCUSED, UNEXCUSED and UNRESOLVED records plus missing expected records in the employee’s monthly employment window. EXEMPT records never count. Non-fixed salary laws use required days, then subtract excused and unexcused deductions and other deductions, and add bonuses. Partial-month fixed salaries use `min(requiredDays × dailyRate, fixedSalary)`; full-month fixed salaries remain fixed.
+
+Archived monetary snapshots remain unchanged. Older v2 snapshots without `requiredDays` derive only that display metric from their frozen attendance/absence/unresolved counts. Do not reprice archives or reset saved preview data during migration. Payroll ignores records outside employment start/end dates without deleting operational history.
+
+Both employee phone fields are required: fixed visible `07` plus exactly nine editable digits. Store full eleven-digit numbers, including valid suffixes that themselves begin `07`. Telegram has a fixed visible `@`, stores the username without `@`, and accepts English letters, digits and underscore. Email is removed from employee forms/types/views. Notes remain optional. Creation/editing does not expose employment end date; deactivation sets it to `DEMO_TODAY`, activation clears it, and ordinary editing preserves it.
+
+Attendance-record `ملاحظة / سبب` is optional for changing status and removing attendance. Removal still requires explicit confirmation, and changes still produce audit events. Day settings, archive and reopen reasons retain their existing requirements.
 
 ## Shared UI
 
@@ -61,7 +71,7 @@ Every zero-data screen provides a useful explanation and next step. No departmen
 
 `lib/attendance`: `isExpected`, `getLatenessSeconds`, `statusLabel`, `assertSingleOpenWorkday`, `getOpenWorkday`, `assertCanOpenWorkday`, `assertUniqueWorkdayDate`.
 
-At most one `OPEN` attendance day may exist system-wide, including across dates/months and reopen paths. Keep unique dates as an additional invariant. Unresolved expected employees block closing; never silently convert them to absence. Check-in seconds precision, no grace period, no automatic lateness deduction, absence formulas, inclusion/exclusion precedence, historical edit reasons and audits remain intact.
+At most one `OPEN` attendance day may exist system-wide, including across dates/months and reopen paths. Keep unique dates as an additional invariant. Unresolved expected employees block closing; never silently convert them to absence. Check-in seconds precision, no grace period, no automatic lateness deduction, absence formulas, inclusion/exclusion precedence, day-setting/archive reasons and audits remain intact; attendance-record notes follow the optional-note rule above.
 
 ## Routes and navigation
 
@@ -85,4 +95,4 @@ Mutations update linked views, show clear feedback and preserve audit behavior. 
 
 Populated data lives exclusively in `tests/fixtures/populated-data.ts`. Tests opt in explicitly; onboarding tests remain empty. `tests/e2e/helpers/preview.ts` supplies test/expect, fixture seeding, splash-aware login/navigation and preview data reads. Its clock advances the actual welcome timer; no app flag disables the splash.
 
-Final acceptance requires lint, strict typecheck, domain tests, production build, browser workflows, responsive review and a new Vercel Preview. Current revision evidence is tracked in `PHASE1_ACCEPTANCE.md`; do not copy historical gate counts into a new delivery claim.
+Final acceptance requires lint, strict typecheck, domain tests, production build, browser workflows, responsive review and a new Vercel Preview. Current patch evidence is tracked in `PATCH_ACCEPTANCE.md`; the preceding revision is documented in `PHASE1_ACCEPTANCE.md`; do not copy historical gate counts into a new delivery claim.

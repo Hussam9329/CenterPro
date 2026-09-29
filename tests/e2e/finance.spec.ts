@@ -101,7 +101,7 @@ test.describe('Finance preview workflows', () => {
     const departmentDialog = page.getByRole('dialog').first();
     await departmentDialog.getByLabel('قيمة اليومية', { exact: false }).fill('30000');
     await departmentDialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
-    await page.getByRole('dialog', { name: 'تأكيد تعديل قواعد الراتب', exact: true }).getByRole('button', { name: 'حفظ وإعادة الاحتساب' }).click();
+    await page.getByRole('dialog', { name: 'تأكيد تعديل قوانين القسم', exact: true }).getByRole('button', { name: 'حفظ وإعادة الاحتساب' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     const afterSettings = (await data(page)).months.find(item => item.month === '2026-08')!;
     expect(afterSettings).toEqual(archived);
@@ -148,6 +148,12 @@ test.describe('Finance preview workflows', () => {
     await login(page, 'موظف');
     await goto(page, '/employee/salary?employee=CP-0002');
     await expect(page.getByRole('heading', { name: 'راتبي', exact: true })).toBeVisible();
+    // CP-0001 has 22 present days, one excused absence and one unresolved required day.
+    // Salary is based on all 24 required days, with the excused deduction applied once.
+    await expect(page.getByText('الأيام المطلوبة', { exact: true }).locator('..').locator('strong')).toHaveText('24');
+    await expect(page.getByText('أيام الحضور', { exact: true }).locator('..').locator('strong')).toHaveText('22');
+    await expect(page.getByText('الراتب الأساسي', { exact: true }).locator('..')).toContainText('600,000 د.ع');
+    await expect(page.getByText('صافي الراتب', { exact: true }).locator('..')).toContainText('610,000 د.ع');
     await expect(page.getByText('اعتراض على تصحيح السؤال رقم 4 بعد مراجعة الإجابة.', { exact: true })).toBeVisible();
     await expect(page.getByText('تعديل مالي بعد الصرف يحتاج إلى مراجعة الإدارة.', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /تسجيل.*صرف|إضافة مكافأة|إضافة خصم/ })).toHaveCount(0);
@@ -157,7 +163,7 @@ test.describe('Finance preview workflows', () => {
     await expect(page).toHaveURL(/\/employee$/);
   });
 
-  test('report type changes clear irrelevant date filters and Excel preserves numeric and date cells', async ({ page }) => {
+  test('report type changes clear irrelevant date filters and Excel preserves required days, numeric and date cells', async ({ page }) => {
     await login(page);
     await goto(page, '/reports?type=attendance&employee=CP-0002');
     await page.getByLabel('من تاريخ', { exact: false }).fill('2026-09-28');
@@ -183,6 +189,37 @@ test.describe('Finance preview workflows', () => {
     expect(String(workbook.worksheets[0].getCell('A3').value)).toContain('تجريبية');
     expect(workbook.worksheets[1].getCell('A6').value).toBeInstanceOf(Date);
     expect(workbook.worksheets[1].getCell('B6').value).toBe(650000);
+
+    await page.getByRole('button', { name: 'كشف رواتب الشهر', exact: true }).click();
+    await page.getByLabel('الموظف', { exact: true }).selectOption('CP-0001');
+    await expect(report.getByRole('columnheader')).toHaveCount(14);
+    await expect(report.getByRole('columnheader').nth(4)).toHaveText('الأيام المطلوبة');
+    const cells = report.locator('tbody tr').filter({ hasText: 'CP-0001' }).getByRole('cell');
+    await expect(cells.nth(4)).toHaveText('24');
+    await expect(cells.nth(5)).toHaveText('22');
+    await expect(cells.nth(8)).toHaveText('600,000 د.ع');
+    await expect(cells.nth(12)).toHaveText('610,000 د.ع');
+    const payrollDownloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Excel', exact: true }).click();
+    const payrollDownload = await payrollDownloadPromise;
+    const payrollPath = await payrollDownload.path();
+    expect(payrollPath).toBeTruthy();
+    const payrollWorkbook = new ExcelJS.Workbook();
+    await payrollWorkbook.xlsx.readFile(payrollPath!);
+    expect(payrollWorkbook.worksheets).toHaveLength(1);
+    const sheet = payrollWorkbook.worksheets[0];
+    expect(sheet.getCell('A6').value).toBe('CP-0001');
+    // The added required-days column moves attendance to F, base to I and net to M.
+    expect(sheet.getCell('E5').value).toBe('الأيام المطلوبة');
+    expect(sheet.getCell('F5').value).toBe('حضور');
+    expect(sheet.getCell('I5').value).toBe('الأساسي');
+    expect(sheet.getCell('M5').value).toBe('الصافي');
+    for (const [address, value] of [['E6', 24], ['F6', 22], ['G6', 1], ['I6', 600000], ['J6', 25000], ['M6', 610000]] as const) {
+      expect(sheet.getCell(address).type).toBe(ExcelJS.ValueType.Number);
+      expect(sheet.getCell(address).value).toBe(value);
+    }
+    expect(sheet.getCell('E6').numFmt).toBe('0');
+    expect(sheet.getCell('M6').numFmt).toContain('د.ع');
   });
 
   test('generates actual branded PDF and print tables stay within A4 width', async ({ page, browserName }, testInfo) => {
@@ -194,6 +231,8 @@ test.describe('Finance preview workflows', () => {
     await page.evaluate(() => document.fonts.ready);
     const report = page.getByRole('article', { name: 'معاينة التقرير', exact: true });
     await expect(report).toBeVisible();
+    await expect(report.getByRole('columnheader')).toHaveCount(14);
+    await expect(report.getByRole('columnheader', { name: 'الأيام المطلوبة', exact: true })).toBeVisible();
     const geometry = await report.evaluate(element => ({ width: element.getBoundingClientRect().width, viewport: document.documentElement.clientWidth, tables: [...element.querySelectorAll('table')].map(table => ({ width: table.getBoundingClientRect().width, parent: table.parentElement!.getBoundingClientRect().width })) }));
     expect(geometry.width).toBeLessThanOrEqual(geometry.viewport + 1);
     for (const table of geometry.tables) expect(table.width).toBeLessThanOrEqual(table.parent + 1);

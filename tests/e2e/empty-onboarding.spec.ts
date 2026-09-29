@@ -40,6 +40,8 @@ test.describe('Fresh CenterPro onboarding', () => {
     const employeeDialog = page.getByRole('dialog', { name: 'إضافة موظف جديد', exact: true });
     await employeeDialog.getByLabel('الاسم الكامل', { exact: false }).fill('موظف الفريق الأول');
     await employeeDialog.getByRole('button', { name: 'التالي', exact: true }).click();
+    await employeeDialog.getByLabel('رقم الهاتف', { exact: true }).fill('712345678');
+    await employeeDialog.getByLabel('رقم هاتف ولي الأمر', { exact: true }).fill('912345678');
     await employeeDialog.getByRole('button', { name: 'التالي', exact: true }).click();
     await employeeDialog.getByLabel('القسم', { exact: false }).selectOption(departmentId);
     await employeeDialog.getByRole('button', { name: 'التالي', exact: true }).click();

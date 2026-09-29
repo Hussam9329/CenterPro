@@ -34,7 +34,7 @@ export default function EmployeeHomePage() {
     </section>
     {result.paymentStatus === 'REVIEW' && <div className="notice notice-warning" role="status"><strong>راتبك يحتاج إلى مراجعة بعد الصرف</strong><p>المصروف سابقاً <bdi dir="ltr">{money(result.paidAmount)}</bdi> · الفرق <bdi dir="ltr">{money(result.difference)}</bdi></p></div>}
     <div className="stats-grid">
-      <StatCard label="أيام الحضور" value={result.attendanceDays} icon={<CalendarCheck size={20} />} hint="الحضور المسجّل هذا الشهر" />
+      <StatCard label="الأيام المطلوبة" value={result.requiredDays} icon={<CalendarCheck size={20} />} hint="الأيام التي كنت مطلوباً فيها للدوام" /><StatCard label="أيام الحضور" value={result.attendanceDays} hint="الحضور المسجّل هذا الشهر" />
       <StatCard label="غياب بعذر" value={result.excusedDays} icon={<UserRoundCheck size={20} />} hint={`الأثر المالي ${money(result.excusedDeduction)}`} />
       <StatCard label="غياب بدون عذر" value={result.unexcusedDays} icon={<ReceiptText size={20} />} hint={`الأثر المالي ${money(result.unexcusedDeduction)}`} />
       <StatCard label="مرات التأخير" value={result.lateDays} icon={<Clock3 size={20} />} hint={`إجمالي التأخير: ${result.latenessSeconds ? duration(result.latenessSeconds) : '0 ثانية'}`} />

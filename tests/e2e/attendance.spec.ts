@@ -53,7 +53,7 @@ test.describe('Attendance preview workflows', () => {
     for (const name of ['علي محمد حسن', 'حسين فاضل سالم']) {
       const review = await reviewEmployee(page, name);
       await review.getByLabel('الحالة الجديدة', { exact: true }).selectOption('PRESENT');
-      await review.getByLabel('سبب التعديل', { exact: true }).fill('إثبات الحضور بعد مراجعة الإدارة');
+      await review.getByLabel('ملاحظة / سبب', { exact: true }).fill('إثبات الحضور بعد مراجعة الإدارة');
       await review.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
       await expect(review).toBeHidden();
     }
@@ -95,19 +95,20 @@ test.describe('Attendance preview workflows', () => {
     let dialog = await reviewEmployee(page, 'علي محمد حسن');
     await dialog.getByLabel('الحالة الجديدة', { exact: true }).selectOption('PRESENT');
     await dialog.getByLabel('وقت الحضور', { exact: false }).fill('14:00:01');
-    await dialog.getByLabel('سبب التعديل', { exact: false }).fill('مراجعة وقت الدخول بالثواني');
+    await expect(dialog.getByLabel('ملاحظة / سبب', { exact: false })).not.toHaveAttribute('required', '');
     await dialog.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
     await expect(dialog).toBeHidden();
     let row = page.locator('.desktop-table tbody tr').filter({ hasText: 'علي محمد حسن' });
     await expect(row).toContainText('02:00:01 PM');
     await expect(row).toContainText('1 ثانية');
     await expect(row).toContainText('يدوي');
+    expect((await readPreviewData(page)).audit[0].newValues.reason).toBe('');
     dialog = await reviewEmployee(page, 'علي محمد حسن');
     await dialog.getByRole('checkbox', { name: 'غائب', exact: true }).check();
     await expect(dialog.getByRole('radio', { name: 'غياب بعذر', exact: true })).toBeChecked();
     await dialog.getByRole('radio', { name: 'غياب بدون عذر', exact: true }).check();
     await expect(dialog.getByRole('radio', { name: 'غياب بعذر', exact: true })).not.toBeChecked();
-    await dialog.getByLabel('سبب التعديل', { exact: false }).fill('تصحيح الحالة بعد مراجعة الإدارة');
+    await dialog.getByLabel('ملاحظة / سبب', { exact: false }).fill('تصحيح الحالة بعد مراجعة الإدارة');
     await dialog.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
     await expect(dialog).toBeHidden();
     row = page.locator('.desktop-table tbody tr').filter({ hasText: 'علي محمد حسن' });
@@ -140,13 +141,11 @@ test.describe('Attendance preview workflows', () => {
     expect(data.audit[0].newValues.reason).toBe('تصحيح وقت بدء الدوام بعد مراجعة السجل');
   });
 
-  test('requires reason and explicit confirmation when removing attendance', async ({ page }) => {
+  test('allows an optional note and still requires explicit confirmation when removing attendance', async ({ page }) => {
     await login(page);
     await gotoPreview(page, '/attendance/wd-2026-09-28');
     const dialog = await reviewEmployee(page, 'مريم أحمد ناصر');
-    await dialog.getByRole('button', { name: 'إزالة تسجيل الحضور', exact: true }).click();
-    await expect(dialog.getByRole('alert')).toContainText('اكتب سبب إزالة الحضور');
-    await dialog.getByLabel('سبب التعديل', { exact: false }).fill('إلغاء إدخال يدوي غير صحيح');
+    await expect(dialog.getByLabel('ملاحظة / سبب', { exact: false })).toBeVisible();
     await dialog.getByRole('button', { name: 'إزالة تسجيل الحضور', exact: true }).click();
     const confirm = page.getByRole('dialog', { name: 'إزالة تسجيل الحضور؟', exact: true });
     await expect(confirm).toBeVisible();
@@ -168,7 +167,7 @@ test.describe('Attendance preview workflows', () => {
     const dialog = page.getByRole('dialog', { name: 'مراجعة سجل الحضور', exact: true });
     await expect(dialog).toContainText('هذا السجل محمي');
     await expect(dialog.getByRole('button', { name: 'حفظ التعديل', exact: true })).toHaveCount(0);
-    await expect(dialog.getByLabel('سبب التعديل')).toHaveCount(0);
+    await expect(dialog.getByLabel('ملاحظة / سبب')).toHaveCount(0);
   });
 
   test('reopened attendance waits for explicit payroll recalculation without replacing history', async ({ page }) => {
@@ -190,7 +189,7 @@ test.describe('Attendance preview workflows', () => {
     await gotoPreview(page, '/attendance/wd-2026-08-27');
     const review = await reviewEmployee(page, 'علي محمد حسن');
     await review.getByRole('checkbox', { name: 'غائب', exact: true }).check();
-    await review.getByLabel('سبب التعديل', { exact: true }).fill('تثبيت عذر موثق بعد مراجعة الحضور التاريخي');
+    await review.getByLabel('ملاحظة / سبب', { exact: true }).fill('تثبيت عذر موثق بعد مراجعة الحضور التاريخي');
     await expect(review).toContainText('يتطلب إعادة الاحتساب الصريحة');
     await review.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
     await expect(review).toBeHidden();

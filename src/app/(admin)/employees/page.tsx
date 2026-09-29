@@ -9,6 +9,7 @@ import { Avatar, Badge, Button, Card, ConfirmDialog, EmptyState, Field, PageHead
 import { EmployeeForm, ResetPasswordDialog } from '@/components/people/employee-form';
 import type { Employee } from '@/lib/types';
 import { date, money } from '@/lib/format';
+import { DEMO_TODAY } from '@/lib/mock-data';
 import styles from '@/components/people/people.module.css';
 
 export default function EmployeesPage() {
@@ -48,7 +49,7 @@ export default function EmployeesPage() {
   const setFilter = (set: (value: string) => void, value: string) => { set(value); setPage(1); };
   const toggle = () => {
     if (!toggleEmployee || (!isSuper && toggleEmployee.role !== 'EMPLOYEE')) return;
-    updateData(draft => { const employee = draft.employees.find(item => item.id === toggleEmployee.id); if (employee) { employee.active = !employee.active; employee.updatedAt = new Date().toISOString(); } }, { action: toggleEmployee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: toggleEmployee.id, employeeId: toggleEmployee.id, oldValues: { active: toggleEmployee.active }, newValues: { active: !toggleEmployee.active } });
+    updateData(draft => { const employee = draft.employees.find(item => item.id === toggleEmployee.id); if (employee) { const nextActive = !employee.active; employee.active = nextActive; employee.endDate = nextActive ? undefined : DEMO_TODAY; employee.updatedAt = new Date().toISOString(); } }, { action: toggleEmployee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: toggleEmployee.id, employeeId: toggleEmployee.id, oldValues: { active: toggleEmployee.active, endDate: toggleEmployee.endDate }, newValues: { active: !toggleEmployee.active, endDate: toggleEmployee.active ? DEMO_TODAY : undefined } });
     toast(toggleEmployee.active ? 'تم إيقاف الموظف مع الاحتفاظ بسجلاته.' : 'تم تفعيل الموظف.');
     setToggleEmployee(null);
   };
@@ -69,6 +70,6 @@ export default function EmployeesPage() {
     </Card>}
     {editing && (editing !== 'new' || hasActiveDepartment) && <EmployeeForm key={editing === 'new' ? 'new' : editing.id} open onClose={() => setEditing(null)} employee={editing === 'new' ? undefined : editing} />}
     <ResetPasswordDialog employee={passwordEmployee} onClose={() => setPasswordEmployee(null)} />
-    <ConfirmDialog open={Boolean(toggleEmployee)} onClose={() => setToggleEmployee(null)} onConfirm={toggle} title={toggleEmployee?.active ? 'إيقاف الموظف؟' : 'تفعيل الموظف؟'} description={toggleEmployee?.active ? `سيصبح ${toggleEmployee.name} غير نشط، ولن يكون متوقعاً في أيام الحضور الجديدة. تبقى بياناته وحضوره ورواتبه السابقة محفوظة.` : `سيعود ${toggleEmployee?.name ?? ''} إلى قائمة الموظفين النشطين مع بقاء رقمه الوظيفي وسجلاته.`} confirmLabel={toggleEmployee?.active ? 'تأكيد إيقاف الموظف' : 'تفعيل الموظف'} danger={toggleEmployee?.active} />
+    <ConfirmDialog open={Boolean(toggleEmployee)} onClose={() => setToggleEmployee(null)} onConfirm={toggle} title={toggleEmployee?.active ? 'إيقاف الموظف؟' : 'تفعيل الموظف؟'} description={toggleEmployee?.active ? `سيصبح ${toggleEmployee.name} غير نشط، وسيُسجل تاريخ انتهاء العمل بتاريخ اليوم. تبقى بياناته وحضوره ورواتبه السابقة محفوظة.` : `سيعود ${toggleEmployee?.name ?? ''} إلى قائمة الموظفين النشطين، ويُلغى تاريخ انتهاء العمل الحالي مع بقاء رقمه الوظيفي وسجلاته.`} confirmLabel={toggleEmployee?.active ? 'تأكيد إيقاف الموظف' : 'تفعيل الموظف'} danger={toggleEmployee?.active} />
   </div>;
 }

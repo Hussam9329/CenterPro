@@ -20,14 +20,14 @@ export function validateSalaryConfig(config: SalaryConfig): void {
     integer(tier.amount, 'مبلغ القانون');
     if (tier.fromDays > tier.toDays) throw new Error('بداية القانون يجب ألا تتجاوز نهايته.');
     if (tier.fromDays <= previousEnd) throw new Error('يجب ترتيب قوانين القسم دون تداخل.');
-    if (tier.fromDays !== previousEnd + 1) throw new Error('يجب أن تغطي قوانين القسم جميع أعداد أيام الحضور بدءاً من 0 دون فجوات.');
+    if (tier.fromDays !== previousEnd + 1) throw new Error('يجب أن تغطي قوانين القسم جميع أعداد الأيام المطلوبة بدءاً من 0 دون فجوات.');
     previousEnd = tier.toDays;
   }
   if (config.extraDaysStart <= previousEnd) throw new Error('الأيام الإضافية يجب أن تبدأ بعد نهاية آخر قانون.');
 }
 
 export function calculateTieredSalary(days: number, config: SalaryConfig): number {
-  integer(days, 'أيام الحضور');
+  integer(days, 'الأيام المطلوبة');
   validateSalaryConfig(config);
   const tier = config.tiers.find((item) => days >= item.fromDays && days <= item.toDays);
   if (tier) return Math.min(config.maximum, tier.type === 'PER_DAY' ? days * config.dailyRate : tier.amount);
@@ -38,11 +38,11 @@ export function calculateTieredSalary(days: number, config: SalaryConfig): numbe
     const extraDays = Math.max(0, days - config.extraDaysStart + 1);
     return Math.min(config.maximum, base + extraDays * config.dailyRate);
   }
-  throw new Error('عدد أيام الحضور غير مغطى بقوانين القسم.');
+  throw new Error('عدد الأيام المطلوبة غير مغطى بقوانين القسم.');
 }
 
 export function calculateFixedSalary(days: number, rate: number, fixed: number, partial: boolean): number {
-  integer(days, 'أيام الحضور');
+  integer(days, 'الأيام المطلوبة');
   integer(rate, 'قيمة اليومية');
   integer(fixed, 'الراتب القطعي');
   return partial ? Math.min(days * rate, fixed) : fixed;
@@ -91,21 +91,27 @@ export function calculateEmployeePayroll(data: DemoData, employeeId: string, mon
   const department = data.departments.find((item) => item.id === employee.departmentId);
   if (!department) throw new Error('لم يتم العثور على قسم الموظف.');
   const config = structuredClone(historicalConfig ?? getEffectiveSalaryConfig(data, employee));
-  const workdays = data.workdays.filter((item) => item.date >= first && item.date <= last);
+  const workdays = data.workdays.filter((item) => item.date >= first && item.date <= last
+    && item.date >= employee.startDate && (!employee.endDate || item.date <= employee.endDate));
   const workdayIds = new Set(workdays.map((item) => item.id));
-  // Historical records survive deactivation and current department changes.
+  // Historical records inside employment dates survive deactivation and current
+  // department changes. Records outside the employment window remain stored but
+  // do not add required, present or absent days to this payroll calculation.
   const records = data.attendance.filter((item) => item.employeeId === employeeId && workdayIds.has(item.workdayId));
   const recorded = new Set(records.map((item) => item.workdayId));
   const expectedMissing = workdays.filter((item) => !recorded.has(item.id) && isExpected(employee, item)).length;
   const count = (status: (typeof records)[number]['status']) => records.filter((item) => item.status === status).length;
   const attendanceDays = count('PRESENT');
+  const excusedDays = count('EXCUSED');
+  const unexcusedDays = count('UNEXCUSED');
+  // Salary law selection is based on days the employee was required to work, not only days actually attended.
+  // Exempt / no-work days never count as required. Missing expected records remain required and unresolved.
+  const requiredDays = records.filter((item) => item.status !== 'EXEMPT').length + expectedMissing;
   const partialMonth = isPartialEmploymentMonth(employee, month);
   const employedInMonth = employee.startDate <= last && (!employee.endDate || employee.endDate >= first);
   const baseSalary = !employedInMonth ? 0 : config.mode === 'FIXED'
-    ? calculateFixedSalary(attendanceDays, config.dailyRate, config.fixedSalary, partialMonth)
-    : calculateTieredSalary(attendanceDays, config);
-  const excusedDays = count('EXCUSED');
-  const unexcusedDays = count('UNEXCUSED');
+    ? calculateFixedSalary(requiredDays, config.dailyRate, config.fixedSalary, partialMonth)
+    : calculateTieredSalary(requiredDays, config);
   const excusedDeduction = excusedDays * config.dailyRate;
   const unexcusedDeduction = unexcusedDays * config.unexcusedRate;
   const otherDeductions = data.deductions.filter((item) => item.employeeId === employeeId && item.date >= first && item.date <= last).reduce((sum, item) => sum + item.amount, 0);
@@ -119,6 +125,7 @@ export function calculateEmployeePayroll(data: DemoData, employeeId: string, mon
     month,
     salaryMode: config.mode,
     dailyRate: config.dailyRate,
+    requiredDays,
     attendanceDays,
     excusedDays,
     unexcusedDays,
@@ -145,8 +152,12 @@ export function getEmployeePayroll(data: DemoData, employeeId: string, month: st
   const snapshot = payrollMonth?.snapshots[employeeId];
   if (payrollMonth && payrollMonth.state !== 'OPEN') {
     if (!snapshot) throw new Error('لا توجد نسخة أرشيفية لهذا الموظف في الشهر المحدد.');
+    const historical = structuredClone(snapshot);
+    // Older preview archives predate requiredDays. Fill only this display count
+    // from their frozen status totals; never recalculate historical money.
+    historical.requiredDays ??= historical.attendanceDays + historical.excusedDays + historical.unexcusedDays + historical.unresolvedDays;
     // Payment history can grow after archiving; financial snapshot stays immutable.
-    return applyPaymentStatus(data, structuredClone(snapshot));
+    return applyPaymentStatus(data, historical);
   }
   return calculateEmployeePayroll(data, employeeId, month);
 }

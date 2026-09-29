@@ -8,11 +8,11 @@ The current revision starts as an **empty installation**. Departments, employees
 
 This remains a browser-only frontend approval preview. It is not a live payroll or authentication system. Explicit UI approval is required before Neon, production authentication, server-side permissions, financial persistence or secure QR validation can be implemented.
 
-The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. Other payroll and attendance rules remain unchanged.
+The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [owner-supplied patch](docs/patches/required-days_employee-form_attendance.patch) changes the required-days salary basis, employee contact fields, deactivation dates and attendance notes. Its current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
 
-**Current Preview:** https://centerpro-3rpro5w1c-hussam9329s-projects.vercel.app/login
+**Previous verified Preview (before the required-days patch):** https://centerpro-3rpro5w1c-hussam9329s-projects.vercel.app/login
 
-**Verified application commit:** `229bdcbfef798889256a1d8ff6e5a34a5737fba6`. Lint, strict typecheck, 101 domain tests, 68 browser tests and the production build pass locally and in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/36434469830). See the [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md) for deployment and verification evidence.
+**Previous verified application commit:** `229bdcbfef798889256a1d8ff6e5a34a5737fba6`. Lint, strict typecheck, 101 domain tests, 68 browser tests and the production build pass locally and in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/36434469830). See the [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md) for deployment and verification evidence.
 
 ## Starting the empty preview
 
@@ -31,13 +31,13 @@ Changes persist in the current tab's `sessionStorage`, using key `centerpro-ui-p
 - Five-second welcome on every full page load and successful login, with the exact message **مرحباً بك موظفنا المميز**. Ordinary client navigation does not replay it. Reduced motion keeps the duration and simplifies animation.
 - Guided empty states, prerequisite checks and setup links. Employee creation requires a department; financial adjustments require an employee.
 - Salary type labels are only **قطعي** (`FIXED`) and **غير قطعي** (`TIERED`). Department configuration uses **قوانين القسم**, **إضافة قانون** and **القانون 1**. Stable internal domain names remain unchanged.
-- Employee create/edit, profile, employment/account details, photo preview, activation and salary overrides.
+- Employee create/edit, profile, employment/account details, photo preview, activation and salary overrides. Both phones require fixed `07` plus nine editable digits; Telegram uses a fixed `@`. Email and editable employment end date are removed. Deactivation sets the end date; reactivation clears it.
 - One **الحضور** navigation item. `/attendance` lists days; `/attendance/[id]` contains day settings, employees, exceptions, attendance review and closing/reopening actions.
 - **At most one OPEN attendance day across the entire system.** Opening or reopening another day is rejected until the current day is closed. The shared preview mutation boundary also enforces this rule.
-- Unresolved employees block closing and are never automatically marked absent. Existing seconds precision, absence rules, reasons and audit protections remain intact.
+- Unresolved employees block closing and are never automatically marked absent. Seconds precision, absence rules and audits remain intact. Attendance-record notes are optional; removal still requires confirmation. Day-setting and archive/reopen reasons retain their existing requirements.
 - `/workdays` safely redirects to `/attendance`; its former create shortcut forwards to `/attendance?open=new`.
 - Standalone `/attendance-display` uses the single open day. Camera decoding and rotating QR remain preview-only simulations.
-- Payroll domain calculations, negative balances, adjustments, archives, explicit historical recalculation and preserved payment history remain unchanged.
+- Payroll salary laws now use required days (present, excused/unexcused absence and unresolved required days), followed by deductions and bonuses. EXEMPT days do not count. Partial fixed salary uses required days × daily rate up to the fixed salary; full-month fixed salary is unchanged. Archived financial snapshots and payment history stay frozen until explicit authorized recalculation.
 - Seven report views, genuine structured XLSX downloads and branded browser print-to-PDF. Reports identify their preview status.
 - Audit history, before/after details, settings and role restrictions.
 - PWA manifest/icons and public offline fallback. The service worker does not cache financial pages or business/API data.
@@ -117,7 +117,8 @@ Phase 2 will add normalized Drizzle migrations, secure Super Admin bootstrap, pa
 - `docs/PHASE1_REVISION_REQUEST.md`: later supplied change request, preserved verbatim.
 - `docs/UI_CONTRACT.md`: current frontend contracts and revision invariants.
 - `docs/BRAND.md`: identity provenance and asset constraints.
-- `docs/PHASE1_ACCEPTANCE.md`: current review checklist and separately labeled historical evidence.
+- `docs/PATCH_ACCEPTANCE.md`: required-days patch delivery and verification evidence.
+- `docs/PHASE1_ACCEPTANCE.md`: preceding Phase 1 revision and historical evidence.
 
 ## Security and data boundary
 
