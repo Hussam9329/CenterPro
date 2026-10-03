@@ -40,8 +40,17 @@ export async function loginPreview(
   role: 'المدير العام' | 'مدير العمليات' | 'موظف' = 'المدير العام',
 ) {
   await gotoPreview(page, '/login');
-  await page.getByRole('button', { name: role, exact: true }).click();
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
+  const account = page.getByLabel('الحساب', { exact: true });
+  if (role === 'المدير العام') {
+    await account.selectOption('SYSTEM');
+  } else {
+    const state = await readPreviewData(page);
+    const targetRole = role === 'مدير العمليات' ? 'ADMIN' : 'EMPLOYEE';
+    const target = state.employees.find(employee => employee.active && employee.role === targetRole);
+    if (!target) throw new Error(`No active ${targetRole} preview account exists.`);
+    await account.selectOption(target.id);
+  }
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await finishWelcome(page);
   await expect(page).toHaveURL(role === 'موظف' ? /\/employee$/ : /\/dashboard$/);
 }

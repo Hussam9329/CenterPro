@@ -26,6 +26,9 @@ test.describe('Fresh CenterPro onboarding', () => {
     await departmentDialog.getByLabel('قيمة اليومية', { exact: false }).fill('25000');
     await departmentDialog.getByLabel('خصم الغياب بدون عذر', { exact: false }).fill('50000');
     await departmentDialog.getByLabel('الحد الأعلى للراتب', { exact: false }).fill('600000');
+    await departmentDialog.getByLabel('تبدأ الأيام الإضافية من اليوم', { exact: false }).fill('5');
+    await departmentDialog.getByLabel('من يوم', { exact: true }).fill('0');
+    await departmentDialog.getByLabel('إلى يوم', { exact: true }).fill('4');
     await departmentDialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
     await expect(departmentDialog).toBeHidden();
     state = await readPreviewData(page);
@@ -69,6 +72,8 @@ test.describe('Fresh CenterPro onboarding', () => {
     let dialog = page.getByRole('dialog', { name: 'إضافة قسم جديد', exact: true });
     await dialog.getByLabel('اسم القسم', { exact: false }).fill('قسم موقوف للاختبار');
     await dialog.getByLabel('نوع الراتب', { exact: true }).selectOption('FIXED');
+    await dialog.getByLabel('قيمة اليومية', { exact: false }).fill('25000');
+    await dialog.getByLabel('خصم الغياب بدون عذر', { exact: false }).fill('50000');
     await dialog.getByLabel('الراتب القطعي', { exact: false }).fill('500000');
     await dialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
     await expect(dialog).toBeHidden();
@@ -80,5 +85,81 @@ test.describe('Fresh CenterPro onboarding', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'لا توجد أقسام نشطة', exact: true })).toBeVisible();
     expect((await readPreviewData(page)).employees).toEqual([]);
+  });
+
+  test('fixed department amounts start blank and accept explicit zero without hidden tier requirements', async ({ page }) => {
+    await loginPreview(page);
+    await gotoPreview(page, '/departments?add=1');
+    let dialog = page.getByRole('dialog', { name: 'إضافة قسم جديد', exact: true });
+    await dialog.getByLabel('اسم القسم', { exact: false }).fill('قسم بقيم صفرية');
+    await dialog.getByLabel('نوع الراتب', { exact: true }).selectOption('FIXED');
+    for (const label of ['قيمة اليومية', 'خصم الغياب بدون عذر', 'الراتب القطعي']) {
+      await expect(dialog.getByLabel(label, { exact: true })).toHaveValue('');
+    }
+    await dialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('أكمل الحقول الرقمية المطلوبة');
+    expect((await readPreviewData(page)).departments).toHaveLength(0);
+    for (const label of ['قيمة اليومية', 'خصم الغياب بدون عذر', 'الراتب القطعي']) {
+      await dialog.getByLabel(label, { exact: true }).fill('0');
+    }
+    await dialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    const saved = await readPreviewData(page);
+    expect(saved.departments[0].salary).toMatchObject({ mode: 'FIXED', dailyRate: 0, unexcusedRate: 0, fixedSalary: 0 });
+    await page.getByRole('button', { name: 'إعدادات القسم', exact: true }).click();
+    dialog = page.getByRole('dialog', { name: 'إعدادات قسم قسم بقيم صفرية', exact: true });
+    await expect(dialog.getByLabel('قيمة اليومية', { exact: true })).toHaveValue('0');
+    await dialog.getByLabel('قيمة اليومية', { exact: true }).fill('');
+    await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('أكمل الحقول الرقمية المطلوبة');
+    expect((await readPreviewData(page)).audit).toEqual(saved.audit);
+    await dialog.getByLabel('قيمة اليومية', { exact: true }).fill('0');
+    await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test('tier law boundaries and fixed amounts require explicit values on create and edit', async ({ page }) => {
+    await loginPreview(page);
+    await gotoPreview(page, '/departments?add=1');
+    let dialog = page.getByRole('dialog', { name: 'إضافة قسم جديد', exact: true });
+    await dialog.getByLabel('اسم القسم', { exact: false }).fill('قسم قانون الصفر');
+    for (const label of ['قيمة اليومية', 'خصم الغياب بدون عذر', 'الحد الأعلى للراتب', 'تبدأ الأيام الإضافية من اليوم', 'من يوم', 'إلى يوم']) {
+      await expect(dialog.getByLabel(label, { exact: true })).toHaveValue('');
+    }
+    for (const label of ['قيمة اليومية', 'خصم الغياب بدون عذر', 'الحد الأعلى للراتب']) {
+      await dialog.getByLabel(label, { exact: true }).fill('0');
+    }
+    await dialog.getByLabel('تبدأ الأيام الإضافية من اليوم', { exact: true }).fill('1');
+    await dialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('أكمل أرقام قوانين القسم');
+    await dialog.getByLabel('من يوم', { exact: true }).fill('0');
+    await dialog.getByLabel('إلى يوم', { exact: true }).fill('0');
+    await dialog.getByRole('combobox', { name: 'طريقة الحساب', exact: true }).selectOption('FIXED');
+    await expect(dialog.getByLabel('المبلغ الثابت', { exact: true })).toHaveValue('');
+    await dialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('أكمل أرقام قوانين القسم');
+    expect((await readPreviewData(page)).departments).toHaveLength(0);
+    await dialog.getByLabel('المبلغ الثابت', { exact: true }).fill('0');
+    await dialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    const saved = await readPreviewData(page);
+    expect(saved.departments[0].salary.tiers[0]).toMatchObject({ fromDays: 0, toDays: 0, type: 'FIXED', amount: 0 });
+    await page.getByRole('button', { name: 'إعدادات القسم', exact: true }).click();
+    dialog = page.getByRole('dialog', { name: 'إعدادات قسم قسم قانون الصفر', exact: true });
+    for (const label of ['من يوم', 'إلى يوم', 'المبلغ الثابت']) {
+      await expect(dialog.getByLabel(label, { exact: true })).toHaveValue('0');
+      await dialog.getByLabel(label, { exact: true }).fill('');
+      await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+      await expect(dialog.getByRole('alert')).toContainText('أكمل أرقام قوانين القسم');
+      expect((await readPreviewData(page)).audit).toEqual(saved.audit);
+      await dialog.getByLabel(label, { exact: true }).fill('0');
+    }
+    await dialog.getByRole('button', { name: 'إضافة قانون', exact: true }).click();
+    await expect(dialog.getByLabel('المبلغ الثابت', { exact: true }).nth(1)).toHaveValue('');
+    await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('أكمل أرقام قوانين القسم');
+    await dialog.getByRole('button', { name: 'حذف القانون 2', exact: true }).click();
+    await dialog.getByRole('button', { name: 'حفظ الإعدادات', exact: true }).click();
+    await expect(dialog).toBeHidden();
   });
 });

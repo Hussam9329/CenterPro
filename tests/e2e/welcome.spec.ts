@@ -10,20 +10,20 @@ test('fresh load covers login for the full five seconds with the exact welcome m
   await expect(welcome).toHaveAttribute('data-welcome-sequence', 'initial');
   await expect(welcome.getByText('مرحباً بك موظفنا المميز', { exact: true })).toBeVisible();
   await expect(welcome.getByRole('img', { name: 'CenterPro', exact: true })).toBeVisible();
-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeHidden();
+  await expect(page.getByLabel('الحساب', { exact: true })).toBeHidden();
   await page.clock.fastForward(4_900);
   await expect(welcome).toBeVisible();
   await page.clock.fastForward(99);
   await expect(welcome).toBeVisible();
   await page.clock.fastForward(1);
   await expect(welcome).toBeHidden();
-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
 });
 
 test('login shows five seconds before dashboard, internal navigation stays clear, reload welcomes again', async ({ page }) => {
   await gotoPreview(page, '/login');
   await page.clock.pauseAt(new Date(await page.evaluate(() => Date.now()) + 1_000));
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   const welcome = await waitForWelcome(page);
   await expect(welcome).toHaveAttribute('data-welcome-sequence', 'login');
   await expect(page).toHaveURL(/\/login$/);
@@ -112,6 +112,6 @@ for (const [width, height] of sizes) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
     await page.screenshot({ path: `qa-artifacts/welcome-reduced-${width}.png` });
     await finishWelcome(page);
-    await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
   });
 }

@@ -2,6 +2,8 @@
 
 Date: 2026-09-29. Scope: Phase 1 frontend approval preview only.
 
+Historical delivery record. The subsequent audit and evaluation update is documented in [EVALUATION_PATCH_ACCEPTANCE.md](EVALUATION_PATCH_ACCEPTANCE.md).
+
 ## Source
 
 The owner supplied `CenterPro_required-days_employee-form_attendance(1).patch`. It applied cleanly to `b56c3b8e270dc933b3e9330ea8ddf261d96112ae`. The exact 643-line patch is preserved in [patches/required-days_employee-form_attendance.patch](patches/required-days_employee-form_attendance.patch).

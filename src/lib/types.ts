@@ -13,7 +13,79 @@ export interface PayrollResult { employeeId: string; employeeName: string; emplo
 export interface PayrollMonth { id: string; month: string; state: 'OPEN' | 'ARCHIVED' | 'REOPENED'; archivedAt?: string; snapshots: Record<string, PayrollResult>; sourceSnapshot?: Pick<DemoData, 'attendance' | 'workdays' | 'deductions' | 'bonuses' | 'employees' | 'departments'> }
 export interface Payment { id: string; employeeId: string; month: string; salaryAtPayment: number; amount: number; date: string; paidBy: string; createdAt: string }
 export interface AuditEntry { id: string; actor: string; role: Role; action: string; entity: string; entityId: string; employeeId?: string; oldValues: Record<string, unknown>; newValues: Record<string, unknown>; timestamp: string; ip?: string; userAgent?: string }
+
+export interface EvaluationLeaderboardRow {
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  papers: number;
+  correctionErrors: number;
+  behaviorErrors: number;
+  examsEvaluated: number;
+  score: number;
+  accuracy: number | null;
+}
+export interface EvaluationExamSnapshot {
+  id: string;
+  name: string;
+  date: string;
+  rows: EvaluationLeaderboardRow[];
+}
+export interface EvaluationCycleSnapshot {
+  rows: EvaluationLeaderboardRow[];
+  exams: EvaluationExamSnapshot[];
+}
+export interface EvaluationCycle {
+  id: string;
+  name: string;
+  state: 'OPEN' | 'ARCHIVED';
+  openedAt: string;
+  openedBy: string;
+  closedAt?: string;
+  closedBy?: string;
+  snapshot?: EvaluationCycleSnapshot;
+}
+export interface EvaluationExam {
+  id: string;
+  cycleId: string;
+  name: string;
+  date: string;
+  note: string;
+  state: 'OPEN' | 'CLOSED';
+  createdBy: string;
+  createdAt: string;
+  closedAt?: string;
+  closedBy?: string;
+}
+export interface ExamEvaluation {
+  id: string;
+  examId: string;
+  employeeId: string;
+  papers: number | null;
+  correctionErrors: number | null;
+  behaviorErrors: number | null;
+  note: string;
+  createdBy: string;
+  createdAt: string;
+  updatedBy: string;
+  updatedAt: string;
+}
+
 export interface DemoSettings { centerName: string; qrInterval: number }
-export interface DemoData { employees: Employee[]; departments: Department[]; workdays: Workday[]; attendance: AttendanceRecord[]; deductions: Deduction[]; bonuses: Bonus[]; months: PayrollMonth[]; payments: Payment[]; audit: AuditEntry[]; settings: DemoSettings }
+export interface DemoData {
+  employees: Employee[];
+  departments: Department[];
+  workdays: Workday[];
+  attendance: AttendanceRecord[];
+  deductions: Deduction[];
+  bonuses: Bonus[];
+  months: PayrollMonth[];
+  payments: Payment[];
+  audit: AuditEntry[];
+  evaluationCycles: EvaluationCycle[];
+  evaluationExams: EvaluationExam[];
+  examEvaluations: ExamEvaluation[];
+  settings: DemoSettings;
+}
 export interface DemoSession { role: Role; employeeId?: string; name: string; kind?: 'SYSTEM' | 'EMPLOYEE' }
 export type AuditInput = Pick<AuditEntry, 'action' | 'entity' | 'entityId'> & Partial<Pick<AuditEntry, 'employeeId' | 'oldValues' | 'newValues'>>;

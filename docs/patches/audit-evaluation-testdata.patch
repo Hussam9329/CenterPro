@@ -1,0 +1,1472 @@
+diff --git a/src/app/(admin)/audit/page.tsx b/src/app/(admin)/audit/page.tsx
+index 1fa1bed..5c9034a 100644
+--- a/src/app/(admin)/audit/page.tsx
++++ b/src/app/(admin)/audit/page.tsx
+@@ -9,9 +9,9 @@ import { date, duration, money, monthLabel, number, time } from '@/lib/format';
+ import type { AuditEntry, DemoData, Role } from '@/lib/types';
+ 
+ const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف' };
+-const entityLabels: Record<string, string> = { employee: 'الموظفون', department: 'الأقسام', workday: 'أيام الحضور', attendance: 'الحضور', deduction: 'الخصومات', bonus: 'المكافآت', payment: 'صرف الرواتب', payroll_month: 'رواتب الشهر', settings: 'إعدادات النظام' };
++const entityLabels: Record<string, string> = { employee: 'الموظفون', department: 'الأقسام', workday: 'أيام الحضور', attendance: 'الحضور', deduction: 'الخصومات', bonus: 'المكافآت', payment: 'صرف الرواتب', payroll_month: 'رواتب الشهر', settings: 'إعدادات النظام', 'evaluation-cycle': 'دورات التقييم', 'evaluation-exam': 'امتحانات التدقيق', 'exam-evaluation': 'تقييمات المصححين' };
+ const valueLabels: Record<string, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف', OPEN: 'مفتوح', CLOSED: 'مغلق', ARCHIVED: 'مؤرشف', REOPENED: 'معاد فتحه', PAID: 'تم الصرف', UNPAID: 'لم يُصرف', REVIEW: 'تحتاج مراجعة', PRESENT: 'حاضر', UNRESOLVED: 'لم يُحسم', EXCUSED: 'غياب بعذر', UNEXCUSED: 'غياب بدون عذر', EXEMPT: 'معفى', QR: 'رمز QR', MANUAL: 'إداري', FIXED: 'قطعي', TIERED: 'غير قطعي', PER_DAY: 'عن كل يوم', INCLUDE: 'مشمول', EXCLUDE: 'مستثنى', MALE: 'ذكر', FEMALE: 'أنثى' };
+-const fieldLabels: Record<string, string> = { id: 'رقم السجل', code: 'الرقم الوظيفي', name: 'الاسم', date: 'التاريخ', startDate: 'تاريخ المباشرة', endDate: 'تاريخ إنهاء الخدمة', startTime: 'بداية الدوام', checkIn: 'وقت الحضور', month: 'الشهر', state: 'الحالة', status: 'حالة الحضور', paymentStatus: 'حالة الصرف', amount: 'المبلغ', finalSalary: 'صافي الراتب', salaryAtPayment: 'الراتب عند الصرف', paidAmount: 'المبلغ المصروف', active: 'نشط', role: 'الدور', username: 'اسم المستخدم', employeeId: 'الموظف', departmentId: 'القسم', departmentIds: 'الأقسام المشمولة', reason: 'السبب', type: 'النوع', customType: 'نوع الخصم', createdBy: 'أضيف بواسطة', paidBy: 'صرف بواسطة', createdAt: 'تاريخ الإنشاء', updatedAt: 'آخر تعديل', sessionsInvalidated: 'إنهاء الجلسات السابقة', simulated: 'محاكاة', preview: 'معاينة', latenessSeconds: 'مدة التأخير', centerName: 'اسم المركز', qrInterval: 'مدة تجديد QR بالثواني', salary: 'إعدادات الراتب', salaryConfig: 'إعدادات الراتب', mode: 'نوع الراتب', dailyRate: 'قيمة اليوم', unexcusedRate: 'خصم اليوم بدون عذر', maximum: 'سقف الراتب', fixedSalary: 'الراتب القطعي', extraDaysStart: 'بداية الأيام الإضافية', tiers: 'قوانين القسم', fromDays: 'من يوم', toDays: 'إلى يوم', fixedOverride: 'راتب قطعي خاص', dailyRateOverride: 'قيمة يوم خاصة', address: 'السكن', phone: 'رقم الهاتف', guardianPhone: 'هاتف ولي الأمر', gender: 'الجنس', birthDate: 'تاريخ الميلاد', notes: 'الملاحظات', qualification: 'المؤهل', telegram: 'معرّف تليغرام', photo: 'الصورة', overrides: 'استثناءات الموظفين', explicitRecalculation: 'إعادة احتساب صريحة', salaryRules: 'قوانين القسم', requiredDays: 'الأيام المطلوبة', attendanceDays: 'أيام الحضور', excusedDays: 'غياب بعذر', unexcusedDays: 'غياب بدون عذر', exemptDays: 'أيام الإعفاء', unresolvedDays: 'أيام لم تُحسم', baseSalary: 'الراتب الأساسي', otherDeductions: 'الخصومات الأخرى', bonuses: 'المكافآت' };
++const fieldLabels: Record<string, string> = { id: 'رقم السجل', code: 'الرقم الوظيفي', name: 'الاسم', date: 'التاريخ', startDate: 'تاريخ المباشرة', endDate: 'تاريخ إنهاء الخدمة', startTime: 'بداية الدوام', checkIn: 'وقت الحضور', month: 'الشهر', state: 'الحالة', status: 'حالة الحضور', paymentStatus: 'حالة الصرف', amount: 'المبلغ', finalSalary: 'صافي الراتب', salaryAtPayment: 'الراتب عند الصرف', paidAmount: 'المبلغ المصروف', active: 'نشط', role: 'الدور', username: 'اسم المستخدم', employeeId: 'الموظف', departmentId: 'القسم', departmentIds: 'الأقسام المشمولة', reason: 'السبب', type: 'النوع', customType: 'نوع الخصم', createdBy: 'أضيف بواسطة', paidBy: 'صرف بواسطة', createdAt: 'تاريخ الإنشاء', updatedAt: 'آخر تعديل', sessionsInvalidated: 'إنهاء الجلسات السابقة', simulated: 'محاكاة', preview: 'معاينة', latenessSeconds: 'مدة التأخير', centerName: 'اسم المركز', qrInterval: 'مدة تجديد QR بالثواني', salary: 'إعدادات الراتب', salaryConfig: 'إعدادات الراتب', mode: 'نوع الراتب', dailyRate: 'قيمة اليوم', unexcusedRate: 'خصم اليوم بدون عذر', maximum: 'سقف الراتب', fixedSalary: 'الراتب القطعي', extraDaysStart: 'بداية الأيام الإضافية', tiers: 'قوانين القسم', fromDays: 'من يوم', toDays: 'إلى يوم', fixedOverride: 'راتب قطعي خاص', dailyRateOverride: 'قيمة يوم خاصة', address: 'السكن', phone: 'رقم الهاتف', guardianPhone: 'هاتف ولي الأمر', gender: 'الجنس', birthDate: 'تاريخ الميلاد', notes: 'الملاحظات', qualification: 'المؤهل', telegram: 'معرّف تليغرام', photo: 'الصورة', overrides: 'استثناءات الموظفين', explicitRecalculation: 'إعادة احتساب صريحة', salaryRules: 'قوانين القسم', requiredDays: 'الأيام المطلوبة', attendanceDays: 'أيام الحضور', excusedDays: 'غياب بعذر', unexcusedDays: 'غياب بدون عذر', exemptDays: 'أيام الإعفاء', unresolvedDays: 'أيام لم تُحسم', baseSalary: 'الراتب الأساسي', otherDeductions: 'الخصومات الأخرى', bonuses: 'المكافآت', cycleId: 'دورة التقييم', examId: 'الامتحان', papers: 'عدد الأوراق المصححة', correctionErrors: 'أخطاء التصحيح', behaviorErrors: 'أخطاء السلوك', note: 'الملاحظة', rows: 'عدد المصححين', exams: 'عدد الامتحانات' };
+ const sensitiveField = /password|passphrase|hash|secret|token|credential|كلمة.?المرور|كلمة.?السر/i;
+ const financialFields = new Set(['amount', 'finalSalary', 'salaryAtPayment', 'paidAmount', 'dailyRate', 'unexcusedRate', 'maximum', 'fixedSalary', 'dailyRateOverride', 'baseSalary', 'otherDeductions', 'bonuses']);
+ 
+diff --git a/src/app/(admin)/evaluations/[id]/page.tsx b/src/app/(admin)/evaluations/[id]/page.tsx
+new file mode 100644
+index 0000000..7552074
+--- /dev/null
++++ b/src/app/(admin)/evaluations/[id]/page.tsx
+@@ -0,0 +1,38 @@
++'use client';
++
++import Link from 'next/link';
++import { useParams, useRouter } from 'next/navigation';
++import { ArrowRight, LockKeyhole, UnlockKeyhole } from 'lucide-react';
++import { useDemo, useToast } from '@/components/demo-provider';
++import { Badge, Button, Card, EmptyState, PageHeader } from '@/components/ui';
++import { getExamLeaderboard } from '@/lib/evaluations';
++import { date } from '@/lib/format';
++import { Leaderboard } from '@/components/evaluations/leaderboard';
++
++export default function EvaluationExamAdminPage() {
++  const params = useParams<{ id: string }>();
++  const router = useRouter();
++  const { data, session, updateData } = useDemo();
++  const toast = useToast();
++  const exam = data.evaluationExams.find(item => item.id === params.id);
++  if (!exam) return <div className="page-stack"><EmptyState title="الامتحان غير موجود" action={<Button variant="secondary" onClick={() => router.push('/evaluations')}>العودة للتدقيق</Button>}/></div>;
++  const cycle = data.evaluationCycles.find(item => item.id === exam.cycleId);
++  const rows = cycle?.state === 'ARCHIVED'
++    ? cycle.snapshot?.exams.find(item => item.id === exam.id)?.rows ?? []
++    : getExamLeaderboard(data, exam.id);
++  const evaluations = data.examEvaluations.filter(item => item.examId === exam.id);
++  const canToggle = cycle?.state === 'OPEN' && session?.role !== 'EMPLOYEE';
++  function toggle() {
++    if (!session || !canToggle) return;
++    const nextState = exam.state === 'OPEN' ? 'CLOSED' : 'OPEN';
++    const now = new Date().toISOString();
++    updateData(draft => { const target = draft.evaluationExams.find(item => item.id === exam.id); if (!target) return; target.state = nextState; if (nextState === 'CLOSED') { target.closedAt = now; target.closedBy = session.name; } else { delete target.closedAt; delete target.closedBy; } }, { action: nextState === 'CLOSED' ? 'إغلاق امتحان للتدقيق' : 'إعادة فتح امتحان للتدقيق', entity:'evaluation-exam', entityId:exam.id, oldValues:{ state:exam.state }, newValues:{ state:nextState } });
++    toast(nextState === 'CLOSED' ? 'تم إغلاق الامتحان للتدقيق.' : 'تمت إعادة فتح الامتحان للتدقيق.');
++  }
++  return <div className="page-stack">
++    <Link href="/evaluations" className="button-link"><ArrowRight size={15}/>العودة إلى التدقيق</Link>
++    <PageHeader eyebrow={cycle?.name || 'التدقيق'} title={exam.name} description={`${date(exam.date)}${exam.note ? ` · ${exam.note}` : ''}`} actions={<div className="inline"><Badge tone={exam.state === 'OPEN' ? 'success' : 'neutral'}>{exam.state === 'OPEN' ? 'مفتوح للتدقيق' : 'مغلق'}</Badge>{canToggle && <Button variant="secondary" onClick={toggle}>{exam.state === 'OPEN' ? <><LockKeyhole size={16}/>إغلاق التدقيق</> : <><UnlockKeyhole size={16}/>إعادة الفتح</>}</Button>}</div>}/>
++    <Card title="Leaderboard الامتحان" description="النقاط تخص هذا الامتحان فقط. عدد الامتحانات لا يدخل بمعادلة التقييم."><Leaderboard rows={rows}/></Card>
++    <Card title="سجل إدخالات المدققين" description="من أدخل أو عدّل كل تقييم وآخر وقت تحديث.">{!evaluations.length ? <EmptyState title="لم تُدخل بيانات تدقيق بعد" description="سيبدأ السجل بالظهور فور إدخال موظف التدقيق للأوراق أو الأخطاء."/> : <div className="stack">{evaluations.map(item => { const employee = data.employees.find(employee => employee.id === item.employeeId); return <div className="list-row" key={item.id}><div><strong>{employee?.name || 'موظف'}</strong><p className="muted">{item.papers ?? '—'} ورقة · {item.correctionErrors ?? '—'} خطأ تصحيح · {item.behaviorErrors ?? '—'} خطأ سلوك</p></div><div className="muted">آخر تعديل: {item.updatedBy} · <span dir="ltr">{date(item.updatedAt)}</span></div></div>; })}</div>}</Card>
++  </div>;
++}
+diff --git a/src/app/(admin)/evaluations/page.tsx b/src/app/(admin)/evaluations/page.tsx
+new file mode 100644
+index 0000000..af73f3d
+--- /dev/null
++++ b/src/app/(admin)/evaluations/page.tsx
+@@ -0,0 +1,85 @@
++'use client';
++
++import Link from 'next/link';
++import { useMemo, useState, type FormEvent } from 'react';
++import { Archive, ChevronLeft, ClipboardCheck, LockKeyhole, Plus, Trophy, UnlockKeyhole } from 'lucide-react';
++import { useDemo, useToast } from '@/components/demo-provider';
++import { Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, StatCard, Textarea } from '@/components/ui';
++import { buildEvaluationCycleSnapshot, getCycleLeaderboard, getOpenEvaluationCycle } from '@/lib/evaluations';
++import { DEMO_TODAY } from '@/lib/mock-data';
++import { date } from '@/lib/format';
++import { Leaderboard } from '@/components/evaluations/leaderboard';
++import styles from '@/components/evaluations/evaluations.module.css';
++
++export default function EvaluationsAdminPage() {
++  const { data, session, updateData } = useDemo();
++  const toast = useToast();
++  const cycle = getOpenEvaluationCycle(data);
++  const [examOpen, setExamOpen] = useState(false);
++  const [closeCycleOpen, setCloseCycleOpen] = useState(false);
++  const [examName, setExamName] = useState('');
++  const [examDate, setExamDate] = useState(DEMO_TODAY);
++  const [examNote, setExamNote] = useState('');
++  const [error, setError] = useState('');
++  const exams = useMemo(() => cycle ? data.evaluationExams.filter(item => item.cycleId === cycle.id).sort((a,b) => b.date.localeCompare(a.date)) : [], [cycle, data.evaluationExams]);
++  const leaderboard = cycle ? getCycleLeaderboard(data, cycle.id) : [];
++  const archived = [...data.evaluationCycles].filter(item => item.state === 'ARCHIVED').sort((a,b) => (b.closedAt || '').localeCompare(a.closedAt || ''));
++
++  function openCycle() {
++    if (!session || cycle) return;
++    const id = crypto.randomUUID();
++    const count = data.evaluationCycles.length + 1;
++    const now = new Date().toISOString();
++    updateData(draft => { draft.evaluationCycles.push({ id, name: `دورة التقييم ${count}`, state:'OPEN', openedAt:now, openedBy:session.name }); }, { action:'فتح دورة تقييم جديدة', entity:'evaluation-cycle', entityId:id, newValues:{ name:`دورة التقييم ${count}` } });
++    toast('تم فتح دورة تقييم جديدة. يمكنك الآن إضافة الامتحانات.');
++  }
++
++  function addExam(event: FormEvent) {
++    event.preventDefault();
++    if (!session || !cycle) return;
++    if (!examName.trim()) { setError('اكتب اسم الامتحان.'); return; }
++    if (!examDate) { setError('اختر تاريخ الامتحان.'); return; }
++    const id = crypto.randomUUID();
++    const now = new Date().toISOString();
++    const exam = { id, cycleId:cycle.id, name:examName.trim(), date:examDate, note:examNote.trim(), state:'OPEN' as const, createdBy:session.name, createdAt:now };
++    updateData(draft => { draft.evaluationExams.push(exam); }, { action:'إضافة امتحان للتدقيق', entity:'evaluation-exam', entityId:id, newValues:{ name:exam.name, date:exam.date, cycleId:cycle.id } });
++    setExamOpen(false); setExamName(''); setExamNote(''); setExamDate(DEMO_TODAY); setError('');
++    toast('تمت إضافة الامتحان وفتحه للتدقيق.');
++  }
++
++  function closeCycle() {
++    if (!session || !cycle) return;
++    const snapshot = buildEvaluationCycleSnapshot(data, cycle.id);
++    const now = new Date().toISOString();
++    updateData(draft => {
++      const current = draft.evaluationCycles.find(item => item.id === cycle.id);
++      if (!current) return;
++      current.state = 'ARCHIVED'; current.closedAt = now; current.closedBy = session.name; current.snapshot = snapshot;
++      draft.evaluationExams.filter(item => item.cycleId === cycle.id).forEach(exam => { if (exam.state === 'OPEN') { exam.state='CLOSED'; exam.closedAt=now; exam.closedBy=session.name; } });
++    }, { action:'إغلاق وأرشفة دورة التقييم', entity:'evaluation-cycle', entityId:cycle.id, oldValues:{ state:'OPEN' }, newValues:{ state:'ARCHIVED', rows:snapshot.rows.length, exams:snapshot.exams.length } });
++    setCloseCycleOpen(false);
++    toast('تم إغلاق وأرشفة دورة التقييم. يمكنك فتح دورة جديدة متى شئت.');
++  }
++
++  const totalPapers = leaderboard.reduce((sum,row) => sum + row.papers, 0);
++  const totalErrors = leaderboard.reduce((sum,row) => sum + row.correctionErrors + row.behaviorErrors, 0);
++
++  return <div className="page-stack">
++    <PageHeader eyebrow="الجودة والتدقيق" title="التدقيق والتقييم" description="إدارة الامتحانات، متابعة أخطاء التصحيح والسلوك، وترتيب المصححين." actions={cycle ? <><Button onClick={() => setExamOpen(true)}><Plus size={17}/>إضافة امتحان</Button><Button variant="secondary" onClick={() => setCloseCycleOpen(true)}><Archive size={17}/>إغلاق وأرشفة الدورة</Button></> : <Button onClick={openCycle}><Trophy size={17}/>فتح دورة تقييم جديدة</Button>} />
++
++    {!cycle ? <Card title="لا توجد دورة تقييم مفتوحة" description="الـ Leaderboard مستقلة عن الأشهر والرواتب."><EmptyState title="ابدأ دورة تقييم جديدة" description="بعد فتح الدورة تستطيع إضافة الامتحانات، ويبدأ المصححون جميعاً من 0 نقطة." action={<Button onClick={openCycle}><Trophy size={17}/>فتح دورة تقييم</Button>}/></Card> : <>
++      <div className={styles.heroGrid}><StatCard label="دورة التقييم" value={cycle.name} icon={<Trophy size={19}/>} hint={`فتحت بواسطة ${cycle.openedBy}`}/><StatCard label="الامتحانات" value={exams.length} icon={<ClipboardCheck size={19}/>} hint={`${exams.filter(item => item.state === 'OPEN').length} مفتوح للتدقيق`}/><StatCard label="إجمالي الأوراق" value={totalPapers} hint="في الدورة الحالية"/><StatCard label="إجمالي الأخطاء" value={totalErrors} hint="تصحيح + سلوك"/></div>
++      <Card title="الامتحانات" description="افتح الامتحان لمشاهدة النتائج أو غيّر حالة التدقيق من صفحة التفاصيل.">
++        {!exams.length ? <EmptyState title="لا توجد امتحانات حتى الآن" description="أضف أول امتحان ليظهر لموظفي التدقيق." action={<Button onClick={() => setExamOpen(true)}><Plus size={16}/>إضافة امتحان</Button>}/> : <div className={styles.examList}>{exams.map(exam => <article className={styles.examCard} key={exam.id}><div className={styles.examCardTop}><div><h3>{exam.name}</h3><p><span dir="ltr">{date(exam.date)}</span> · أضيف بواسطة {exam.createdBy}</p></div><Badge tone={exam.state === 'OPEN' ? 'success' : 'neutral'}>{exam.state === 'OPEN' ? <><UnlockKeyhole size={12}/>مفتوح</> : <><LockKeyhole size={12}/>مغلق</>}</Badge></div>{exam.note && <p>{exam.note}</p>}<div className={styles.examActions}><Link href={`/evaluations/${exam.id}`} className="button-link">تفاصيل الامتحان <ChevronLeft size={15}/></Link></div></article>)}</div>}
++      </Card>
++      <Card title="المحصلة النهائية الحالية" description="الترتيب يعتمد فقط على: الأوراق − (أخطاء التصحيح ×5) − (أخطاء السلوك ×3). عدد الامتحانات إحصائية فقط."><Leaderboard rows={leaderboard}/></Card>
++    </>}
++
++    <Card title="أرشيف دورات التقييم" description="كل دورة مغلقة تحفظ ترتيبها وتفاصيل امتحاناتها كما كانت لحظة الأرشفة.">
++      {!archived.length ? <EmptyState title="لا يوجد أرشيف تقييمات بعد" description="ستظهر الدورات هنا بعد إغلاقها."/> : <div className={styles.archiveList}>{archived.map(item => <details className={styles.archiveDetails} key={item.id}><summary className={styles.archiveRow}><div><strong>{item.name}</strong><p>{item.closedAt ? `أغلقت ${date(item.closedAt)} بواسطة ${item.closedBy}` : 'دورة مؤرشفة'}</p></div><div className="inline"><Badge>{item.snapshot?.exams.length ?? 0} امتحان</Badge><Badge tone="brand">{item.snapshot?.rows.length ?? 0} مصحح</Badge></div></summary><div className="stack" style={{padding:'14px 4px 4px'}}><Leaderboard rows={item.snapshot?.rows ?? []}/><div className={styles.examBreakdown}>{(item.snapshot?.exams ?? []).map(exam => <div className={styles.examBreakdownItem} key={exam.id}><h4>{exam.name}</h4><p><span dir="ltr">{date(exam.date)}</span> · {exam.rows.reduce((sum,row) => sum + row.papers,0)} ورقة</p></div>)}</div></div></details>)}</div>}
++    </Card>
++
++    <Dialog open={examOpen} onClose={() => setExamOpen(false)} title="إضافة امتحان" description="الامتحان يظهر مباشرة لموظفي قسم التدقيق ضمن دورة التقييم الحالية."><form className="stack" onSubmit={addExam}><Field label="اسم الامتحان" required><Input value={examName} onChange={event => setExamName(event.target.value)} autoFocus placeholder="مثال: امتحان الفصل الثالث"/></Field><Field label="تاريخ الامتحان" required><Input type="date" value={examDate} onChange={event => setExamDate(event.target.value)}/></Field><Field label="ملاحظة" hint="اختياري"><Textarea rows={3} value={examNote} onChange={event => setExamNote(event.target.value)} placeholder="ملاحظة اختيارية عن الامتحان"/></Field>{error && <p className="text-danger" role="alert">{error}</p>}<div className="form-actions"><Button type="button" variant="secondary" onClick={() => setExamOpen(false)}>إلغاء</Button><Button type="submit">إضافة وفتح للتدقيق</Button></div></form></Dialog>
++    <ConfirmDialog open={closeCycleOpen} onClose={() => setCloseCycleOpen(false)} onConfirm={closeCycle} title="إغلاق وأرشفة دورة التقييم؟" description="سيتم تثبيت ترتيب المصححين، الأوراق، الأخطاء ومعدل الدقة لهذه الدورة. ستُغلق امتحاناتها المفتوحة، وبعدها يمكنك فتح دورة جديدة فارغة." confirmLabel="إغلاق وأرشفة الدورة"/>
++  </div>;
++}
+diff --git a/src/app/employee/audit/page.tsx b/src/app/employee/audit/page.tsx
+new file mode 100644
+index 0000000..eca3fa8
+--- /dev/null
++++ b/src/app/employee/audit/page.tsx
+@@ -0,0 +1,41 @@
++'use client';
++
++import { useEffect, useMemo, useState } from 'react';
++import { ClipboardCheck } from 'lucide-react';
++import { AuditorWorkspace } from '@/components/evaluations/auditor-workspace';
++import { Leaderboard } from '@/components/evaluations/leaderboard';
++import styles from '@/components/evaluations/evaluations.module.css';
++import { useDemo } from '@/components/demo-provider';
++import { Badge, Card, EmptyState, PageHeader, Select, StatCard } from '@/components/ui';
++import { getCycleLeaderboard, getExamLeaderboard, getOpenEvaluationCycle, isAuditEmployee } from '@/lib/evaluations';
++import { date } from '@/lib/format';
++
++export default function AuditorPage() {
++  const { data, session } = useDemo();
++  const employee = data.employees.find(item => item.id === session?.employeeId);
++  const cycle = getOpenEvaluationCycle(data);
++  const exams = useMemo(() => cycle ? data.evaluationExams.filter(item => item.cycleId === cycle.id).sort((a,b) => b.date.localeCompare(a.date)) : [], [cycle, data.evaluationExams]);
++  const [examId, setExamId] = useState('');
++  useEffect(() => { if (!exams.some(item => item.id === examId)) setExamId(exams[0]?.id || ''); }, [exams, examId]);
++
++  if (!employee || !isAuditEmployee(data, employee)) return <EmptyState title="واجهة التدقيق مخصصة لموظفي قسم التدقيق" description="لا يملك هذا الحساب صلاحية إدخال تقييمات المصححين."/>;
++  if (!cycle) return <div className="page-stack"><PageHeader eyebrow="الجودة" title="التدقيق" description="إدخال أوراق وأخطاء المصححين لكل امتحان."/><EmptyState title="لا توجد دورة تقييم مفتوحة" description="افتح الإدارة دورة تقييم جديدة ثم أضف الامتحانات ليبدأ التدقيق."/></div>;
++  if (!exams.length) return <div className="page-stack"><PageHeader eyebrow={cycle.name} title="التدقيق" description="إدخال أوراق وأخطاء المصححين لكل امتحان."/><EmptyState title="لا توجد امتحانات في الدورة الحالية" description="بعد إضافة الامتحان من الإدارة سيظهر هنا تلقائياً."/></div>;
++
++  const selectedExam = exams.find(item => item.id === examId) || exams[0];
++  const examLeaderboard = selectedExam ? getExamLeaderboard(data, selectedExam.id) : [];
++  const cycleLeaderboard = getCycleLeaderboard(data, cycle.id);
++  const totalPapers = examLeaderboard.reduce((sum,row) => sum + row.papers, 0);
++  const totalErrors = examLeaderboard.reduce((sum,row) => sum + row.correctionErrors + row.behaviorErrors, 0);
++
++  return <div className="page-stack">
++    <PageHeader eyebrow={cycle.name} title="التدقيق" description="اختر الامتحان، فلتر المصححين، ثم أدخل الأوراق والأخطاء مباشرة. كل تغيير يُحفظ تلقائياً." actions={<Badge tone="brand"><ClipboardCheck size={14}/>حساب مدقق</Badge>}/>
++    <div className={styles.heroGrid}><StatCard label="الأوراق في الامتحان" value={totalPapers}/><StatCard label="أخطاء التصحيح" value={examLeaderboard.reduce((sum,row) => sum + row.correctionErrors,0)}/><StatCard label="أخطاء السلوك" value={examLeaderboard.reduce((sum,row) => sum + row.behaviorErrors,0)}/><StatCard label="مجموع الأخطاء" value={totalErrors} icon={<ClipboardCheck size={18}/>}/></div>
++    <Card title="إدخال بيانات التدقيق" description="اختر الامتحان والمصححين من نفس الصف. خطأ التصحيح = 5 نقاط، وخطأ السلوك = 3 نقاط، وعدد الامتحانات إحصائية فقط.">
++      <div className="notice" style={{ marginBottom: 16 }}><strong>حفظ تلقائي</strong><span>زر + أو − يحفظ فوراً، والكتابة من الكيبورد تُحفظ بعد توقف قصير. خطأ السلوك يعني عدم الالتزام بتعليمات المدقق.</span></div>
++      <AuditorWorkspace examId={selectedExam.id} examControl={<div className="field"><span className="field-label">اختيار الامتحان</span><Select value={selectedExam.id} onChange={event => setExamId(event.target.value)}>{exams.map(exam => <option key={exam.id} value={exam.id}>{exam.name} — {date(exam.date)}{exam.state === 'CLOSED' ? ' (مغلق)' : ''}</option>)}</Select></div>}/>
++    </Card>
++    <Card title="Leaderboard الامتحان" description="ترتيب هذا الامتحان فقط."><Leaderboard rows={examLeaderboard}/></Card>
++    <Card title="المحصلة النهائية للدورة" description="تجمع جميع امتحانات الدورة الحالية دون أي معامل حضور أو عدد امتحانات."><Leaderboard rows={cycleLeaderboard}/></Card>
++  </div>;
++}
+diff --git a/src/app/employee/evaluation/page.tsx b/src/app/employee/evaluation/page.tsx
+new file mode 100644
+index 0000000..bebdb73
+--- /dev/null
++++ b/src/app/employee/evaluation/page.tsx
+@@ -0,0 +1,53 @@
++'use client';
++
++import { useMemo, useState } from 'react';
++import { ClipboardCheck, FileText, Target, Trophy } from 'lucide-react';
++import { Leaderboard } from '@/components/evaluations/leaderboard';
++import styles from '@/components/evaluations/evaluations.module.css';
++import { useDemo } from '@/components/demo-provider';
++import { Badge, Card, EmptyState, PageHeader, Select, StatCard } from '@/components/ui';
++import { formatAccuracy, getCycleLeaderboard, getExamLeaderboard, getExamEvaluation, getOpenEvaluationCycle, isCorrectionEmployee } from '@/lib/evaluations';
++import { date } from '@/lib/format';
++
++export default function EmployeeEvaluationPage() {
++  const { data, session } = useDemo();
++  const employee = data.employees.find(item => item.id === session?.employeeId);
++  const openCycle = getOpenEvaluationCycle(data);
++  const cycles = useMemo(() => [
++    ...(openCycle ? [openCycle] : []),
++    ...data.evaluationCycles.filter(item => item.state === 'ARCHIVED').sort((a,b) => (b.closedAt || '').localeCompare(a.closedAt || '')),
++  ], [data.evaluationCycles, openCycle]);
++  const [cycleId, setCycleId] = useState(openCycle?.id || cycles[0]?.id || '');
++  const cycle = cycles.find(item => item.id === cycleId) || cycles[0];
++  const currentRows = cycle ? getCycleLeaderboard(data, cycle.id) : [];
++  const own = currentRows.find(row => row.employeeId === employee?.id);
++  const currentExams = cycle ? data.evaluationExams.filter(item => item.cycleId === cycle.id).sort((a,b) => a.date.localeCompare(b.date)) : [];
++  const snapshotExams = cycle?.state === 'ARCHIVED' ? cycle.snapshot?.exams || [] : [];
++  const examOptions = cycle?.state === 'ARCHIVED' ? snapshotExams.map(exam => ({ id:exam.id, name:exam.name, date:exam.date })) : currentExams;
++  const [examId, setExamId] = useState('');
++  const effectiveExamId = examOptions.some(item => item.id === examId) ? examId : examOptions[0]?.id || '';
++  const examRows = !cycle || !effectiveExamId ? [] : cycle.state === 'ARCHIVED' ? snapshotExams.find(exam => exam.id === effectiveExamId)?.rows || [] : getExamLeaderboard(data, effectiveExamId);
++
++  if (!employee || !isCorrectionEmployee(data, employee)) return <EmptyState title="واجهة التقييم مخصصة لموظفي قسم التصحيح" description="هذا الحساب لا يملك ملف تقييم مصحح."/>;
++  if (!cycle) return <div className="page-stack"><PageHeader eyebrow="أداؤك" title="التقييمات" description="تفاصيل أدائك وLeaderboard المصححين."/><EmptyState title="لا توجد دورة تقييم حتى الآن" description="ستظهر بياناتك هنا بعد فتح أول دورة تقييم وإضافة الامتحانات."/></div>;
++
++  const ownExamItems = (cycle.state === 'ARCHIVED' ? snapshotExams.map(exam => ({ exam, row:exam.rows.find(row => row.employeeId === employee.id) })) : currentExams.map(exam => ({ exam, row:getExamLeaderboard(data, exam.id).find(row => row.employeeId === employee.id) }))).map(item => ({
++    id:item.exam.id,
++    name:item.exam.name,
++    date:item.exam.date,
++    papers:item.row?.papers ?? 0,
++    correctionErrors:item.row?.correctionErrors ?? 0,
++    behaviorErrors:item.row?.behaviorErrors ?? 0,
++    score:item.row?.score ?? 0,
++    evaluated: cycle.state === 'ARCHIVED' ? Boolean(item.row && item.row.examsEvaluated > 0) : Boolean(getExamEvaluation(data, item.exam.id, employee.id)),
++  }));
++  const rank = currentRows.findIndex(row => row.employeeId === employee.id) + 1;
++
++  return <div className="page-stack">
++    <PageHeader eyebrow="أداؤك" title="التقييمات" description="نتيجتك، تفاصيل كل امتحان، وLeaderboard كاملة للمصححين." actions={<div className="inline"><Select value={cycle.id} onChange={event => { setCycleId(event.target.value); setExamId(''); }} aria-label="اختيار دورة التقييم">{cycles.map(item => <option key={item.id} value={item.id}>{item.name}{item.state === 'ARCHIVED' ? ' — مؤرشفة' : ' — الحالية'}</option>)}</Select><Badge tone={cycle.state === 'OPEN' ? 'success' : 'neutral'}>{cycle.state === 'OPEN' ? 'الدورة الحالية' : 'أرشيف'}</Badge></div>}/>
++    <section className={styles.ownHero}><div><div className="eyebrow">ترتيبك الحالي</div><h2 style={{fontSize:24,marginTop:6}}>{employee.name}</h2><p className="muted">التقييم يعتمد على الأوراق والأخطاء فقط. عدد الامتحانات يظهر كمعلومة ولا يدخل بالمعادلة.</p><div className={styles.heroGrid} style={{marginTop:18}}><StatCard label="الترتيب" value={rank ? `#${rank}` : '—'} icon={<Trophy size={18}/>}/><StatCard label="الأوراق" value={own?.papers ?? 0} icon={<FileText size={18}/>}/><StatCard label="الامتحانات" value={own?.examsEvaluated ?? 0} icon={<ClipboardCheck size={18}/>}/><StatCard label="معدل الدقة" value={formatAccuracy(own?.accuracy ?? null)} icon={<Target size={18}/>}/></div></div><div className={styles.ownScore}><span>التقييم النهائي</span><strong dir="ltr">{own?.score ?? 0}</strong><span>{own?.correctionErrors ?? 0} خطأ تصحيح · {own?.behaviorErrors ?? 0} خطأ سلوك</span></div></section>
++    <Card title="تفاصيلك حسب الامتحان" description="الامتحانات التي لا يوجد لك إدخال فيها تبقى ظاهرة بدون احتسابها ضمن عدد الامتحانات التي تم تقييمك فيها.">{!ownExamItems.length ? <EmptyState title="لا توجد امتحانات"/> : <div className={styles.examBreakdown}>{ownExamItems.map(item => <div className={styles.examBreakdownItem} key={item.id}><div className="inline" style={{justifyContent:'space-between'}}><h4>{item.name}</h4><Badge tone={item.evaluated ? 'brand' : 'neutral'}>{item.evaluated ? 'تم التقييم' : 'بدون تقييم'}</Badge></div><p><span dir="ltr">{date(item.date)}</span></p><p>{item.papers} ورقة · {item.correctionErrors} تصحيح · {item.behaviorErrors} سلوك · <strong>{item.score} نقطة</strong></p></div>)}</div>}</Card>
++    <Card title="Leaderboard الدورة" description="كل موظفي التصحيح الفعالين يظهرون حتى لو كانت نقاطهم 0."><Leaderboard rows={currentRows}/></Card>
++    <Card title="Leaderboard لكل امتحان" description="اختر امتحاناً لمشاهدة ترتيب المصححين داخله.">{!examOptions.length ? <EmptyState title="لا توجد امتحانات في هذه الدورة"/> : <div className="stack"><Select value={effectiveExamId} onChange={event => setExamId(event.target.value)}>{examOptions.map(exam => <option key={exam.id} value={exam.id}>{exam.name} — {date(exam.date)}</option>)}</Select><Leaderboard rows={examRows}/></div>}</Card>
++  </div>;
++}
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 4217794..967fa7e 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -614,3 +614,13 @@ fieldset { min-width: 0; }
+ .setup-step.completed { background:#fff; }
+ .login-role:disabled { cursor:not-allowed; opacity:.55; }
+ @media(max-width:600px) { .setup-guide { grid-template-columns:1fr; gap:10px; } .setup-step { padding:18px; } .setup-step-top { margin-bottom:10px; } }
++
++/* Numeric inputs: CenterPro uses explicit values, never browser stepper chrome. */
++.input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
++.input[type="number"]::-webkit-outer-spin-button,
++.input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
++.login-test-data { margin-top: 12px; border: 1px solid #e7e7eb; border-radius: 9px; padding: 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 11px; align-items: center; background: #fff; color: #656b76; }
++.login-test-data > svg { color: var(--brand); }
++.login-test-data strong { display:block; color:#4a505b; font-size:11px; }
++.login-test-data p { color:#999da6; font-size:9px; line-height:1.9; }
++@media (max-width: 767px) { .login-test-data { grid-template-columns:auto 1fr; } .login-test-data .btn { grid-column:1 / -1; width:100%; } }
+diff --git a/src/app/login/page.tsx b/src/app/login/page.tsx
+index 868243a..05411b3 100644
+--- a/src/app/login/page.tsx
++++ b/src/app/login/page.tsx
+@@ -1,34 +1,70 @@
+ 'use client';
+-import { useState, type FormEvent } from 'react';
++
++import { useMemo, useState, type FormEvent } from 'react';
+ import { useRouter } from 'next/navigation';
+-import { ShieldCheck, UserRound, BriefcaseBusiness, ArrowLeft, CalendarCheck2, Wallet, UsersRound, Eye, EyeOff } from 'lucide-react';
++import { ArrowLeft, CalendarCheck2, Database, ShieldCheck, UsersRound, Wallet } from 'lucide-react';
+ import { Brand } from '@/components/brand';
+-import { Button, Field, Input, Select } from '@/components/ui';
++import { Button, Field, Select } from '@/components/ui';
+ import { useDemo } from '@/components/demo-provider';
+ import { useWelcome } from '@/components/welcome-provider';
+-import { PREVIEW_SYSTEM_USERNAME } from '@/lib/preview-config';
+-import type { Role } from '@/lib/types';
+ 
+ export default function LoginPage() {
+-  const { login, data, ready } = useDemo();
++  const { login, data, ready, loadTestData } = useDemo();
+   const router = useRouter();
+   const { showWelcome } = useWelcome();
+-  const [role, setRole] = useState<Role>('SUPER_ADMIN');
+   const [loading, setLoading] = useState(false);
+-  const [visible, setVisible] = useState(false);
+-  const [accountId, setAccountId] = useState('');
+-  const accounts = data.employees.filter(employee => employee.role === role && employee.active);
+-  const isSystem = role === 'SUPER_ADMIN' && !accountId;
+-  const account = accounts.find(employee => employee.id === accountId) || (isSystem ? undefined : accounts[0]);
+-  const canEnter = isSystem || Boolean(account);
++  const [accountId, setAccountId] = useState('SYSTEM');
++  const activeAccounts = useMemo(() => [...data.employees].filter(employee => employee.active).sort((a, b) => a.name.localeCompare(b.name, 'ar')), [data.employees]);
++  const selected = activeAccounts.find(employee => employee.id === accountId);
++
+   async function enter(event: FormEvent) {
+     event.preventDefault();
+-    if (!ready || !canEnter || loading) return;
++    if (!ready || loading) return;
+     setLoading(true);
+-    if (!login(role, isSystem ? undefined : account?.id)) { setLoading(false); return; }
++    const ok = accountId === 'SYSTEM' ? login('SUPER_ADMIN') : selected ? login(selected.role, selected.id) : false;
++    if (!ok) { setLoading(false); return; }
+     await showWelcome();
+-    router.push(role === 'EMPLOYEE' ? '/employee' : '/dashboard');
++    router.push(selected?.role === 'EMPLOYEE' ? '/employee' : '/dashboard');
++  }
++
++  function loadFixture() {
++    loadTestData();
++    setAccountId('SYSTEM');
+   }
+-  const roles = [{ value:'SUPER_ADMIN' as const,label:'المدير العام',icon:ShieldCheck },{ value:'ADMIN' as const,label:'مدير العمليات',icon:BriefcaseBusiness },{ value:'EMPLOYEE' as const,label:'موظف',icon:UserRound }];
+-  return <main className="login-page" id="main-content"><section className="login-story"><Brand reversed/><div className="login-story-inner"><div className="login-story-kicker">منظومة إدارة المركز</div><h1 className="login-story-title">كل التفاصيل.<br/>في مكان واحد.</h1><p className="login-story-copy">مساحة عمل منظّمة تجمع فريقك، حضوره ورواتبه. لتبدأ كل يوم برؤية واضحة وتبقى أقرب إلى التفاصيل.</p><div className="login-story-points"><div><UsersRound size={20}/><span>فريق واحد. إدارة أكثر وضوحاً.</span></div><div><CalendarCheck2 size={20}/><span>حضور دقيق، ومتابعة مستمرة.</span></div><div><Wallet size={20}/><span>رواتب مفصّلة، لكل موظف.</span></div></div></div><div className="login-story-footer">CenterPro © 2026 · مبني على الوضوح والنظام</div></section><section className="login-form-side"><div className="login-form-wrap"><div className="login-mobile-brand"><Brand/></div><div className="login-heading"><span className="eyebrow">أهلاً بعودتك</span><h2>مساحتك للعمل تبدأ هنا.</h2><p>ادخل إلى CenterPro وتابع تفاصيل يومك.</p></div><div className="login-role-grid" aria-label="اختر دور المعاينة">{roles.map(item => <button key={item.value} className={`login-role ${role === item.value ? 'active' : ''}`} onClick={() => { setRole(item.value); setAccountId(''); }} disabled={loading || (item.value !== 'SUPER_ADMIN' && !data.employees.some(employee => employee.active && employee.role === item.value))} aria-pressed={role === item.value}><item.icon className="login-role-icon" size={21}/><span>{item.label}</span></button>)}</div><form onSubmit={enter}>{accounts.length > 0 && <Field label="حساب المعاينة"><Select value={isSystem ? '' : account?.id || ''} onChange={event => setAccountId(event.target.value)} disabled={loading}>{role === 'SUPER_ADMIN' && <option value="">مدير النظام — حساب معاينة مستقل</option>}{accounts.map(item => <option key={item.id} value={item.id}>{item.name} — {item.code}</option>)}</Select></Field>}<Field label="اسم المستخدم"><Input dir="ltr" value={isSystem ? PREVIEW_SYSTEM_USERNAME : account?.username || ''} readOnly autoComplete="off" aria-label="اسم المستخدم"/></Field><Field label="كلمة المرور" hint="حقل توضيحي للواجهة؛ لا تحتاج كلمة مرور في المعاينة."><div style={{ position:'relative' }}><Input type={visible ? 'text' : 'password'} value="preview-only" readOnly autoComplete="off" dir="ltr" style={{ paddingRight:48 }}/><button type="button" className="icon-button" style={{ position:'absolute',right:4,top:3 }} onClick={() => setVisible(!visible)} aria-label={visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>{visible ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div></Field><Button type="submit" loading={loading} disabled={!ready || !canEnter}>دخول إلى المعاينة<ArrowLeft size={17}/></Button></form><div className="login-preview-note"><strong>ابدأ مركزك من الصفر</strong><p>حساب مدير النظام مخصص للمعاينة، ولا يُعدّ موظفاً. أنشئ أقسامك ثم موظفيك؛ ستتوفر أدوارهم بعد إضافتهم. بيانات المعاينة محفوظة في جلسة هذا المتصفح فقط.</p></div><div className="login-footer">مركز واحد. تجربة متكاملة.</div></div></section></main>;
++
++  return <main className="login-page" id="main-content">
++    <section className="login-story">
++      <Brand reversed/>
++      <div className="login-story-inner">
++        <div className="login-story-kicker">منظومة إدارة المركز</div>
++        <h1 className="login-story-title">كل التفاصيل.<br/>في مكان واحد.</h1>
++        <p className="login-story-copy">مساحة عمل منظّمة تجمع فريقك، حضوره ورواتبه وتقييماته. لتبدأ كل يوم برؤية واضحة وتبقى أقرب إلى التفاصيل.</p>
++        <div className="login-story-points"><div><UsersRound size={20}/><span>فريق واحد. إدارة أكثر وضوحاً.</span></div><div><CalendarCheck2 size={20}/><span>حضور دقيق، ومتابعة مستمرة.</span></div><div><Wallet size={20}/><span>رواتب وتقييمات مفصّلة لكل موظف.</span></div></div>
++      </div>
++      <div className="login-story-footer">CenterPro © 2026 · مبني على الوضوح والنظام</div>
++    </section>
++
++    <section className="login-form-side">
++      <div className="login-form-wrap">
++        <div className="login-mobile-brand"><Brand/></div>
++        <div className="login-heading"><span className="eyebrow">معاينة CenterPro</span><h2>اختر الحساب وادخل مباشرة.</h2><p>لا تحتاج اسم مستخدم أو كلمة مرور في وضع الاختبار.</p></div>
++        <form onSubmit={enter}>
++          <Field label="الحساب" required hint="الحسابات التجريبية مخصصة للمعاينة فقط.">
++            <Select value={accountId} onChange={event => setAccountId(event.target.value)} disabled={loading}>
++              <option value="SYSTEM">مدير النظام — Super Admin</option>
++              {activeAccounts.map(employee => {
++                const department = data.departments.find(item => item.id === employee.departmentId)?.name || 'بدون قسم';
++                return <option key={employee.id} value={employee.id}>{employee.name} — {department}</option>;
++              })}
++            </Select>
++          </Field>
++          <Button type="submit" loading={loading} disabled={!ready}>تسجيل الدخول<ArrowLeft size={17}/></Button>
++        </form>
++
++        <div className="login-preview-note"><ShieldCheck size={17}/><div><strong>دخول سريع للمعاينة</strong><p>اختيار الاسم ينقلك مباشرة إلى واجهة ذلك الحساب. المصادقة الحقيقية تُربط في مرحلة الباك إند.</p></div></div>
++        {!activeAccounts.length && <div className="login-test-data"><Database size={20}/><div><strong>بيانات اختبار جاهزة</strong><p>حمّل 4 مصححين و2 تدقيق مع سجلات الحضور المطلوبة. لن تُضاف أي امتحانات أو تقييمات.</p></div><Button type="button" variant="secondary" onClick={loadFixture}><Database size={16}/>تحميل بيانات الاختبار</Button></div>}
++        <div className="login-footer">مركز واحد. تجربة متكاملة.</div>
++      </div>
++    </section>
++  </main>;
+ }
+diff --git a/src/components/app-shell.tsx b/src/components/app-shell.tsx
+index 23ddbff..6adaf43 100644
+--- a/src/components/app-shell.tsx
++++ b/src/components/app-shell.tsx
+@@ -3,29 +3,33 @@
+ import Link from 'next/link';
+ import { usePathname, useRouter } from 'next/navigation';
+ import { useEffect, useState, type ReactNode } from 'react';
+-import { LayoutDashboard, UsersRound, CalendarCheck2, CalendarDays, Wallet, Receipt, Gift, Building2, ChartNoAxesCombined, History, Settings2, Menu, LogOut, QrCode, UserRound, ScanLine, ChevronLeft, Monitor, ChevronDown, ShieldCheck } from 'lucide-react';
++import { LayoutDashboard, UsersRound, CalendarCheck2, CalendarDays, Wallet, Receipt, Gift, Building2, ChartNoAxesCombined, History, Settings2, Menu, LogOut, QrCode, UserRound, ScanLine, ChevronLeft, Monitor, ChevronDown, ShieldCheck, ClipboardCheck, Trophy } from 'lucide-react';
+ import { useDemo } from '@/components/demo-provider';
+ import { Avatar, Dialog, Skeleton } from '@/components/ui';
+ import { Brand } from '@/components/brand';
+ import { date } from '@/lib/format';
++import { isAuditEmployee, isCorrectionEmployee } from '@/lib/evaluations';
+ import { DEMO_TODAY } from '@/lib/mock-data';
+ 
+ const adminNav = [
+   { href: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard }, { href: '/employees', label: 'الموظفون', icon: UsersRound },
+   { href: '/attendance', label: 'الحضور', icon: CalendarCheck2 },
++  { href: '/evaluations', label: 'التدقيق', icon: ClipboardCheck },
+   { href: '/payroll', label: 'الرواتب', icon: Wallet }, { href: '/deductions', label: 'الخصومات', icon: Receipt },
+   { href: '/bonuses', label: 'المكافآت', icon: Gift }, { href: '/departments', label: 'الأقسام', icon: Building2, superOnly: true },
+   { href: '/reports', label: 'التقارير', icon: ChartNoAxesCombined }, { href: '/audit', label: 'سجل العمليات', icon: History, superOnly: true },
+   { href: '/settings', label: 'الإعدادات', icon: Settings2, superOnly: true },
+ ];
+-const employeeNav = [
++const baseEmployeeNav = [
+   { href: '/employee', label: 'الرئيسية', icon: LayoutDashboard }, { href: '/employee/scan', label: 'تسجيل الحضور', icon: ScanLine },
+   { href: '/employee/attendance', label: 'سجل الحضور', icon: CalendarCheck2 }, { href: '/employee/salary', label: 'راتبي', icon: Wallet },
+   { href: '/employee/profile', label: 'حسابي', icon: UserRound },
+ ];
++function stateEmployee(data: ReturnType<typeof useDemo>['data'], employeeId: string) { return data.employees.find(item => item.id === employeeId); }
++
+ export function AppSkeleton() { return <div className="app-loading" role="status" aria-label="جارٍ تحميل الصفحة"><Brand/><Skeleton className="loading-title"/><div className="stats-grid">{[0,1,2,3].map(i => <Skeleton key={i} className="loading-stat"/>)}</div><Skeleton className="loading-main"/></div>; }
+ export function AppShell({ children, employee = false }: { children: ReactNode; employee?: boolean }) {
+-  const { session, ready, logout } = useDemo();
++  const { session, ready, logout, data } = useDemo();
+   const router = useRouter();
+   const pathname = usePathname();
+   const [menu, setMenu] = useState(false);
+@@ -37,6 +41,13 @@ export function AppShell({ children, employee = false }: { children: ReactNode;
+   }, [ready, session, employee, router, pathname]);
+   if (!ready || !session || employee !== (session.role === 'EMPLOYEE')) return <AppSkeleton/>;
+   if (session.role === 'ADMIN' && ['/departments','/audit','/settings'].some(path => pathname.startsWith(path))) return <AppSkeleton/>;
++  const employeeRecord = session.employeeId ? stateEmployee(data, session.employeeId) : undefined;
++  const employeeNav = employee ? [
++    ...baseEmployeeNav.slice(0, 2),
++    ...(employeeRecord && isAuditEmployee(data, employeeRecord) ? [{ href: '/employee/audit', label: 'التدقيق', icon: ClipboardCheck }] : []),
++    ...(employeeRecord && isCorrectionEmployee(data, employeeRecord) ? [{ href: '/employee/evaluation', label: 'التقييمات', icon: Trophy }] : []),
++    ...baseEmployeeNav.slice(2),
++  ] : baseEmployeeNav;
+   const nav = employee ? employeeNav : adminNav.filter(item => !item.superOnly || session.role === 'SUPER_ADMIN');
+   const current = nav.find(item => item.href === pathname || (item.href !== '/employee' && pathname.startsWith(item.href + '/')));
+   function exit() { logout(); router.replace('/login'); }
+@@ -45,7 +56,7 @@ export function AppShell({ children, employee = false }: { children: ReactNode;
+     <div className={`app-shell ${employee ? 'employee-shell' : ''}`}>
+       <aside className="sidebar"><Link href={employee ? '/employee' : '/dashboard'} className="sidebar-brand"><Brand/></Link><div className="workspace-label"><span className="workspace-dot"/>إدارة المركز<span className="workspace-version">01</span></div><div className="nav-caption">{employee ? 'مساحتك الشخصية' : 'مساحة العمل'}</div><nav aria-label="القائمة الرئيسية">{links}</nav>{!employee && <Link className="sidebar-qr" href="/attendance-display"><QrCode size={22}/><div>شاشة الحضور<span>عرض الرمز على شاشة المركز</span></div><ChevronLeft size={16}/></Link>}<div className="sidebar-footer"><ShieldCheck size={16}/><span>نظام واحد. مركز أكثر وضوحاً.</span></div></aside>
+       <div className="app-main"><div className="preview-strip"><span className="preview-dot"/>معاينة الواجهات<span className="preview-strip-detail">حفظ محلي في المتصفح · معاينة الواجهات</span><Link href="/login">تبديل الدور <ChevronLeft size={13}/></Link></div><header className="topbar"><div className="inline"><button className="icon-button mobile-menu" onClick={() => setMenu(true)} aria-label="فتح القائمة"><Menu size={22}/></button><div className="breadcrumb"><span>CenterPro</span><ChevronLeft size={13}/><strong>{current?.label || 'مساحة العمل'}</strong></div></div><div className="topbar-end"><div className="topbar-date"><CalendarDays size={16}/><span dir="ltr">{date(DEMO_TODAY)}</span></div><span className="topbar-divider"/><Link href={employee ? '/employee/profile' : session.employeeId ? `/employees/${session.employeeId}` : '/settings'} className="user-menu"><Avatar name={session.name}/><div><strong>{session.name.split(' ').slice(0,2).join(' ')}</strong><span>{session.role === 'SUPER_ADMIN' ? 'المدير العام' : session.role === 'ADMIN' ? 'مدير العمليات' : 'حساب الموظف'}</span></div><ChevronDown size={14}/></Link><button className="icon-button desktop-logout" onClick={exit} aria-label="تسجيل الخروج"><LogOut size={18}/></button></div></header><main className="main-content" id="main-content">{children}</main><footer className="app-footer"><span>CenterPro © 2026</span><span>إدارة مبنية على الوضوح.</span></footer></div>
+-      <nav className="mobile-bottom-nav" aria-label="التنقل السريع">{(employee ? employeeNav.filter(item => item.href !== '/employee/attendance') : adminNav.filter(item => ['/dashboard','/employees','/attendance','/payroll'].includes(item.href))).map(item => <Link href={item.href} key={item.href} className={current?.href === item.href ? 'active' : ''}><item.icon size={21}/><span>{item.label}</span></Link>)}<button onClick={() => setMenu(true)}><Menu size={21}/><span>المزيد</span></button></nav>
++      <nav className="mobile-bottom-nav" aria-label="التنقل السريع">{(employee ? employeeNav.filter(item => item.href !== '/employee/attendance').slice(0,4) : adminNav.filter(item => ['/dashboard','/employees','/attendance','/payroll'].includes(item.href))).map(item => <Link href={item.href} key={item.href} className={current?.href === item.href ? 'active' : ''}><item.icon size={21}/><span>{item.label}</span></Link>)}<button onClick={() => setMenu(true)}><Menu size={21}/><span>المزيد</span></button></nav>
+     </div>
+     <Dialog open={menu} onClose={() => setMenu(false)} title="مساحة العمل"><div className="mobile-nav-links">{links}{!employee && <Link className="nav-link" href="/attendance-display"><Monitor size={19}/>شاشة الحضور</Link>}<button className="nav-link" onClick={exit}><LogOut size={19}/>تسجيل الخروج</button></div></Dialog>
+   </>;
+diff --git a/src/components/demo-provider.tsx b/src/components/demo-provider.tsx
+index 3e5107c..a44ce7b 100644
+--- a/src/components/demo-provider.tsx
++++ b/src/components/demo-provider.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { createContext, useContext, useState, useCallback, useSyncExternalStore, type ReactNode } from 'react';
+ import { Check, X } from 'lucide-react';
+-import { createInitialData } from '@/lib/mock-data';
++import { createInitialData, createTestData } from '@/lib/mock-data';
+ import { assertSingleOpenWorkday } from '@/lib/attendance';
+ import { PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION, PREVIEW_SYSTEM_ADMIN } from '@/lib/preview-config';
+ import type { DemoData, DemoSession, Role, AuditInput } from '@/lib/types';
+@@ -25,10 +25,11 @@ function initialize() {
+   let next: Snapshot = { ...serverSnapshot, data: createInitialData(), ready: true };
+   try {
+     sessionStorage.removeItem('centerpro-ui-preview-v1');
++    sessionStorage.removeItem('centerpro-ui-preview-v2');
+     const raw = sessionStorage.getItem(PREVIEW_STORAGE_KEY);
+     if (raw) {
+       const stored = JSON.parse(raw);
+-      const collections: Array<keyof DemoData> = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit'];
++      const collections: Array<keyof DemoData> = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit', 'evaluationCycles', 'evaluationExams', 'examEvaluations'];
+       if (stored.version === PREVIEW_STORAGE_VERSION && collections.every(key => Array.isArray(stored.data?.[key])) && typeof stored.data?.settings?.centerName === 'string' && Number.isFinite(stored.data.settings.qrInterval)) {
+         assertSingleOpenWorkday(stored.data.workdays);
+         let session: DemoSession | null = null;
+@@ -50,6 +51,7 @@ interface DemoContextValue extends Snapshot {
+   login: (role: Role, employeeId?: string) => boolean;
+   logout: () => void;
+   resetDemo: () => void;
++  loadTestData: () => void;
+   updateData: (updater: (draft: DemoData) => void, audit?: AuditInput) => void;
+   notify: (message: string) => void;
+ }
+@@ -71,6 +73,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
+   }
+   function logout() { emit({ ...snapshot, session: null }); }
+   function resetDemo() { emit({ data: createInitialData(), session: { ...PREVIEW_SYSTEM_ADMIN }, ready: true }); notify('تم تصفير المعاينة. يمكنك إنشاء الأقسام والموظفين من البداية.'); }
++  function loadTestData() { emit({ data: createTestData(), session: { ...PREVIEW_SYSTEM_ADMIN }, ready: true }); notify('تم تحميل حسابات وبيانات الحضور الاختبارية. لم تتم إضافة أي امتحانات أو تقييمات.'); }
+   function updateData(updater: (draft: DemoData) => void, audit?: AuditInput) {
+     const draft = structuredClone(snapshot.data);
+     updater(draft);
+@@ -81,7 +84,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
+     }
+     emit({ ...snapshot, data: draft });
+   }
+-  return <DemoContext.Provider value={{ ...state, login, logout, resetDemo, updateData, notify }}>{children}{toast && <div className="toast" role="status"><Check size={20}/><span>{toast}</span><button onClick={() => setToast('')} aria-label="إغلاق الإشعار"><X size={17}/></button></div>}</DemoContext.Provider>;
++  return <DemoContext.Provider value={{ ...state, login, logout, resetDemo, loadTestData, updateData, notify }}>{children}{toast && <div className="toast" role="status"><Check size={20}/><span>{toast}</span><button onClick={() => setToast('')} aria-label="إغلاق الإشعار"><X size={17}/></button></div>}</DemoContext.Provider>;
+ }
+ export function useDemo() { const context = useContext(DemoContext); if (!context) throw new Error('DemoProvider is required'); return context; }
+ export function useToast() { return useDemo().notify; }
+diff --git a/src/components/evaluations/auditor-workspace.tsx b/src/components/evaluations/auditor-workspace.tsx
+new file mode 100644
+index 0000000..b4c1d94
+--- /dev/null
++++ b/src/components/evaluations/auditor-workspace.tsx
+@@ -0,0 +1,130 @@
++'use client';
++
++import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
++import { Check, ChevronDown, Minus, Plus, Search, UsersRound } from 'lucide-react';
++import { useDemo } from '@/components/demo-provider';
++import { Avatar, Badge, EmptyState, Input } from '@/components/ui';
++import { calculateEvaluationScore, getCorrectionEmployees, getExamEvaluation } from '@/lib/evaluations';
++import { date, time } from '@/lib/format';
++import styles from './evaluations.module.css';
++
++type NumericField = 'papers' | 'correctionErrors' | 'behaviorErrors';
++type SaveState = 'idle' | 'saving' | 'saved';
++
++function safeNumber(value: string): number | null {
++  if (value === '') return null;
++  const numeric = Number(value);
++  if (!Number.isSafeInteger(numeric) || numeric < 0) return null;
++  return numeric;
++}
++
++function valueText(value: number | null | undefined): string { return value === null || value === undefined ? '' : String(value); }
++
++function Stepper({ label, value, disabled, onImmediate, onType }: { label: string; value: string; disabled?: boolean; onImmediate: (value: number) => void; onType: (value: string) => void }) {
++  const numeric = safeNumber(value);
++  return <div className={styles.numericField}><span className={styles.numericLabel}>{label}</span><div className={styles.stepper}><button type="button" disabled={disabled || (numeric ?? 0) <= 0} onClick={() => onImmediate(Math.max(0, (numeric ?? 0) - 1))} aria-label={`إنقاص ${label}`}><Minus size={18}/></button><input inputMode="numeric" pattern="[0-9]*" value={value} placeholder="0" disabled={disabled} onChange={event => onType(event.target.value.replace(/\D/g, ''))} aria-label={label}/><button type="button" disabled={disabled} onClick={() => onImmediate((numeric ?? 0) + 1)} aria-label={`زيادة ${label}`}><Plus size={18}/></button></div></div>;
++}
++
++function EvaluationEditor({ examId, employeeId, disabled }: { examId: string; employeeId: string; disabled: boolean }) {
++  const { data, session, updateData } = useDemo();
++  const employee = data.employees.find(item => item.id === employeeId)!;
++  const current = getExamEvaluation(data, examId, employeeId);
++  const [papers, setPapers] = useState(valueText(current?.papers));
++  const [correctionErrors, setCorrectionErrors] = useState(valueText(current?.correctionErrors));
++  const [behaviorErrors, setBehaviorErrors] = useState(valueText(current?.behaviorErrors));
++  const [saveState, setSaveState] = useState<SaveState>('idle');
++  const timers = useRef<Record<NumericField, ReturnType<typeof setTimeout> | undefined>>({ papers: undefined, correctionErrors: undefined, behaviorErrors: undefined });
++
++  useEffect(() => {
++    setPapers(valueText(current?.papers));
++    setCorrectionErrors(valueText(current?.correctionErrors));
++    setBehaviorErrors(valueText(current?.behaviorErrors));
++  }, [current?.id, current?.papers, current?.correctionErrors, current?.behaviorErrors]);
++
++  useEffect(() => () => { Object.values(timers.current).forEach(timer => timer && clearTimeout(timer)); }, []);
++
++  function persist(field: NumericField, value: number | null) {
++    if (!session || disabled) return;
++    const before = getExamEvaluation(data, examId, employeeId);
++    setSaveState('saving');
++    updateData(draft => {
++      const index = draft.examEvaluations.findIndex(item => item.examId === examId && item.employeeId === employeeId);
++      const now = new Date().toISOString();
++      if (index >= 0) {
++        const target = draft.examEvaluations[index];
++        target[field] = value;
++        target.updatedBy = session.name;
++        target.updatedAt = now;
++        if (target.papers === null && target.correctionErrors === null && target.behaviorErrors === null && !target.note.trim()) draft.examEvaluations.splice(index, 1);
++      } else if (value !== null) {
++        draft.examEvaluations.push({ id: crypto.randomUUID(), examId, employeeId, papers: null, correctionErrors: null, behaviorErrors: null, note: '', [field]: value, createdBy: session.name, createdAt: now, updatedBy: session.name, updatedAt: now });
++      }
++    }, {
++      action: before ? 'تعديل بيانات تدقيق مصحح' : 'إضافة بيانات تدقيق مصحح',
++      entity: 'exam-evaluation',
++      entityId: before?.id ?? `${examId}:${employeeId}`,
++      employeeId,
++      oldValues: before ? { [field]: before[field] } : {},
++      newValues: { [field]: value, examId },
++    });
++    setSaveState('saved');
++    window.setTimeout(() => setSaveState('idle'), 1200);
++  }
++
++  function schedule(field: NumericField, raw: string) {
++    const setters = { papers: setPapers, correctionErrors: setCorrectionErrors, behaviorErrors: setBehaviorErrors };
++    setters[field](raw);
++    if (timers.current[field]) clearTimeout(timers.current[field]);
++    setSaveState('saving');
++    timers.current[field] = setTimeout(() => persist(field, safeNumber(raw)), 450);
++  }
++
++  function immediate(field: NumericField, value: number) {
++    if (timers.current[field]) clearTimeout(timers.current[field]);
++    const raw = String(value);
++    const setters = { papers: setPapers, correctionErrors: setCorrectionErrors, behaviorErrors: setBehaviorErrors };
++    setters[field](raw);
++    persist(field, value);
++  }
++
++  const score = calculateEvaluationScore(safeNumber(papers), safeNumber(correctionErrors), safeNumber(behaviorErrors));
++  const latest = getExamEvaluation(data, examId, employeeId);
++  return <article className={styles.auditCard}>
++    <div className={styles.auditCardHeader}><div className={styles.employeeIdentity}><Avatar name={employee.name}/><div><strong>{employee.name}</strong><small dir="ltr">{employee.code}</small></div></div>{latest ? <Badge tone="brand">لديه تقييم</Badge> : <Badge>لم يُدخل بعد</Badge>}</div>
++    <div className={styles.editorFields}>
++      <div className={styles.numericField}><span className={styles.numericLabel}>عدد الأوراق المصححة</span><Input type="text" inputMode="numeric" value={papers} placeholder="0" disabled={disabled} onChange={event => schedule('papers', event.target.value.replace(/\D/g, ''))}/></div>
++      <Stepper label="أخطاء التصحيح" value={correctionErrors} disabled={disabled} onImmediate={value => immediate('correctionErrors', value)} onType={value => schedule('correctionErrors', value)}/>
++      <Stepper label="أخطاء السلوك" value={behaviorErrors} disabled={disabled} onImmediate={value => immediate('behaviorErrors', value)} onType={value => schedule('behaviorErrors', value)}/>
++    </div>
++    <div className={styles.scoreStrip}><div><span className="muted">التقييم الحالي</span><strong dir="ltr">{score} نقطة</strong></div><span className={styles.saveState} data-state={saveState}>{saveState === 'saving' ? 'جارٍ الحفظ…' : saveState === 'saved' ? <><Check size={13}/>تم الحفظ</> : latest ? 'حفظ تلقائي' : 'أدخل القيم للبدء'}</span></div>
++    {latest && <div className={styles.metaLine}>آخر تحديث بواسطة {latest.updatedBy} · <span dir="ltr">{date(latest.updatedAt)} — {time(latest.updatedAt)}</span></div>}
++  </article>;
++}
++
++function MultiEmployeeFilter({ selected, onChange, employeeIds }: { selected: string[]; onChange: (ids: string[]) => void; employeeIds: { id: string; name: string }[] }) {
++  const [open, setOpen] = useState(false);
++  const selectedSet = new Set(selected);
++  return <div className={styles.multiSelect}><button className={styles.multiButton} type="button" onClick={() => setOpen(value => !value)} aria-expanded={open}><span className="inline"><UsersRound size={17}/>{selected.length === employeeIds.length ? 'كل المصححين' : `${selected.length} مصححين محددين`}</span><ChevronDown size={16}/></button>{open && <div className={styles.multiPanel}><div className={styles.multiActions}><button className="button-link" type="button" onClick={() => onChange(employeeIds.map(item => item.id))}>تحديد الكل</button><button className="button-link" type="button" onClick={() => onChange([])}>إلغاء التحديد</button></div>{employeeIds.map(item => <label className={styles.multiOption} key={item.id}><input type="checkbox" checked={selectedSet.has(item.id)} onChange={event => onChange(event.target.checked ? [...selected, item.id] : selected.filter(id => id !== item.id))}/><span>{item.name}</span></label>)}</div>}</div>;
++}
++
++export function AuditorWorkspace({ examId, examControl }: { examId: string; examControl?: ReactNode }) {
++  const { data } = useDemo();
++  const exam = data.evaluationExams.find(item => item.id === examId);
++  const employees = useMemo(() => getCorrectionEmployees(data), [data]);
++  const [selected, setSelected] = useState<string[]>(() => getCorrectionEmployees(data).map(item => item.id));
++  const [query, setQuery] = useState('');
++
++  const filtered = employees.filter(employee => selected.includes(employee.id) && employee.name.includes(query.trim()));
++  if (!exam) return <EmptyState title="الامتحان غير موجود" />;
++  if (!employees.length) return <EmptyState title="لا يوجد مصححون فعالون" description="أضف موظفين فعالين إلى قسم التصحيح أولاً." />;
++
++  return <div className="stack">
++    <div className={styles.toolbarGrid}>
++      {examControl ?? <div />}
++      <div className="field"><span className="field-label">اختيار المصححين</span><MultiEmployeeFilter selected={selected} onChange={setSelected} employeeIds={employees.map(item => ({ id:item.id, name:item.name }))}/></div>
++    </div>
++    <div className="filter-row" style={{ marginBottom: 0 }}><div className="search-input" style={{ maxWidth: 420 }}><Search size={18}/><Input value={query} onChange={event => setQuery(event.target.value)} placeholder="ابحث داخل المصححين المختارين"/></div></div>
++    {exam.state === 'CLOSED' && <div className="notice notice-warning">هذا الامتحان مغلق للتدقيق. يمكنك مشاهدة البيانات فقط حتى يعيد الأدمن فتحه.</div>}
++    {!selected.length ? <EmptyState title="لم تختر أي مصحح" description="اختر مصححاً واحداً أو أكثر لعرض حقول الإدخال." /> : !filtered.length ? <EmptyState title="لا توجد نتائج مطابقة" description="غيّر البحث أو اختيار المصححين." /> : <div className={styles.auditGrid}>{filtered.map(employee => <EvaluationEditor key={employee.id} examId={exam.id} employeeId={employee.id} disabled={exam.state === 'CLOSED'}/>)}</div>}
++  </div>;
++}
+diff --git a/src/components/evaluations/evaluations.module.css b/src/components/evaluations/evaluations.module.css
+new file mode 100644
+index 0000000..601728b
+--- /dev/null
++++ b/src/components/evaluations/evaluations.module.css
+@@ -0,0 +1,75 @@
++.heroGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
++.toolbarGrid { display:grid; grid-template-columns:minmax(220px,.9fr) minmax(260px,1.1fr); gap:14px; align-items:end; }
++.multiSelect { position:relative; }
++.multiButton { width:100%; min-height:43px; border:1px solid #dedfe5; border-radius:7px; background:#fff; color:#555a65; padding:9px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:right; }
++.multiPanel { position:absolute; z-index:30; inset-inline:0; top:calc(100% + 7px); background:#fff; border:1px solid #e1e2e6; border-radius:10px; box-shadow:0 16px 45px #20151a18; padding:12px; max-height:320px; overflow:auto; }
++.multiActions { display:flex; gap:8px; padding-bottom:10px; border-bottom:1px solid #f0f0f2; margin-bottom:8px; }
++.multiOption { display:flex; align-items:center; gap:10px; min-height:39px; padding:7px 6px; border-radius:7px; color:#555b65; }
++.multiOption:hover { background:#faf7f8; }
++.multiOption input { accent-color:#a51c30; width:16px; height:16px; }
++.auditGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
++.auditCard { border:1px solid #e8e8ec; border-radius:11px; background:#fff; padding:17px; display:flex; flex-direction:column; gap:15px; min-width:0; }
++.auditCardHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
++.employeeIdentity { display:flex; align-items:center; gap:10px; min-width:0; }
++.employeeIdentity strong { display:block; color:#333842; font-size:13px; }
++.employeeIdentity small { color:#969ba5; font-size:9px; }
++.editorFields { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:end; }
++.numericField { display:flex; flex-direction:column; gap:6px; min-width:0; }
++.numericLabel { color:#6b707a; font-size:10px; }
++.stepper { display:grid; grid-template-columns:39px minmax(55px,1fr) 39px; direction:ltr; border:1px solid #dedfe5; border-radius:8px; overflow:hidden; min-height:43px; background:#fff; }
++.stepper button { border:0; background:#fafafb; color:#7d828c; font-size:20px; line-height:1; display:grid; place-items:center; }
++.stepper button:hover:not(:disabled) { background:#f7ecef; color:#a51c30; }
++.stepper button:disabled { opacity:.35; cursor:not-allowed; }
++.stepper input { width:100%; min-width:0; border:0; border-inline:1px solid #ececf0; outline:none; text-align:center; color:#353a44; background:#fff; font-variant-numeric:tabular-nums; }
++.stepper input::placeholder { color:#c7c9cf; }
++.scoreStrip { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #f0f0f3; padding-top:12px; }
++.scoreStrip strong { color:#a51c30; font-size:15px; }
++.saveState { display:flex; align-items:center; gap:6px; color:#8e939d; font-size:9px; }
++.saveState[data-state='saved'] { color:#4d7f69; }
++.saveState[data-state='saving'] { color:#946925; }
++.metaLine { color:#a0a4ad; font-size:9px; line-height:1.8; }
++.examList { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
++.examCard { border:1px solid #e8e8ec; border-radius:10px; padding:16px; background:#fff; display:flex; flex-direction:column; gap:12px; }
++.examCardTop { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
++.examCard h3 { color:#333842; font-size:13px; }
++.examCard p { color:#969ba5; font-size:10px; }
++.examActions { display:flex; gap:7px; flex-wrap:wrap; }
++.leaderboardTable { width:100%; border-collapse:collapse; }
++.leaderboardTable th { font-size:9px; color:#969ba5; background:#fafafb; padding:10px 11px; text-align:right; white-space:nowrap; border-bottom:1px solid #ececf0; }
++.leaderboardTable td { padding:13px 11px; border-bottom:1px solid #f0f0f2; color:#5d626c; font-size:11px; vertical-align:middle; }
++.leaderboardTable tr:last-child td { border-bottom:0; }
++.rank { width:29px; height:29px; border-radius:8px; display:grid; place-items:center; background:#f5f5f7; color:#777c86; font-weight:650; }
++.rankTop { color:#a51c30; background:#f9e9ed; }
++.score { font-weight:700; color:#a51c30; font-variant-numeric:tabular-nums; }
++.mobileLeaderboard { display:none; }
++.archiveList { display:flex; flex-direction:column; gap:10px; }
++.archiveDetails { border:1px solid #ececf0; border-radius:9px; background:#fff; overflow:hidden; }
++.archiveDetails > summary { list-style:none; cursor:pointer; }
++.archiveDetails > summary::-webkit-details-marker { display:none; }
++.archiveDetails[open] > summary { background:#fdf9fa; border-bottom:1px solid #ececf0; }
++.archiveRow { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 14px; }
++.archiveRow p { color:#9a9ea7; font-size:10px; }
++.ownHero { border:1px solid #eadde1; border-radius:12px; padding:22px; background:#fff; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); gap:20px; }
++.ownScore { background:#a51c30; color:white; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:center; }
++.ownScore span { color:#e6bcc4; font-size:10px; }
++.ownScore strong { font-size:34px; line-height:1.35; }
++.examBreakdown { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
++.examBreakdownItem { border:1px solid #ececf0; border-radius:9px; padding:13px; }
++.examBreakdownItem h4 { color:#4a4f59; font-size:11px; margin-bottom:7px; }
++.examBreakdownItem p { color:#8f949e; font-size:9px; }
++@media (max-width:1023px) { .heroGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } .auditGrid,.examList { grid-template-columns:1fr; } }
++@media (max-width:767px) {
++  .toolbarGrid { grid-template-columns:1fr; }
++  .heroGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
++  .auditCard { padding:14px; }
++  .editorFields { grid-template-columns:1fr; }
++  .stepper { min-height:47px; grid-template-columns:48px minmax(70px,1fr) 48px; }
++  .stepper button { font-size:23px; }
++  .leaderboardTable { display:none; }
++  .mobileLeaderboard { display:flex; flex-direction:column; gap:9px; }
++  .mobileLeaderCard { border:1px solid #e9e9ed; border-radius:9px; padding:12px; display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:center; }
++  .mobileLeaderCard p { grid-column:2 / -1; color:#9499a3; font-size:9px; }
++  .ownHero { grid-template-columns:1fr; padding:15px; }
++  .examBreakdown { grid-template-columns:1fr; }
++  .multiPanel { position:fixed; inset-inline:14px; top:auto; bottom:82px; max-height:50dvh; }
++}
+diff --git a/src/components/evaluations/leaderboard.tsx b/src/components/evaluations/leaderboard.tsx
+new file mode 100644
+index 0000000..13c28f9
+--- /dev/null
++++ b/src/components/evaluations/leaderboard.tsx
+@@ -0,0 +1,19 @@
++'use client';
++
++import { Avatar, EmptyState } from '@/components/ui';
++import { formatAccuracy } from '@/lib/evaluations';
++import type { EvaluationLeaderboardRow } from '@/lib/types';
++import styles from './evaluations.module.css';
++
++export function Leaderboard({ rows, emptyTitle = 'لا توجد بيانات تقييم حتى الآن' }: { rows: EvaluationLeaderboardRow[]; emptyTitle?: string }) {
++  if (!rows.length) return <EmptyState title={emptyTitle} description="ستظهر النتائج هنا بعد توفر موظفي التصحيح وبيانات التدقيق." />;
++  return <>
++    <div className="table-wrap">
++      <table className={styles.leaderboardTable}>
++        <thead><tr><th>#</th><th>المصحح</th><th>الأوراق</th><th>الامتحانات</th><th>أخطاء التصحيح</th><th>أخطاء السلوك</th><th>معدل الدقة</th><th>التقييم</th></tr></thead>
++        <tbody>{rows.map((row, index) => <tr key={row.employeeId}><td><span className={`${styles.rank} ${index < 3 ? styles.rankTop : ''}`}>{index + 1}</span></td><td><div className="inline"><Avatar name={row.employeeName} size="sm"/><div><strong>{row.employeeName}</strong><div className="muted" dir="ltr">{row.employeeCode}</div></div></div></td><td dir="ltr">{row.papers}</td><td dir="ltr">{row.examsEvaluated}</td><td dir="ltr">{row.correctionErrors}</td><td dir="ltr">{row.behaviorErrors}</td><td dir="ltr">{formatAccuracy(row.accuracy)}</td><td><span className={styles.score} dir="ltr">{row.score}</span></td></tr>)}</tbody>
++      </table>
++    </div>
++    <div className={styles.mobileLeaderboard}>{rows.map((row, index) => <article className={styles.mobileLeaderCard} key={row.employeeId}><span className={`${styles.rank} ${index < 3 ? styles.rankTop : ''}`}>{index + 1}</span><div><strong>{row.employeeName}</strong><div className="muted" dir="ltr">{row.employeeCode}</div></div><strong className={styles.score} dir="ltr">{row.score}</strong><p>{row.papers} ورقة · {row.examsEvaluated} امتحان · {row.correctionErrors} خطأ تصحيح · {row.behaviorErrors} سلوك · الدقة {formatAccuracy(row.accuracy)}</p></article>)}</div>
++  </>;
++}
+diff --git a/src/components/people/department-form.tsx b/src/components/people/department-form.tsx
+index 2335743..61021fb 100644
+--- a/src/components/people/department-form.tsx
++++ b/src/components/people/department-form.tsx
+@@ -8,7 +8,7 @@ import { validateSalaryConfig } from '@/lib/payroll';
+ import type { Department, SalaryConfig, SalaryTier } from '@/lib/types';
+ import styles from './people.module.css';
+ 
+-const blankSalary: SalaryConfig = { mode: 'TIERED', dailyRate: 0, unexcusedRate: 0, maximum: 0, fixedSalary: 0, extraDaysStart: 32, tiers: [{ id: 'initial-tier', fromDays: 0, toDays: 31, type: 'PER_DAY', amount: 0 }] };
++const blankSalary: SalaryConfig = { mode: 'TIERED', dailyRate: 0, unexcusedRate: 0, maximum: 0, fixedSalary: 0, extraDaysStart: 0, tiers: [{ id: 'initial-tier', fromDays: 0, toDays: 0, type: 'PER_DAY', amount: 0 }] };
+ 
+ export function DepartmentForm({ department, onClose }: { department?: Department; onClose: () => void }) {
+   const { data, session, updateData } = useDemo();
+@@ -17,10 +17,21 @@ export function DepartmentForm({ department, onClose }: { department?: Departmen
+   const [description, setDescription] = useState(department?.description ?? '');
+   const [salary, setSalary] = useState<SalaryConfig>(() => structuredClone(department?.salary ?? blankSalary));
+   const [error, setError] = useState('');
++  const [numericText, setNumericText] = useState<Record<string, string>>(() => {
++    if (!department) return {};
++    const values: Record<string, string> = {
++      dailyRate: String(department.salary.dailyRate), unexcusedRate: String(department.salary.unexcusedRate), maximum: String(department.salary.maximum),
++      fixedSalary: String(department.salary.fixedSalary), extraDaysStart: String(department.salary.extraDaysStart),
++    };
++    department.salary.tiers.forEach(tier => { values[`${tier.id}:fromDays`] = String(tier.fromDays); values[`${tier.id}:toDays`] = String(tier.toDays); values[`${tier.id}:amount`] = String(tier.amount); });
++    return values;
++  });
+   const [confirmation, setConfirmation] = useState(false);
++  const setNumberText = (key: string, value: string) => setNumericText(current => ({ ...current, [key]: value }));
++  const displayNumber = (key: string) => numericText[key] ?? '';
+   const change = <K extends keyof SalaryConfig>(key: K, value: SalaryConfig[K]) => setSalary(current => ({ ...current, [key]: value }));
+   const updateTier = <K extends keyof SalaryTier>(id: string, key: K, value: SalaryTier[K]) => setSalary(current => ({ ...current, tiers: current.tiers.map(tier => tier.id === id ? { ...tier, [key]: value } : tier) }));
+-  const addTier = () => { const last = salary.tiers.at(-1); const from = last ? last.toDays + 1 : 0; change('tiers', [...salary.tiers, { id: crypto.randomUUID(), fromDays: from, toDays: from, type: 'FIXED', amount: 0 }]); };
++  const addTier = () => { const last = salary.tiers.at(-1); const from = last ? last.toDays + 1 : 0; const id = crypto.randomUUID(); change('tiers', [...salary.tiers, { id, fromDays: from, toDays: from, type: 'FIXED', amount: 0 }]); setNumericText(current => ({ ...current, [`${id}:fromDays`]: String(from), [`${id}:toDays`]: String(from) })); };
+   const save = () => {
+     if (session?.role !== 'SUPER_ADMIN') return;
+     const id = department?.id ?? `department-${crypto.randomUUID()}`;
+@@ -35,6 +46,13 @@ export function DepartmentForm({ department, onClose }: { department?: Departmen
+     if (!name.trim()) { setError('اكتب اسم القسم.'); return; }
+     if (data.departments.some(item => item.id !== department?.id && item.name.trim() === name.trim())) { setError('يوجد قسم بهذا الاسم. اختر اسماً مختلفاً.'); return; }
+     try {
++      if (!department) {
++        const required = salary.mode === 'FIXED' ? ['dailyRate','unexcusedRate','fixedSalary'] : ['dailyRate','unexcusedRate','maximum','extraDaysStart'];
++        if (required.some(key => (numericText[key] ?? '').trim() === '')) throw new Error('أكمل الحقول الرقمية المطلوبة. اكتب 0 بنفسك إذا كانت القيمة المقصودة صفراً.');
++        for (const tier of salary.tiers) {
++          if ((numericText[`${tier.id}:fromDays`] ?? '').trim() === '' || (numericText[`${tier.id}:toDays`] ?? '').trim() === '' || (tier.type === 'FIXED' && (numericText[`${tier.id}:amount`] ?? '').trim() === '')) throw new Error('أكمل أرقام قوانين القسم. اكتب 0 بنفسك إذا كانت القيمة المقصودة صفراً.');
++        }
++      }
+       validateSalaryConfig(salary);
+       if (salary.mode === 'TIERED') {
+         let nextDay = 0;
+@@ -50,8 +68,8 @@ export function DepartmentForm({ department, onClose }: { department?: Departmen
+         <div className="form-grid"><Field label="اسم القسم" required><Input value={name} autoFocus onChange={event => setName(event.target.value)} placeholder="اسم القسم" /></Field><Field label="نوع الراتب"><Select value={salary.mode} onChange={event => change('mode', event.target.value as SalaryConfig['mode'])}><option value="TIERED">غير قطعي</option><option value="FIXED">قطعي</option></Select></Field><div className="field-span-2"><Field label="وصف القسم"><Textarea value={description} onChange={event => setDescription(event.target.value)} rows={2} placeholder="وصف مختصر لطبيعة عمل القسم" /></Field></div></div>
+         <hr className={styles.sectionRule} />
+         <div className={styles.sectionTitle}><h3 className="inline"><SlidersHorizontal size={17} />إعدادات الراتب</h3><span className={styles.mutedNote}>المبالغ بالدينار العراقي</span></div>
+-        <div className="form-grid"><Field label="قيمة اليومية" required hint="تستخدم لخصم الغياب بعذر والأيام الإضافية."><Input type="number" min={0} step={1000} value={salary.dailyRate} onChange={event => change('dailyRate', Number(event.target.value))} /></Field><Field label="خصم الغياب بدون عذر" required hint="المبلغ الذي يخصم عن كل يوم غياب بدون عذر."><Input type="number" min={0} step={1000} value={salary.unexcusedRate} onChange={event => change('unexcusedRate', Number(event.target.value))} /></Field>{salary.mode === 'FIXED' ? <Field label="الراتب القطعي" required hint="لا يزيد الأساسي بزيادة الحضور في الشهر الكامل."><Input type="number" min={0} step={1000} value={salary.fixedSalary} onChange={event => change('fixedSalary', Number(event.target.value))} /></Field> : <><Field label="الحد الأعلى للراتب" required><Input type="number" min={0} step={1000} value={salary.maximum} onChange={event => change('maximum', Number(event.target.value))} /></Field><Field label="تبدأ الأيام الإضافية من اليوم" required hint="رقم أول يوم مطلوب يحتسب بعد نهاية القوانين."><Input type="number" min={1} step={1} value={salary.extraDaysStart} onChange={event => change('extraDaysStart', Number(event.target.value))} /></Field></>}</div>
+-        {salary.mode === 'TIERED' && <><div className={styles.sectionTitle}><h3>قوانين القسم</h3><Button variant="secondary" type="button" onClick={addTier}><Plus size={15} />إضافة قانون</Button></div><p className={styles.mutedNote}>تعتمد قوانين القسم على عدد الأيام المطلوبة من الموظف. رتبها من 0 تصاعدياً؛ ثم تضاف اليومية لكل يوم مطلوب إضافي حتى الحد الأعلى.</p>{salary.tiers.map((tier, index) => <div className={styles.tier} key={tier.id}><div className={styles.tierTitle}><span>القانون {index + 1}</span><Button variant="ghost" type="button" aria-label={`حذف القانون ${index + 1}`} onClick={() => change('tiers', salary.tiers.filter(item => item.id !== tier.id))}><Trash2 size={16} /></Button></div><div className={styles.tierFields}><Field label="من يوم"><Input type="number" min={0} step={1} value={tier.fromDays} onChange={event => updateTier(tier.id, 'fromDays', Number(event.target.value))} /></Field><Field label="إلى يوم"><Input type="number" min={0} step={1} value={tier.toDays} onChange={event => updateTier(tier.id, 'toDays', Number(event.target.value))} /></Field><Field label="طريقة الحساب"><Select value={tier.type} onChange={event => updateTier(tier.id, 'type', event.target.value as SalaryTier['type'])}><option value="PER_DAY">حسب اليومية</option><option value="FIXED">مبلغ ثابت</option></Select></Field><Field label={tier.type === 'FIXED' ? 'المبلغ الثابت' : 'طريقة الحساب'}>{tier.type === 'FIXED' ? <Input type="number" min={0} step={1000} value={tier.amount} onChange={event => updateTier(tier.id, 'amount', Number(event.target.value))} /> : <Input value="الأيام المطلوبة × اليومية" readOnly />}</Field></div></div>)}</>}
++        <div className="form-grid"><Field label="قيمة اليومية" required hint="تستخدم لخصم الغياب بعذر والأيام الإضافية."><Input type="number" min={0} step={1000} value={displayNumber('dailyRate')} placeholder="0" onChange={event => { setNumberText('dailyRate', event.target.value); change('dailyRate', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field><Field label="خصم الغياب بدون عذر" required hint="المبلغ الذي يخصم عن كل يوم غياب بدون عذر."><Input type="number" min={0} step={1000} value={displayNumber('unexcusedRate')} placeholder="0" onChange={event => { setNumberText('unexcusedRate', event.target.value); change('unexcusedRate', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field>{salary.mode === 'FIXED' ? <Field label="الراتب القطعي" required hint="لا يزيد الأساسي بزيادة الحضور في الشهر الكامل."><Input type="number" min={0} step={1000} value={displayNumber('fixedSalary')} placeholder="0" onChange={event => { setNumberText('fixedSalary', event.target.value); change('fixedSalary', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field> : <><Field label="الحد الأعلى للراتب" required><Input type="number" min={0} step={1000} value={displayNumber('maximum')} placeholder="0" onChange={event => { setNumberText('maximum', event.target.value); change('maximum', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field><Field label="تبدأ الأيام الإضافية من اليوم" required hint="رقم أول يوم مطلوب يحتسب بعد نهاية القوانين."><Input type="number" min={1} step={1} value={displayNumber('extraDaysStart')} placeholder="0" onChange={event => { setNumberText('extraDaysStart', event.target.value); change('extraDaysStart', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field></>}</div>
++        {salary.mode === 'TIERED' && <><div className={styles.sectionTitle}><h3>قوانين القسم</h3><Button variant="secondary" type="button" onClick={addTier}><Plus size={15} />إضافة قانون</Button></div><p className={styles.mutedNote}>تعتمد قوانين القسم على عدد الأيام المطلوبة من الموظف. رتبها من 0 تصاعدياً؛ ثم تضاف اليومية لكل يوم مطلوب إضافي حتى الحد الأعلى.</p>{salary.tiers.map((tier, index) => <div className={styles.tier} key={tier.id}><div className={styles.tierTitle}><span>القانون {index + 1}</span><Button variant="ghost" type="button" aria-label={`حذف القانون ${index + 1}`} onClick={() => change('tiers', salary.tiers.filter(item => item.id !== tier.id))}><Trash2 size={16} /></Button></div><div className={styles.tierFields}><Field label="من يوم"><Input type="number" min={0} step={1} value={displayNumber(`${tier.id}:fromDays`)} placeholder="0" onChange={event => { setNumberText(`${tier.id}:fromDays`, event.target.value); updateTier(tier.id, 'fromDays', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field><Field label="إلى يوم"><Input type="number" min={0} step={1} value={displayNumber(`${tier.id}:toDays`)} placeholder="0" onChange={event => { setNumberText(`${tier.id}:toDays`, event.target.value); updateTier(tier.id, 'toDays', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field><Field label="طريقة الحساب"><Select value={tier.type} onChange={event => updateTier(tier.id, 'type', event.target.value as SalaryTier['type'])}><option value="PER_DAY">حسب اليومية</option><option value="FIXED">مبلغ ثابت</option></Select></Field><Field label={tier.type === 'FIXED' ? 'المبلغ الثابت' : 'طريقة الحساب'}>{tier.type === 'FIXED' ? <Input type="number" min={0} step={1000} value={displayNumber(`${tier.id}:amount`)} placeholder="0" onChange={event => { setNumberText(`${tier.id}:amount`, event.target.value); updateTier(tier.id, 'amount', event.target.value === '' ? 0 : Number(event.target.value)); }} /> : <Input value="الأيام المطلوبة × اليومية" readOnly />}</Field></div></div>)}</>}
+         {salary.mode === 'FIXED' && <p className={styles.mutedNote}>الشهر الأول أو الأخير غير المكتمل: الأيام المطلوبة × قيمة اليومية، ضمن سقف الراتب القطعي. تطبق بعدها خصومات الغياب وبقية الخصومات والمكافآت.</p>}
+         {department && <div className="notice notice-warning"><AlertCircle size={18} /><span>سيتم تطبيق تعديل إعدادات الراتب على الشهر المفتوح حالياً وإعادة احتساب الرواتب. الأشهر المؤرشفة تبقى ثابتة.</span></div>}
+         {error && <p className={styles.error} role="alert">{error}</p>}
+diff --git a/src/components/people/employee-form.tsx b/src/components/people/employee-form.tsx
+index acce803..db49644 100644
+--- a/src/components/people/employee-form.tsx
++++ b/src/components/people/employee-form.tsx
+@@ -40,6 +40,7 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
+   const [step, setStep] = useState(0);
+   const [error, setError] = useState('');
+   const [confirmSalary, setConfirmSalary] = useState(false);
++  const [fixedSalaryText, setFixedSalaryText] = useState(employee ? String(employee.fixedSalary) : '');
+   const passwordRef = useRef<HTMLInputElement>(null);
+   const passwordProvided = useRef(false);
+   const isSuper = session?.role === 'SUPER_ADMIN';
+@@ -58,6 +59,7 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
+     if (current === 3 && /\s/.test(draft.username.trim())) return 'اسم المستخدم لا يحتوي على مسافات.';
+     if (current === 3 && data.employees.some(item => item.id !== employee?.id && item.username.toLocaleLowerCase() === draft.username.trim().toLocaleLowerCase())) return 'اسم المستخدم مستخدم مسبقاً. اختر اسماً آخر.';
+     if (current === 3 && !employee && !passwordProvided.current) return 'أدخل كلمة مرور أولية لتجربة إنشاء الحساب.';
++    if (current === 4 && draft.fixedOverride && !employee && fixedSalaryText.trim() === '') return 'أدخل الراتب القطعي. اكتب 0 بنفسك إذا كانت القيمة المقصودة صفراً.';
+     if (current === 4 && (!Number.isSafeInteger(draft.fixedSalary) || draft.fixedSalary < 0 || (draft.dailyRateOverride !== null && (!Number.isSafeInteger(draft.dailyRateOverride) || draft.dailyRateOverride < 0)))) return 'قيم الراتب واليومية يجب أن تكون أعداداً صحيحة تساوي صفراً أو أكثر.';
+     return '';
+   };
+@@ -124,7 +126,7 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
+         {step === 1 && <div className="form-grid"><Field label="رقم الهاتف" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.phone)} onChange={event => update('phone', fullPhone(event.target.value))} autoComplete="tel" placeholder="xxxxxxxxx" /></div></Field><Field label="رقم هاتف ولي الأمر" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.guardianPhone)} onChange={event => update('guardianPhone', fullPhone(event.target.value))} placeholder="xxxxxxxxx" /></div></Field><Field label="معرف تيليغرام" hint="اكتب المعرف فقط من دون @."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>@</span><Input dir="ltr" value={draft.telegram} onChange={event => update('telegram', telegramUsername(event.target.value))} placeholder="username" /></div></Field><div className="field-span-2"><Field label="العنوان / محل السكن"><Input value={draft.address} onChange={event => update('address', event.target.value)} placeholder="المحافظة، المنطقة" autoComplete="street-address" /></Field></div></div>}
+         {step === 2 && <div className="form-grid"><Field label="القسم" required><Select value={draft.departmentId} onChange={event => update('departmentId', event.target.value)}><option value="">اختر القسم</option>{data.departments.filter(item => item.active || item.id === employee?.departmentId).map(item => <option key={item.id} value={item.id}>{item.name}{!item.active ? ' (غير نشط)' : ''}</option>)}</Select></Field><Field label="تاريخ المباشرة" required><Input type="date" value={draft.startDate} onChange={event => update('startDate', event.target.value)} /></Field><Field label="الرقم الوظيفي"><Input value={employee?.code ?? 'يُنشأ تلقائياً عند الحفظ'} readOnly /></Field><div className="field-span-2"><Field label="ملاحظات" hint="اختياري"><Textarea value={draft.notes} onChange={event => update('notes', event.target.value)} rows={3} placeholder="ملاحظات إدارية عن الموظف (اختياري)" /></Field></div></div>}
+         {step === 3 && <><div className="form-grid"><Field label="اسم المستخدم" required hint="فريد، وتسجيل الدخول لا يفرق بين الحروف الكبيرة والصغيرة."><Input dir="ltr" value={draft.username} onChange={event => update('username', event.target.value)} autoComplete="off" placeholder="AHMED21" /></Field><Field label="الصلاحية"><Select value={draft.role} disabled={!isSuper} onChange={event => update('role', event.target.value as Role)}><option value="EMPLOYEE">موظف</option>{isSuper && <><option value="ADMIN">مدير</option><option value="SUPER_ADMIN">مشرف عام</option></>}</Select></Field>{!employee && <div className="field-span-2"><Field label="كلمة المرور الأولية" required hint="هذه معاينة؛ لن تُحفظ كلمة المرور أو تُستخدم لتسجيل دخول حقيقي."><Input type="password" ref={passwordRef} autoComplete="new-password" onChange={event => { passwordProvided.current = Boolean(event.target.value); }} /></Field></div>}</div><div className="notice" style={{ marginTop: 20 }}><ShieldCheck size={18} /><span>{employee ? 'يمكن تغيير كلمة المرور من تبويب «حساب الدخول» داخل ملف الموظف.' : 'تتم إضافة الملف وحساب المعاينة معاً. يستطيع الموظف الاطلاع على بياناته فقط.'}</span></div></>}
+-        {step === 4 && <><div className={styles.salaryType}><span>نوع الراتب</span><Badge tone="brand">{draft.fixedOverride || data.departments.find(item => item.id === draft.departmentId)?.salary.mode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</Badge></div><div className="notice"><ShieldCheck size={18} /><span>{isSuper ? 'تخصيص الراتب متاح للمشرف العام. اترك اليومية فارغة لاستخدام قيمة القسم.' : 'إعدادات الراتب محمية؛ يتولى المشرف العام تعديلها.'}</span></div><label className={styles.checkLabel}><input type="checkbox" checked={draft.fixedOverride} disabled={!isSuper} onChange={event => update('fixedOverride', event.target.checked)} />هذا الموظف راتبه قطعي</label>{draft.fixedOverride ? <div className="form-grid"><Field label="الراتب القطعي (د.ع)" required><Input type="number" min={0} step={1000} value={draft.fixedSalary} disabled={!isSuper} onChange={event => update('fixedSalary', Number(event.target.value))} /></Field><Field label="قيمة اليومية الخاصة (د.ع)" hint="اختياري — تُستخدم يومية القسم عند تركه فارغاً."><Input type="number" min={0} step={1000} value={draft.dailyRateOverride ?? ''} disabled={!isSuper} placeholder="يومية القسم" onChange={event => update('dailyRateOverride', event.target.value === '' ? null : Number(event.target.value))} /></Field></div> : <p className={styles.mutedNote}>سيطبق نوع الراتب المعتمد لقسم {data.departments.find(item => item.id === draft.departmentId)?.name || 'الموظف'} تلقائياً.</p>}<p className={styles.mutedNote}>في أول أو آخر شهر غير مكتمل للراتب القطعي، يعتمد الأساسي على الأيام المطلوبة × اليومية. ثم تطبق الخصومات والمكافآت.</p></>}
++        {step === 4 && <><div className={styles.salaryType}><span>نوع الراتب</span><Badge tone="brand">{draft.fixedOverride || data.departments.find(item => item.id === draft.departmentId)?.salary.mode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</Badge></div><div className="notice"><ShieldCheck size={18} /><span>{isSuper ? 'تخصيص الراتب متاح للمشرف العام. اترك اليومية فارغة لاستخدام قيمة القسم.' : 'إعدادات الراتب محمية؛ يتولى المشرف العام تعديلها.'}</span></div><label className={styles.checkLabel}><input type="checkbox" checked={draft.fixedOverride} disabled={!isSuper} onChange={event => update('fixedOverride', event.target.checked)} />هذا الموظف راتبه قطعي</label>{draft.fixedOverride ? <div className="form-grid"><Field label="الراتب القطعي (د.ع)" required><Input type="number" min={0} step={1000} value={fixedSalaryText} placeholder="0" disabled={!isSuper} onChange={event => { setFixedSalaryText(event.target.value); update('fixedSalary', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field><Field label="قيمة اليومية الخاصة (د.ع)" hint="اختياري — تُستخدم يومية القسم عند تركه فارغاً."><Input type="number" min={0} step={1000} value={draft.dailyRateOverride ?? ''} disabled={!isSuper} placeholder="يومية القسم" onChange={event => update('dailyRateOverride', event.target.value === '' ? null : Number(event.target.value))} /></Field></div> : <p className={styles.mutedNote}>سيطبق نوع الراتب المعتمد لقسم {data.departments.find(item => item.id === draft.departmentId)?.name || 'الموظف'} تلقائياً.</p>}<p className={styles.mutedNote}>في أول أو آخر شهر غير مكتمل للراتب القطعي، يعتمد الأساسي على الأيام المطلوبة × اليومية. ثم تطبق الخصومات والمكافآت.</p></>}
+         {error && <p role="alert" className={styles.error}>{error}</p>}
+         <div className="form-actions"><Button type="submit" disabled={!canModify}>{step < steps.length - 1 ? <>التالي<ArrowLeft size={16} /></> : <><Check size={16} />{employee ? 'حفظ التعديلات' : 'إضافة الموظف'}</>}</Button><Button type="button" variant="secondary" onClick={() => { if (step) { setStep(step - 1); setError(''); } else onClose(); }}>{step ? <><ArrowRight size={16} />السابق</> : 'إلغاء'}</Button></div>
+       </form>
+diff --git a/src/lib/evaluations.ts b/src/lib/evaluations.ts
+new file mode 100644
+index 0000000..f6db6f1
+--- /dev/null
++++ b/src/lib/evaluations.ts
+@@ -0,0 +1,98 @@
++import type {
++  DemoData,
++  Employee,
++  EvaluationCycle,
++  EvaluationCycleSnapshot,
++  EvaluationLeaderboardRow,
++  ExamEvaluation,
++} from './types';
++
++function normalizeArabic(value: string): string {
++  return value.trim().replace(/[أإآ]/g, 'ا').replace(/\s+/g, '');
++}
++
++export function isCorrectionDepartmentName(name: string): boolean {
++  return normalizeArabic(name) === normalizeArabic('التصحيح');
++}
++
++export function isAuditDepartmentName(name: string): boolean {
++  return normalizeArabic(name) === normalizeArabic('التدقيق');
++}
++
++export function isCorrectionEmployee(data: DemoData, employee: Employee): boolean {
++  const department = data.departments.find(item => item.id === employee.departmentId);
++  return Boolean(employee.active && department && isCorrectionDepartmentName(department.name));
++}
++
++export function isAuditEmployee(data: DemoData, employee: Employee): boolean {
++  const department = data.departments.find(item => item.id === employee.departmentId);
++  return Boolean(employee.active && department && isAuditDepartmentName(department.name));
++}
++
++export function getCorrectionEmployees(data: DemoData): Employee[] {
++  return data.employees.filter(employee => isCorrectionEmployee(data, employee));
++}
++
++export function getOpenEvaluationCycle(data: DemoData): EvaluationCycle | undefined {
++  return data.evaluationCycles.find(cycle => cycle.state === 'OPEN');
++}
++
++export function getExamEvaluation(data: DemoData, examId: string, employeeId: string): ExamEvaluation | undefined {
++  return data.examEvaluations.find(item => item.examId === examId && item.employeeId === employeeId);
++}
++
++export function calculateEvaluationScore(papers: number | null | undefined, correctionErrors: number | null | undefined, behaviorErrors: number | null | undefined): number {
++  return (papers ?? 0) - ((correctionErrors ?? 0) * 5) - ((behaviorErrors ?? 0) * 3);
++}
++
++export function calculateAccuracy(papers: number, correctionErrors: number, behaviorErrors: number): number | null {
++  if (papers <= 0) return null;
++  const raw = 100 - (((correctionErrors + behaviorErrors) / papers) * 100);
++  return Math.max(0, Math.min(100, raw));
++}
++
++function rowForEmployee(employee: Employee, evaluations: ExamEvaluation[]): EvaluationLeaderboardRow {
++  const papers = evaluations.reduce((sum, item) => sum + (item.papers ?? 0), 0);
++  const correctionErrors = evaluations.reduce((sum, item) => sum + (item.correctionErrors ?? 0), 0);
++  const behaviorErrors = evaluations.reduce((sum, item) => sum + (item.behaviorErrors ?? 0), 0);
++  return {
++    employeeId: employee.id,
++    employeeName: employee.name,
++    employeeCode: employee.code,
++    papers,
++    correctionErrors,
++    behaviorErrors,
++    examsEvaluated: new Set(evaluations.map(item => item.examId)).size,
++    score: calculateEvaluationScore(papers, correctionErrors, behaviorErrors),
++    accuracy: calculateAccuracy(papers, correctionErrors, behaviorErrors),
++  };
++}
++
++function sortLeaderboard(rows: EvaluationLeaderboardRow[]): EvaluationLeaderboardRow[] {
++  return [...rows].sort((a, b) => b.score - a.score || b.papers - a.papers || a.employeeName.localeCompare(b.employeeName, 'ar'));
++}
++
++export function getExamLeaderboard(data: DemoData, examId: string): EvaluationLeaderboardRow[] {
++  const employees = getCorrectionEmployees(data);
++  return sortLeaderboard(employees.map(employee => rowForEmployee(employee, data.examEvaluations.filter(item => item.examId === examId && item.employeeId === employee.id))));
++}
++
++export function getCycleLeaderboard(data: DemoData, cycleId: string): EvaluationLeaderboardRow[] {
++  const cycle = data.evaluationCycles.find(item => item.id === cycleId);
++  if (cycle?.state === 'ARCHIVED' && cycle.snapshot) return structuredClone(cycle.snapshot.rows);
++  const examIds = new Set(data.evaluationExams.filter(item => item.cycleId === cycleId).map(item => item.id));
++  const employees = getCorrectionEmployees(data);
++  return sortLeaderboard(employees.map(employee => rowForEmployee(employee, data.examEvaluations.filter(item => examIds.has(item.examId) && item.employeeId === employee.id))));
++}
++
++export function buildEvaluationCycleSnapshot(data: DemoData, cycleId: string): EvaluationCycleSnapshot {
++  const exams = data.evaluationExams.filter(item => item.cycleId === cycleId);
++  return {
++    rows: getCycleLeaderboard(data, cycleId),
++    exams: exams.map(exam => ({ id: exam.id, name: exam.name, date: exam.date, rows: getExamLeaderboard(data, exam.id) })),
++  };
++}
++
++export function formatAccuracy(value: number | null): string {
++  return value === null ? '—' : `${value.toFixed(2)} / 100`;
++}
+diff --git a/src/lib/mock-data.ts b/src/lib/mock-data.ts
+index 35ca2c6..bccd4c4 100644
+--- a/src/lib/mock-data.ts
++++ b/src/lib/mock-data.ts
+@@ -1,9 +1,9 @@
+-import type { DemoData } from './types';
++import type { AttendanceRecord, DemoData, Department, Employee, SalaryConfig, Workday } from './types';
+ 
+ export const DEMO_TODAY = '2026-09-28';
+ export const DEMO_MONTH = '2026-09';
+ 
+-/** A clean installation. Populated scenarios belong exclusively to tests/fixtures. */
++/** A clean installation. Populated scenarios belong exclusively to the explicit test-data loader. */
+ export function createInitialData(): DemoData {
+   return {
+     employees: [],
+@@ -15,6 +15,128 @@ export function createInitialData(): DemoData {
+     months: [],
+     payments: [],
+     audit: [],
++    evaluationCycles: [],
++    evaluationExams: [],
++    examEvaluations: [],
+     settings: { centerName: 'CenterPro', qrInterval: 45 },
+   };
+ }
++
++const correctionSalary: SalaryConfig = {
++  mode: 'TIERED',
++  dailyRate: 25_000,
++  unexcusedRate: 50_000,
++  maximum: 600_000,
++  fixedSalary: 0,
++  extraDaysStart: 17,
++  tiers: [
++    { id: 'test-correction-law-1', fromDays: 0, toDays: 4, type: 'PER_DAY', amount: 0 },
++    { id: 'test-correction-law-2', fromDays: 5, toDays: 8, type: 'FIXED', amount: 200_000 },
++    { id: 'test-correction-law-3', fromDays: 9, toDays: 16, type: 'FIXED', amount: 400_000 },
++  ],
++};
++
++const auditSalary: SalaryConfig = structuredClone(correctionSalary);
++auditSalary.tiers = auditSalary.tiers.map((tier, index) => ({ ...tier, id: `test-audit-law-${index + 1}` }));
++
++const testDepartments: Department[] = [
++  { id: 'department-correction-test', name: 'التصحيح', active: true, description: 'قسم التصحيح — بيانات اختبار المعاينة', salary: correctionSalary },
++  { id: 'department-audit-test', name: 'التدقيق', active: true, description: 'قسم التدقيق — بيانات اختبار المعاينة', salary: auditSalary },
++];
++
++function testEmployee(input: {
++  id: string;
++  code: string;
++  name: string;
++  username: string;
++  departmentId: string;
++  gender: 'MALE' | 'FEMALE';
++  phone: string;
++  guardianPhone: string;
++}): Employee {
++  return {
++    ...input,
++    address: 'بغداد',
++    startDate: '2026-09-01',
++    active: true,
++    birthDate: '2000-01-01',
++    notes: '',
++    qualification: 'اختبار المعاينة',
++    telegram: input.username.toLowerCase(),
++    role: 'EMPLOYEE',
++    fixedOverride: false,
++    fixedSalary: 0,
++    dailyRateOverride: null,
++    createdAt: '2026-09-01T09:00:00.000Z',
++    updatedAt: '2026-09-01T09:00:00.000Z',
++  };
++}
++
++const testEmployees: Employee[] = [
++  testEmployee({ id: 'employee-abrar-haqi', code: 'CP-0001', name: 'ابرار حقي', username: 'ABRAR1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000001', guardianPhone: '07800000001' }),
++  testEmployee({ id: 'employee-hiba-mohammed', code: 'CP-0002', name: 'هبة محمد', username: 'HIBA1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000002', guardianPhone: '07800000002' }),
++  testEmployee({ id: 'employee-fatima-firas', code: 'CP-0003', name: 'فاطمة فراس', username: 'FATIMA1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000003', guardianPhone: '07800000003' }),
++  testEmployee({ id: 'employee-maryam-issam', code: 'CP-0004', name: 'مريم عصام', username: 'MARYAME1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000004', guardianPhone: '07800000004' }),
++  testEmployee({ id: 'employee-jaafar-ali', code: 'CP-0005', name: 'جعفر علي', username: 'JAAFAR1', departmentId: 'department-audit-test', gender: 'MALE', phone: '07700000005', guardianPhone: '07800000005' }),
++  testEmployee({ id: 'employee-maryam-fahad', code: 'CP-0006', name: 'مريم فهد', username: 'MARYAMF1', departmentId: 'department-audit-test', gender: 'FEMALE', phone: '07700000006', guardianPhone: '07800000006' }),
++];
++
++function day(index: number): Workday {
++  const date = `2026-09-${String(index).padStart(2, '0')}`;
++  return {
++    id: `test-workday-${String(index).padStart(2, '0')}`,
++    date,
++    startTime: '14:00:00',
++    departmentIds: testDepartments.map(item => item.id),
++    overrides: {},
++    state: 'CLOSED',
++    createdBy: 'بيانات الاختبار',
++    createdAt: `${date}T10:00:00.000Z`,
++  };
++}
++
++function attendance(employeeId: string, dayIndex: number, status: AttendanceRecord['status']): AttendanceRecord {
++  const date = `2026-09-${String(dayIndex).padStart(2, '0')}`;
++  const present = status === 'PRESENT';
++  return {
++    id: `test-attendance-${employeeId}-${dayIndex}`,
++    employeeId,
++    workdayId: `test-workday-${String(dayIndex).padStart(2, '0')}`,
++    status,
++    checkIn: present ? `${date}T11:00:00.000Z` : null,
++    latenessSeconds: 0,
++    source: present ? 'QR' : null,
++    reason: status === 'EXCUSED' ? 'غياب بعذر — بيانات اختبار' : status === 'UNEXCUSED' ? 'غياب بدون عذر — بيانات اختبار' : status === 'EXEMPT' ? 'لا يوجد دوام — بيانات اختبار' : '',
++    updatedAt: `${date}T15:00:00.000Z`,
++  };
++}
++
++function recordsFor(employeeId: string, presentDays: number[], excusedDays: number[] = [], unexcusedDays: number[] = [], totalDays = 18): AttendanceRecord[] {
++  const present = new Set(presentDays);
++  const excused = new Set(excusedDays);
++  const unexcused = new Set(unexcusedDays);
++  return Array.from({ length: totalDays }, (_, offset) => offset + 1).map(dayIndex => {
++    const status: AttendanceRecord['status'] = present.has(dayIndex) ? 'PRESENT' : excused.has(dayIndex) ? 'EXCUSED' : unexcused.has(dayIndex) ? 'UNEXCUSED' : 'EXEMPT';
++    return attendance(employeeId, dayIndex, status);
++  });
++}
++
++/** Explicit preview-only fixture. No exams or evaluation scores are pre-populated. */
++export function createTestData(): DemoData {
++  const workdays = Array.from({ length: 18 }, (_, index) => day(index + 1));
++  const attendanceRecords = [
++    ...recordsFor('employee-abrar-haqi', Array.from({ length: 16 }, (_, index) => index + 1)),
++    ...recordsFor('employee-hiba-mohammed', [1, 2, 3, 4, 5, 6, 7], [8, 9]),
++    ...recordsFor('employee-fatima-firas', Array.from({ length: 16 }, (_, index) => index + 1), [17], [18]),
++    ...recordsFor('employee-maryam-issam', Array.from({ length: 18 }, (_, index) => index + 1)),
++    ...recordsFor('employee-jaafar-ali', Array.from({ length: 17 }, (_, index) => index + 1)),
++    ...recordsFor('employee-maryam-fahad', [1, 2, 3, 4], [5, 6]),
++  ];
++  return {
++    ...createInitialData(),
++    departments: structuredClone(testDepartments),
++    employees: structuredClone(testEmployees),
++    workdays,
++    attendance: attendanceRecords,
++  };
++}
+diff --git a/src/lib/preview-config.ts b/src/lib/preview-config.ts
+index 05c8117..29512b7 100644
+--- a/src/lib/preview-config.ts
++++ b/src/lib/preview-config.ts
+@@ -1,8 +1,8 @@
+ import type { DemoSession } from './types';
+ 
+ /** Browser-only preview contract. No production credentials or authorization. */
+-export const PREVIEW_STORAGE_KEY = 'centerpro-ui-preview-v2';
+-export const PREVIEW_STORAGE_VERSION = 2;
++export const PREVIEW_STORAGE_KEY = 'centerpro-ui-preview-v3';
++export const PREVIEW_STORAGE_VERSION = 3;
+ export const PREVIEW_SYSTEM_USERNAME = 'centerpro-owner';
+ export const PREVIEW_SYSTEM_ADMIN: DemoSession = {
+   role: 'SUPER_ADMIN',
+diff --git a/src/lib/types.ts b/src/lib/types.ts
+index 3a86d84..50dcd1b 100644
+--- a/src/lib/types.ts
++++ b/src/lib/types.ts
+@@ -13,7 +13,79 @@ export interface PayrollResult { employeeId: string; employeeName: string; emplo
+ export interface PayrollMonth { id: string; month: string; state: 'OPEN' | 'ARCHIVED' | 'REOPENED'; archivedAt?: string; snapshots: Record<string, PayrollResult>; sourceSnapshot?: Pick<DemoData, 'attendance' | 'workdays' | 'deductions' | 'bonuses' | 'employees' | 'departments'> }
+ export interface Payment { id: string; employeeId: string; month: string; salaryAtPayment: number; amount: number; date: string; paidBy: string; createdAt: string }
+ export interface AuditEntry { id: string; actor: string; role: Role; action: string; entity: string; entityId: string; employeeId?: string; oldValues: Record<string, unknown>; newValues: Record<string, unknown>; timestamp: string; ip?: string; userAgent?: string }
++
++export interface EvaluationLeaderboardRow {
++  employeeId: string;
++  employeeName: string;
++  employeeCode: string;
++  papers: number;
++  correctionErrors: number;
++  behaviorErrors: number;
++  examsEvaluated: number;
++  score: number;
++  accuracy: number | null;
++}
++export interface EvaluationExamSnapshot {
++  id: string;
++  name: string;
++  date: string;
++  rows: EvaluationLeaderboardRow[];
++}
++export interface EvaluationCycleSnapshot {
++  rows: EvaluationLeaderboardRow[];
++  exams: EvaluationExamSnapshot[];
++}
++export interface EvaluationCycle {
++  id: string;
++  name: string;
++  state: 'OPEN' | 'ARCHIVED';
++  openedAt: string;
++  openedBy: string;
++  closedAt?: string;
++  closedBy?: string;
++  snapshot?: EvaluationCycleSnapshot;
++}
++export interface EvaluationExam {
++  id: string;
++  cycleId: string;
++  name: string;
++  date: string;
++  note: string;
++  state: 'OPEN' | 'CLOSED';
++  createdBy: string;
++  createdAt: string;
++  closedAt?: string;
++  closedBy?: string;
++}
++export interface ExamEvaluation {
++  id: string;
++  examId: string;
++  employeeId: string;
++  papers: number | null;
++  correctionErrors: number | null;
++  behaviorErrors: number | null;
++  note: string;
++  createdBy: string;
++  createdAt: string;
++  updatedBy: string;
++  updatedAt: string;
++}
++
+ export interface DemoSettings { centerName: string; qrInterval: number }
+-export interface DemoData { employees: Employee[]; departments: Department[]; workdays: Workday[]; attendance: AttendanceRecord[]; deductions: Deduction[]; bonuses: Bonus[]; months: PayrollMonth[]; payments: Payment[]; audit: AuditEntry[]; settings: DemoSettings }
++export interface DemoData {
++  employees: Employee[];
++  departments: Department[];
++  workdays: Workday[];
++  attendance: AttendanceRecord[];
++  deductions: Deduction[];
++  bonuses: Bonus[];
++  months: PayrollMonth[];
++  payments: Payment[];
++  audit: AuditEntry[];
++  evaluationCycles: EvaluationCycle[];
++  evaluationExams: EvaluationExam[];
++  examEvaluations: ExamEvaluation[];
++  settings: DemoSettings;
++}
+ export interface DemoSession { role: Role; employeeId?: string; name: string; kind?: 'SYSTEM' | 'EMPLOYEE' }
+ export type AuditInput = Pick<AuditEntry, 'action' | 'entity' | 'entityId'> & Partial<Pick<AuditEntry, 'employeeId' | 'oldValues' | 'newValues'>>;
+diff --git a/tests/domain/empty-startup.test.ts b/tests/domain/empty-startup.test.ts
+index 0657fa9..f1f0aea 100644
+--- a/tests/domain/empty-startup.test.ts
++++ b/tests/domain/empty-startup.test.ts
+@@ -7,7 +7,7 @@ describe('clean preview installation', () => {
+   it('starts with no operational records, departments, accounts or payroll periods', () => {
+     expect(createInitialData()).toEqual({
+       employees: [], departments: [], workdays: [], attendance: [], deductions: [],
+-      bonuses: [], months: [], payments: [], audit: [],
++      bonuses: [], months: [], payments: [], audit: [], evaluationCycles: [], evaluationExams: [], examEvaluations: [],
+       settings: { centerName: 'CenterPro', qrInterval: 45 },
+     });
+   });
+diff --git a/tests/domain/evaluations.test.ts b/tests/domain/evaluations.test.ts
+new file mode 100644
+index 0000000..b17ec06
+--- /dev/null
++++ b/tests/domain/evaluations.test.ts
+@@ -0,0 +1,39 @@
++import { describe, expect, it } from 'vitest';
++import { createTestData } from '../../src/lib/mock-data';
++import { calculateAccuracy, calculateEvaluationScore, getCycleLeaderboard, getExamLeaderboard } from '../../src/lib/evaluations';
++
++describe('correction evaluation domain', () => {
++  it('uses papers minus weighted correction and behavior errors only', () => {
++    expect(calculateEvaluationScore(800, 3, 2)).toBe(779);
++    expect(calculateEvaluationScore(0, 1, 1)).toBe(-8);
++  });
++
++  it('keeps accuracy informational and independent of weighted score', () => {
++    expect(calculateAccuracy(500, 3, 2)).toBe(99);
++    expect(calculateAccuracy(0, 0, 0)).toBeNull();
++  });
++
++  it('counts evaluated exams as an informational metric without multiplying the score', () => {
++    const data = createTestData();
++    data.evaluationCycles.push({ id:'cycle-1', name:'دورة التقييم 1', state:'OPEN', openedAt:'2026-10-01T00:00:00.000Z', openedBy:'مدير النظام' });
++    data.evaluationExams.push(
++      { id:'exam-1', cycleId:'cycle-1', name:'امتحان 1', date:'2026-10-01', note:'', state:'OPEN', createdBy:'مدير النظام', createdAt:'2026-10-01T00:00:00.000Z' },
++      { id:'exam-2', cycleId:'cycle-1', name:'امتحان 2', date:'2026-10-02', note:'', state:'OPEN', createdBy:'مدير النظام', createdAt:'2026-10-02T00:00:00.000Z' },
++    );
++    data.examEvaluations.push(
++      { id:'ev-1', examId:'exam-1', employeeId:'employee-abrar-haqi', papers:100, correctionErrors:1, behaviorErrors:0, note:'', createdBy:'جعفر علي', createdAt:'2026-10-01T10:00:00.000Z', updatedBy:'جعفر علي', updatedAt:'2026-10-01T10:00:00.000Z' },
++      { id:'ev-2', examId:'exam-2', employeeId:'employee-abrar-haqi', papers:100, correctionErrors:0, behaviorErrors:1, note:'', createdBy:'جعفر علي', createdAt:'2026-10-02T10:00:00.000Z', updatedBy:'جعفر علي', updatedAt:'2026-10-02T10:00:00.000Z' },
++    );
++    const row = getCycleLeaderboard(data, 'cycle-1').find(item => item.employeeId === 'employee-abrar-haqi')!;
++    expect(row).toMatchObject({ papers:200, correctionErrors:1, behaviorErrors:1, examsEvaluated:2, score:192 });
++  });
++
++  it('keeps all active correction employees on the exam leaderboard even with zero entries', () => {
++    const data = createTestData();
++    data.evaluationCycles.push({ id:'cycle-1', name:'دورة التقييم 1', state:'OPEN', openedAt:'2026-10-01T00:00:00.000Z', openedBy:'مدير النظام' });
++    data.evaluationExams.push({ id:'exam-1', cycleId:'cycle-1', name:'امتحان 1', date:'2026-10-01', note:'', state:'OPEN', createdBy:'مدير النظام', createdAt:'2026-10-01T00:00:00.000Z' });
++    const rows = getExamLeaderboard(data, 'exam-1');
++    expect(rows).toHaveLength(4);
++    expect(rows.every(row => row.score === 0 && row.examsEvaluated === 0)).toBe(true);
++  });
++});
+diff --git a/tests/domain/test-seed.test.ts b/tests/domain/test-seed.test.ts
+new file mode 100644
+index 0000000..59e406a
+--- /dev/null
++++ b/tests/domain/test-seed.test.ts
+@@ -0,0 +1,24 @@
++import { describe, expect, it } from 'vitest';
++import { createTestData, DEMO_MONTH } from '../../src/lib/mock-data';
++import { calculateEmployeePayroll } from '../../src/lib/payroll';
++
++describe('explicit preview test data', () => {
++  it('creates exactly four correction and two audit employees with no evaluation fixtures', () => {
++    const data = createTestData();
++    expect(data.employees.map(item => item.name)).toEqual(['ابرار حقي','هبة محمد','فاطمة فراس','مريم عصام','جعفر علي','مريم فهد']);
++    expect(data.evaluationCycles).toEqual([]);
++    expect(data.evaluationExams).toEqual([]);
++    expect(data.examEvaluations).toEqual([]);
++  });
++
++  it('matches the requested attendance scenarios', () => {
++    const data = createTestData();
++    const result = (id: string) => calculateEmployeePayroll(data, id, DEMO_MONTH);
++    expect(result('employee-abrar-haqi')).toMatchObject({ attendanceDays:16, excusedDays:0, unexcusedDays:0, requiredDays:16 });
++    expect(result('employee-hiba-mohammed')).toMatchObject({ attendanceDays:7, excusedDays:2, unexcusedDays:0, requiredDays:9 });
++    expect(result('employee-fatima-firas')).toMatchObject({ attendanceDays:16, excusedDays:1, unexcusedDays:1, requiredDays:18 });
++    expect(result('employee-maryam-issam')).toMatchObject({ attendanceDays:18, excusedDays:0, unexcusedDays:0, requiredDays:18 });
++    expect(result('employee-jaafar-ali')).toMatchObject({ attendanceDays:17, excusedDays:0, unexcusedDays:0, requiredDays:17 });
++    expect(result('employee-maryam-fahad')).toMatchObject({ attendanceDays:4, excusedDays:2, unexcusedDays:0, requiredDays:6 });
++  });
++});
+diff --git a/tests/e2e/empty-onboarding.spec.ts b/tests/e2e/empty-onboarding.spec.ts
+index f4233e1..841f96e 100644
+--- a/tests/e2e/empty-onboarding.spec.ts
++++ b/tests/e2e/empty-onboarding.spec.ts
+@@ -26,6 +26,9 @@ test.describe('Fresh CenterPro onboarding', () => {
+     await departmentDialog.getByLabel('قيمة اليومية', { exact: false }).fill('25000');
+     await departmentDialog.getByLabel('خصم الغياب بدون عذر', { exact: false }).fill('50000');
+     await departmentDialog.getByLabel('الحد الأعلى للراتب', { exact: false }).fill('600000');
++    await departmentDialog.getByLabel('تبدأ الأيام الإضافية من اليوم', { exact: false }).fill('5');
++    await departmentDialog.getByLabel('من يوم', { exact: true }).fill('0');
++    await departmentDialog.getByLabel('إلى يوم', { exact: true }).fill('4');
+     await departmentDialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+     await expect(departmentDialog).toBeHidden();
+     state = await readPreviewData(page);
+@@ -69,6 +72,8 @@ test.describe('Fresh CenterPro onboarding', () => {
+     let dialog = page.getByRole('dialog', { name: 'إضافة قسم جديد', exact: true });
+     await dialog.getByLabel('اسم القسم', { exact: false }).fill('قسم موقوف للاختبار');
+     await dialog.getByLabel('نوع الراتب', { exact: true }).selectOption('FIXED');
++    await dialog.getByLabel('قيمة اليومية', { exact: false }).fill('25000');
++    await dialog.getByLabel('خصم الغياب بدون عذر', { exact: false }).fill('50000');
+     await dialog.getByLabel('الراتب القطعي', { exact: false }).fill('500000');
+     await dialog.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+     await expect(dialog).toBeHidden();
+diff --git a/tests/e2e/helpers/preview.ts b/tests/e2e/helpers/preview.ts
+index c414c59..4fafa5b 100644
+--- a/tests/e2e/helpers/preview.ts
++++ b/tests/e2e/helpers/preview.ts
+@@ -40,8 +40,17 @@ export async function loginPreview(
+   role: 'المدير العام' | 'مدير العمليات' | 'موظف' = 'المدير العام',
+ ) {
+   await gotoPreview(page, '/login');
+-  await page.getByRole('button', { name: role, exact: true }).click();
+-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
++  const account = page.getByLabel('الحساب', { exact: true });
++  if (role === 'المدير العام') {
++    await account.selectOption('SYSTEM');
++  } else {
++    const state = await readPreviewData(page);
++    const targetRole = role === 'مدير العمليات' ? 'ADMIN' : 'EMPLOYEE';
++    const target = state.employees.find(employee => employee.active && employee.role === targetRole);
++    if (!target) throw new Error(`No active ${targetRole} preview account exists.`);
++    await account.selectOption(target.id);
++  }
++  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+   await finishWelcome(page);
+   await expect(page).toHaveURL(role === 'موظف' ? /\/employee$/ : /\/dashboard$/);
+ }
+diff --git a/tests/e2e/preview-state.spec.ts b/tests/e2e/preview-state.spec.ts
+index 480d7ab..86cb4ad 100644
+--- a/tests/e2e/preview-state.spec.ts
++++ b/tests/e2e/preview-state.spec.ts
+@@ -1,10 +1,11 @@
+ import type { Page } from '@playwright/test';
+ import type { DemoData } from '../../src/lib/types';
+ import { createPopulatedTestData } from '../fixtures/populated-data';
+-import { PREVIEW_SYSTEM_ADMIN, PREVIEW_SYSTEM_USERNAME } from '../../src/lib/preview-config';
++import { PREVIEW_SYSTEM_ADMIN } from '../../src/lib/preview-config';
+ import { test, expect, gotoPreview, loginPreview, finishWelcome, seedPopulatedPreview, readPreviewData, readPreviewSession, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION } from './helpers/preview';
+ 
+-const collections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit'] as const;
++const collections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit', 'evaluationCycles', 'evaluationExams', 'examEvaluations'] as const;
++const populatedFixtureCollections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit'] as const;
+ function expectEmpty(data: DemoData) {
+   for (const collection of collections) expect(data[collection], `${collection} must remain empty`).toEqual([]);
+ }
+@@ -27,7 +28,7 @@ async function addAccount(page: Page, name: string, username: string, role: 'EMP
+   await expect(dialog).toBeHidden();
+ }
+ 
+-test('legacy v1 fictional records and session are discarded in favor of an empty v2 installation', async ({ page }) => {
++test('legacy v1 fictional records and session are discarded in favor of an empty v3 installation', async ({ page }) => {
+   await page.addInitScript(({ key, fixture }) => {
+     if (!sessionStorage.getItem(key)) {
+       sessionStorage.setItem('centerpro-ui-preview-v1', JSON.stringify({
+@@ -41,8 +42,8 @@ test('legacy v1 fictional records and session are discarded in favor of an empty
+   expect(await readPreviewSession(page)).toBeNull();
+   expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v1'))).toBeNull();
+   expect(await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)!).version, PREVIEW_STORAGE_KEY)).toBe(PREVIEW_STORAGE_VERSION);
+-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toHaveValue(PREVIEW_SYSTEM_USERNAME);
+-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
++  await expect(page.getByLabel('الحساب', { exact: true })).toHaveValue('SYSTEM');
++  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+   await finishWelcome(page);
+   await expect(page).toHaveURL(/\/dashboard$/);
+   expectEmpty(await readPreviewData(page));
+@@ -51,11 +52,10 @@ test('legacy v1 fictional records and session are discarded in favor of an empty
+ 
+ test('the system Super Admin enters without becoming an employee and uncreated roles stay disabled', async ({ page }) => {
+   await gotoPreview(page, '/login');
+-  await expect(page.getByRole('button', { name: 'المدير العام', exact: true })).toBeEnabled();
+-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeDisabled();
+-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeDisabled();
+-  await expect(page.getByLabel('حساب المعاينة', { exact: true })).toHaveCount(0);
+-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
++  const accountSelect = page.getByLabel('الحساب', { exact: true });
++  await expect(accountSelect).toHaveValue('SYSTEM');
++  await expect(accountSelect.locator('option')).toHaveCount(1);
++  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+   await finishWelcome(page);
+   await expect(page).toHaveURL(/\/dashboard$/);
+   const session = await readPreviewSession(page);
+@@ -77,6 +77,8 @@ test('role choices become available only after the owner manually creates the co
+   const department = page.getByRole('dialog', { name: 'إضافة قسم جديد', exact: true });
+   await department.getByLabel('اسم القسم', { exact: false }).fill('قسم الحسابات اليدوية');
+   await department.getByLabel('نوع الراتب', { exact: true }).selectOption('FIXED');
++  await department.getByLabel('قيمة اليومية', { exact: false }).fill('25000');
++  await department.getByLabel('خصم الغياب بدون عذر', { exact: false }).fill('50000');
+   await department.getByLabel('الراتب القطعي', { exact: false }).fill('500000');
+   await department.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
+   await expect(department).toBeHidden();
+@@ -84,19 +86,15 @@ test('role choices become available only after the owner manually creates the co
+ 
+   await addAccount(page, 'موظف يضاف يدوياً', 'MANUAL-EMP', 'EMPLOYEE', departmentId);
+   await gotoPreview(page, '/login');
+-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeEnabled();
+-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeDisabled();
+-  await page.getByRole('button', { name: 'موظف', exact: true }).click();
+-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toHaveValue('MANUAL-EMP');
++  const employeeAccount = (await readPreviewData(page)).employees.find(item => item.username === 'MANUAL-EMP')!;
++  await expect(page.getByLabel('الحساب', { exact: true }).locator(`option[value="${employeeAccount.id}"]`)).toHaveCount(1);
+ 
+   await loginPreview(page);
+   await addAccount(page, 'مدير يضاف يدوياً', 'MANUAL-ADMIN', 'ADMIN', departmentId);
+   await gotoPreview(page, '/login');
+-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeEnabled();
+-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeEnabled();
+-  await page.getByRole('button', { name: 'مدير العمليات', exact: true }).click();
+-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toHaveValue('MANUAL-ADMIN');
+-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
++  const adminAccount = (await readPreviewData(page)).employees.find(item => item.username === 'MANUAL-ADMIN')!;
++  await page.getByLabel('الحساب', { exact: true }).selectOption(adminAccount.id);
++  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+   await finishWelcome(page);
+   await expect(page).toHaveURL(/\/dashboard$/);
+   const state = await readPreviewData(page);
+@@ -109,12 +107,12 @@ test('reset clears every operational collection and replaces an employee-based a
+   fixture.settings = { centerName: 'اسم معدل قبل إعادة الضبط', qrInterval: 60 };
+   await seedPopulatedPreview(page, fixture);
+   await gotoPreview(page, '/login');
+-  await page.getByLabel('حساب المعاينة', { exact: true }).selectOption('CP-0012');
+-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
++  await page.getByLabel('الحساب', { exact: true }).selectOption('CP-0012');
++  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+   await finishWelcome(page);
+   await expect(page).toHaveURL(/\/dashboard$/);
+   expect(await readPreviewSession(page)).toMatchObject({ kind: 'EMPLOYEE', role: 'SUPER_ADMIN', employeeId: 'CP-0012' });
+-  for (const collection of collections) expect((await readPreviewData(page))[collection].length).toBeGreaterThan(0);
++  for (const collection of populatedFixtureCollections) expect((await readPreviewData(page))[collection].length).toBeGreaterThan(0);
+ 
+   await gotoPreview(page, '/settings');
+   await page.getByRole('button', { name: 'تصفير بيانات المعاينة', exact: true }).click();
+@@ -132,6 +130,5 @@ test('reset clears every operational collection and replaces an employee-based a
+   expectEmpty(await readPreviewData(page));
+   expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
+   await gotoPreview(page, '/login');
+-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeDisabled();
+-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeDisabled();
++  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
+ });
+diff --git a/tests/e2e/responsive.spec.ts b/tests/e2e/responsive.spec.ts
+index 175e06b..2c91d57 100644
+--- a/tests/e2e/responsive.spec.ts
++++ b/tests/e2e/responsive.spec.ts
+@@ -93,7 +93,7 @@ test('unified attendance navigation and legacy route redirect', async ({ page })
+ test('empty key pages meet accessibility checks', async ({ page }) => {
+   test.setTimeout(180_000);
+   await gotoPreview(page, '/login');
+-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeVisible();
++  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+   await loginPreview(page);
+   const violations: unknown[] = [];
+   for (const path of ['/dashboard', '/employees', '/attendance', '/payroll', '/settings']) {
+diff --git a/tests/e2e/welcome.spec.ts b/tests/e2e/welcome.spec.ts
+index 376a0af..9596d14 100644
+--- a/tests/e2e/welcome.spec.ts
++++ b/tests/e2e/welcome.spec.ts
+@@ -10,20 +10,20 @@ test('fresh load covers login for the full five seconds with the exact welcome m
+   await expect(welcome).toHaveAttribute('data-welcome-sequence', 'initial');
+   await expect(welcome.getByText('مرحباً بك موظفنا المميز', { exact: true })).toBeVisible();
+   await expect(welcome.getByRole('img', { name: 'CenterPro', exact: true })).toBeVisible();
+-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeHidden();
++  await expect(page.getByLabel('الحساب', { exact: true })).toBeHidden();
+   await page.clock.fastForward(4_900);
+   await expect(welcome).toBeVisible();
+   await page.clock.fastForward(99);
+   await expect(welcome).toBeVisible();
+   await page.clock.fastForward(1);
+   await expect(welcome).toBeHidden();
+-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeVisible();
++  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+ });
+ 
+ test('login shows five seconds before dashboard, internal navigation stays clear, reload welcomes again', async ({ page }) => {
+   await gotoPreview(page, '/login');
+   await page.clock.pauseAt(new Date(await page.evaluate(() => Date.now()) + 1_000));
+-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
++  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+   const welcome = await waitForWelcome(page);
+   await expect(welcome).toHaveAttribute('data-welcome-sequence', 'login');
+   await expect(page).toHaveURL(/\/login$/);
+@@ -112,6 +112,6 @@ for (const [width, height] of sizes) {
+     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+     await page.screenshot({ path: `qa-artifacts/welcome-reduced-${width}.png` });
+     await finishWelcome(page);
+-    await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeVisible();
++    await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+   });
+ }
+diff --git a/tests/fixtures/populated-data.ts b/tests/fixtures/populated-data.ts
+index 4578f41..0cf0ddf 100644
+--- a/tests/fixtures/populated-data.ts
++++ b/tests/fixtures/populated-data.ts
+@@ -146,6 +146,7 @@ export function createPopulatedTestData(): DemoData {
+       { id: 'audit-006', actor: 'حسن أحمد فلاح', role: 'SUPER_ADMIN', action: 'أرشفة رواتب الشهر', entity: 'payroll_month', entityId: 'pm-2026-08', oldValues: { state: 'OPEN' }, newValues: { state: 'ARCHIVED', month: '2026-08' }, timestamp: '2026-08-31T16:00:00.000Z' },
+       { id: 'audit-007', actor: 'أحمد كريم مهند', role: 'ADMIN', action: 'إنهاء خدمة موظف', entity: 'employee', entityId: 'CP-0014', employeeId: 'CP-0014', oldValues: { active: true }, newValues: { active: false, endDate: '2026-09-14' }, timestamp: '2026-09-14T16:10:00.000Z' },
+     ] satisfies DemoData['audit']).sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
++    evaluationCycles: [], evaluationExams: [], examEvaluations: [],
+     settings: { centerName: 'CenterPro', qrInterval: 45 },
+   };
+   for (const month of data.months.filter((item) => item.state === 'ARCHIVED')) {

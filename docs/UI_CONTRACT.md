@@ -2,26 +2,38 @@
 
 ## Authoritative revision
 
-`MASTER_SPECIFICATION.txt` remains the unchanged original specification. `PHASE1_REVISION_REQUEST.md` is the later owner-approved addendum and takes precedence for startup data, preview administrator, salary terminology, attendance architecture, the single-open-day rule and the five-second welcome. The later owner-supplied `patches/required-days_employee-form_attendance.patch` overrides salary-basis, employee-form and attendance-note requirements as described below. No Phase 2 work is authorized.
+`MASTER_SPECIFICATION.txt` remains the unchanged original specification. `PHASE1_REVISION_REQUEST.md` is the later owner-approved addendum and takes precedence for startup data, preview administrator, salary terminology, attendance architecture, the single-open-day rule and the five-second welcome. The later owner-supplied `patches/required-days_employee-form_attendance.patch` overrides salary-basis, employee-form and attendance-note requirements as described below. The October 3 `patches/audit-evaluation-testdata.patch` adds evaluation workflows, explicit preview test data and name-based preview login. No Phase 2 work is authorized.
 
 ## Preview state and identity
 
 Use domain types from `src/lib/types.ts`.
 
-`createInitialData()` in `src/lib/mock-data.ts` returns empty `employees`, `departments`, `workdays`, `attendance`, `deductions`, `bonuses`, `months`, `payments` and `audit` arrays. Only application settings and preview date constants remain. Do not import test fixtures into runtime modules or auto-create records for role switching, empty states or payroll archives.
+`createInitialData()` in `src/lib/mock-data.ts` returns empty `employees`, `departments`, `workdays`, `attendance`, `deductions`, `bonuses`, `months`, `payments`, `audit`, `evaluationCycles`, `evaluationExams` and `examEvaluations` arrays. Only application settings and preview date constants remain. Do not import test fixtures into runtime modules or auto-create records for role switching, empty states or payroll archives.
 
-`src/lib/preview-config.ts` exports `PREVIEW_STORAGE_KEY='centerpro-ui-preview-v2'`, `PREVIEW_STORAGE_VERSION=2` and the preview-only system administrator. Its session has `kind: 'SYSTEM'`, `role: 'SUPER_ADMIN'`, name `مدير النظام` and no `employeeId`. It must never contribute to employee counts, department membership, payroll or attendance.
+`src/lib/preview-config.ts` exports `PREVIEW_STORAGE_KEY='centerpro-ui-preview-v3'`, `PREVIEW_STORAGE_VERSION=3` and the preview-only system administrator. Its session has `kind: 'SYSTEM'`, `role: 'SUPER_ADMIN'`, name `مدير النظام` and no `employeeId`. It must never contribute to employee counts, department membership, payroll or attendance.
 
-Employee-backed sessions have `kind: 'EMPLOYEE'` and an existing active employee ID. Admin/Employee login must fail when a suitable account does not exist. A fresh installation must not fabricate those roles. v1 fixture storage is removed/ignored; Settings resets to the new empty dataset and the system administrator session.
+Employee-backed sessions have `kind: 'EMPLOYEE'` and an existing active employee ID. Admin/Employee login must fail when a suitable account does not exist. A fresh installation must not fabricate those roles. Valid v2 owner data migrates to v3 with empty evaluation collections and preserves its original v2 key. v1 fixture storage is removed/ignored; Settings resets to the new empty dataset and the system administrator session.
 
 `useDemo()` from `@/components/demo-provider` exposes:
 
 - `data`, `session`, `ready`
 - `login(role: Role, employeeId?: string): boolean`
-- `logout()`, `resetDemo()`
-- `updateData(updater: (draft: DemoData) => void, audit?: AuditInput)`
+- `logout()`, `resetDemo()`, `loadTestData(): boolean`
+- `updateData(updater: (draft: DemoData, currentSession: DemoSession | null) => void, audit?: AuditInput | ((before: DemoData, after: DemoData) => AuditInput | undefined))`
 
-The updater receives a cloned draft. Mutate that draft directly; the provider validates the global single-open-day invariant before persisting it. Passwords never enter state. `useToast()` returns a `(message: string) => void` notification function. State is local to the browser tab and is not production persistence.
+The updater receives a cloned draft. Mutate that draft directly; the provider validates the global single-open-day and evaluation mutation invariants before persisting it. Passwords never enter state. `useToast()` returns a `(message: string) => void` notification function. State is local to the browser tab and is not production persistence.
+
+## Evaluation and explicit test data
+
+The account selector at `/login` enters the chosen preview identity directly, without username/password fields. The owner may use the independent system administrator or explicitly load six test employee accounts when all operational collections are empty. The loader also enforces that precondition at the shared provider boundary and preserves application settings. It creates four correction employees and two auditors with the patch’s attendance records, no exams and no evaluations. It never auto-loads on navigation, role switching or reset.
+
+Evaluation cycles are independent from payroll months. Admin and Super Admin may create one open cycle, create/reopen/close exams, and archive the cycle. Archiving freezes cycle and exam leaderboards and closes its exams atomically. A new cycle starts at zero. Archived counts, names, scores and exam metadata do not follow later employee or record changes.
+
+Employees in `التدقيق` can edit active `التصحيح` employees on open exams in the open cycle. The corrector multiselect and exam selector appear in one toolbar. Error steppers place minus on the left and plus on the right; buttons save immediately, typed values save after a short debounce or on blur/navigation. Saves retain the exam, employee and actor identity, reject closed/archived targets and record actual before/after values in the audit log. There is no save button.
+
+Score is `papers − correctionErrors × 5 − behaviorErrors × 3`. Negative scores are allowed. Accuracy is `100 − (correctionErrors + behaviorErrors) / papers × 100`, clamped to 0–100 and shown as unavailable when papers are zero. Exam count is informational and never multiplies the score. Active correctors with no entries remain visible at zero. Ranking uses score descending, then papers descending, then Arabic name.
+
+Correctors can view their own breakdown and full read-only cycle/exam leaderboards. Other employee departments cannot open the auditor or corrector views. Required salary-number inputs start blank for new forms; explicit zero is valid and blank required values are rejected. Optional inherited daily rates remain optional.
 
 ## Welcome lifecycle
 
@@ -75,13 +87,13 @@ At most one `OPEN` attendance day may exist system-wide, including across dates/
 
 ## Routes and navigation
 
-Admin routes: `/dashboard`, `/employees`, `/employees/[id]`, `/departments`, `/attendance`, `/attendance/[id]`, `/payroll`, `/deductions`, `/bonuses`, `/reports`, `/audit`, `/settings`.
+Admin routes: `/dashboard`, `/employees`, `/employees/[id]`, `/departments`, `/attendance`, `/attendance/[id]`, `/payroll`, `/deductions`, `/bonuses`, `/reports`, `/audit`, `/settings`, `/evaluations`, `/evaluations/[id]`.
 
 There is one attendance navigation concept, **الحضور**. `/attendance` is the days hub; `/attendance?open=new` opens the creation flow or the current-open-day explanation. `/attendance/[id]` handles all settings and review for one day. `/workdays` redirects to `/attendance`; its legacy create query forwards safely. It is not a second management UI or navigation item.
 
 `/attendance-display` is standalone and uses the single currently open day. It returns to **الحضور** when none exists. QR remains unsigned preview data.
 
-Employee routes: `/employee`, `/employee/attendance`, `/employee/salary`, `/employee/profile`, `/employee/scan`. Employee pages derive identity from the session and show only that account's records.
+Employee routes: `/employee`, `/employee/attendance`, `/employee/salary`, `/employee/profile`, `/employee/scan`, `/employee/audit`, `/employee/evaluation`. Personal records derive identity from the session; evaluation leaderboards show the shared correction rankings as requested.
 
 Use Next.js `useSearchParams()` under Suspense for query-driven actions. Do not read `window.location` in initializers to drive links such as `?add=1`; it can be stale during client navigation.
 
@@ -93,6 +105,6 @@ Mutations update linked views, show clear feedback and preserve audit behavior. 
 
 ## Test isolation
 
-Populated data lives exclusively in `tests/fixtures/populated-data.ts`. Tests opt in explicitly; onboarding tests remain empty. `tests/e2e/helpers/preview.ts` supplies test/expect, fixture seeding, splash-aware login/navigation and preview data reads. Its clock advances the actual welcome timer; no app flag disables the splash.
+Broad regression fixtures remain in `tests/fixtures/populated-data.ts`. The six owner-requested preview accounts live in `createTestData()` and load only through the explicit preview action. Tests opt in explicitly; onboarding tests remain empty. `tests/e2e/helpers/preview.ts` supplies test/expect, fixture seeding, splash-aware login/navigation and preview data reads. Its clock advances the actual welcome timer; no app flag disables the splash.
 
-Final acceptance requires lint, strict typecheck, domain tests, production build, browser workflows, responsive review and a new Vercel Preview. Current patch evidence is tracked in `PATCH_ACCEPTANCE.md`; the preceding revision is documented in `PHASE1_ACCEPTANCE.md`; do not copy historical gate counts into a new delivery claim.
+Final acceptance requires lint, strict typecheck, domain tests, production build, browser workflows, responsive review and a new Vercel Preview. Current patch evidence is tracked in `EVALUATION_PATCH_ACCEPTANCE.md`; the previous required-days patch is tracked in `PATCH_ACCEPTANCE.md`; the preceding revision is documented in `PHASE1_ACCEPTANCE.md`; do not copy historical gate counts into a new delivery claim.

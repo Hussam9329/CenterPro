@@ -93,7 +93,7 @@ test('unified attendance navigation and legacy route redirect', async ({ page })
 test('empty key pages meet accessibility checks', async ({ page }) => {
   test.setTimeout(180_000);
   await gotoPreview(page, '/login');
-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
   await loginPreview(page);
   const violations: unknown[] = [];
   for (const path of ['/dashboard', '/employees', '/attendance', '/payroll', '/settings']) {

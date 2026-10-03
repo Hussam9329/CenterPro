@@ -37,6 +37,10 @@ test.describe('Employee and department preview workflows', () => {
     await dialog.getByLabel('اسم المستخدم', { exact: false }).fill('TEST100');
     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
     await dialog.getByRole('checkbox', { name: 'هذا الموظف راتبه قطعي', exact: true }).check();
+    await expect(dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false })).toHaveValue('');
+    await dialog.getByRole('button', { name: 'إضافة الموظف', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('أدخل الراتب القطعي');
+    expect((await readPreviewData(page)).employees.find(item => item.username === 'TEST100')).toBeUndefined();
     await dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false }).fill('1000000');
     await dialog.getByLabel('قيمة اليومية الخاصة (د.ع)', { exact: false }).fill('25000');
     await dialog.getByRole('button', { name: 'إضافة الموظف', exact: true }).click();
@@ -157,6 +161,35 @@ test.describe('Employee and department preview workflows', () => {
     const state = await readPreviewData(page);
     expect(state.audit[0]).toMatchObject({ action: 'محاكاة تغيير كلمة مرور الموظف', employeeId: 'CP-0001', newValues: { simulated: true } });
     expect(await page.evaluate(key => sessionStorage.getItem(key), PREVIEW_STORAGE_KEY)).not.toContain(secret);
+  });
+
+  test('employee fixed salary rejects a cleared amount and persists an explicitly entered zero', async ({ page }) => {
+    await loginPreview(page);
+    await gotoPreview(page, '/employees/CP-0005');
+    const before = await readPreviewData(page);
+    await page.getByRole('button', { name: 'تعديل الملف', exact: true }).click();
+    let dialog = page.getByRole('dialog', { name: 'تعديل بيانات الموظف', exact: true });
+    await dialog.getByRole('button', { name: /إعدادات الراتب/ }).click();
+    await expect(dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false })).toHaveValue('800000');
+    await expect(dialog.getByLabel('قيمة اليومية الخاصة (د.ع)', { exact: false })).toHaveValue('');
+    await dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false }).fill('');
+    await dialog.getByRole('button', { name: 'حفظ التعديلات', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('أدخل الراتب القطعي');
+    expect((await readPreviewData(page)).employees).toEqual(before.employees);
+    await expect(page.getByRole('dialog', { name: 'تأكيد تعديل إعدادات الراتب', exact: true })).toHaveCount(0);
+    await dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false }).fill('0');
+    await dialog.getByRole('button', { name: 'حفظ التعديلات', exact: true }).click();
+    await page.getByRole('dialog', { name: 'تأكيد تعديل إعدادات الراتب', exact: true }).getByRole('button', { name: 'تأكيد وحفظ الإعدادات', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const saved = await readPreviewData(page);
+    expect(saved.employees.find(item => item.id === 'CP-0005')).toMatchObject({ fixedOverride: true, fixedSalary: 0, dailyRateOverride: null });
+    expect(saved.months).toEqual(before.months);
+    await page.getByRole('button', { name: 'تعديل الملف', exact: true }).click();
+    dialog = page.getByRole('dialog', { name: 'تعديل بيانات الموظف', exact: true });
+    await dialog.getByRole('button', { name: /إعدادات الراتب/ }).click();
+    await expect(dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false })).toHaveValue('0');
+    await dialog.getByRole('button', { name: 'حفظ التعديلات', exact: true }).click();
+    await expect(dialog).toBeHidden();
   });
 
   test('fixed and tier configuration changes warn before affecting open payroll while archives stay intact', async ({ page }) => {

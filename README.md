@@ -4,26 +4,26 @@ Arabic-first, RTL employee, attendance and payroll management for one physical c
 
 ## Current scope: revised Phase 1 — UI approval preview
 
-The current revision starts as an **empty installation**. Departments, employees, attendance days and records, deductions, bonuses, payroll archives, payments and audit events all begin at zero. The owner creates every department and employee manually.
+The current revision starts as an **empty installation**. Departments, employees, attendance days and records, deductions, bonuses, payroll archives, payments and audit events all begin at zero. The owner can create records manually or explicitly load the six attendance test accounts from the login screen. Evaluation cycles, exams and scores always start empty.
 
 This remains a browser-only frontend approval preview. It is not a live payroll or authentication system. Explicit UI approval is required before Neon, production authentication, server-side permissions, financial persistence or secure QR validation can be implemented.
 
-The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [owner-supplied patch](docs/patches/required-days_employee-form_attendance.patch) changes the required-days salary basis, employee contact fields, deactivation dates and attendance notes. Its current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
+The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [required-days patch](docs/patches/required-days_employee-form_attendance.patch) changes the salary basis, employee contact fields, deactivation dates and attendance notes. The latest [audit and evaluation patch](docs/patches/audit-evaluation-testdata.patch) adds evaluation workflows, optional test accounts and direct name selection at login. Current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
 
-**Current Preview:** https://centerpro-2al22y1ye-hussam9329s-projects.vercel.app/login
+**Previous verified Preview (before the evaluation patch):** https://centerpro-2al22y1ye-hussam9329s-projects.vercel.app/login
 
-**Verified application commit:** `ae7623330e86878cf0551936bbd4670ae3281813`. Lint, strict typecheck, 114 domain tests, all 69 browser tests and the production build pass in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/36601010200). See the [patch handoff](docs/PATCH_ACCEPTANCE.md) for verification and deployment evidence. The earlier revision remains documented in the [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
+**Previous verified application commit:** `ae7623330e86878cf0551936bbd4670ae3281813`. Lint, strict typecheck, 114 domain tests, all 69 browser tests and the production build pass in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/36601010200). See the [patch handoff](docs/PATCH_ACCEPTANCE.md) for verification and deployment evidence. The earlier revision remains documented in the [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
 
 ## Starting the empty preview
 
 1. Open the application and wait for the five-second CenterPro welcome screen.
-2. Enter as **المدير العام**. The preview-only system administrator has no employee record, department, attendance or payroll entry. No real password is required.
+2. Select **مدير النظام — Super Admin** and click **تسجيل الدخول**. The preview-only system administrator has no employee record, department, attendance or payroll entry. No real password is required.
 3. Create the first department, then its employees.
 4. Open an attendance day from **الحضور** and manage it from its dedicated details page.
 
-Admin and Employee roles become available only when corresponding active accounts have been created manually. Role switching never fabricates accounts. A successful login shows the five-second welcome screen before navigation to the destination.
+The account selector shows existing active employees. From an empty installation, **تحميل بيانات الاختبار** adds ابرار حقي، هبة محمد، فاطمة فراس، مريم عصام (التصحيح) and جعفر علي، مريم فهد (التدقيق), with the requested attendance scenarios and no exams/evaluations. Role switching never fabricates accounts. A successful login shows the five-second welcome screen before navigation to the destination.
 
-Changes persist in the current tab's `sessionStorage`, using key `centerpro-ui-preview-v2` and storage version `2`. Old v1 fixtures are not restored. The Settings reset action returns the installation to the same empty state and retains the separate system administrator access. No credentials are stored.
+Changes persist in the current tab's `sessionStorage`, using key `centerpro-ui-preview-v3` and storage version `3`. Valid v2 owner data migrates without resetting employees, attendance or archived payroll. Old v1 fixtures are not restored. The Settings reset action returns the installation to the same empty state and retains the separate system administrator access. No credentials are stored.
 
 ## Revised workflows
 
@@ -39,6 +39,7 @@ Changes persist in the current tab's `sessionStorage`, using key `centerpro-ui-p
 - Standalone `/attendance-display` uses the single open day. Camera decoding and rotating QR remain preview-only simulations.
 - Payroll salary laws now use required days (present, excused/unexcused absence and unresolved required days), followed by deductions and bonuses. EXEMPT days do not count. Partial fixed salary uses required days × daily rate up to the fixed salary; full-month fixed salary is unchanged. Archived financial snapshots and payment history stay frozen until explicit authorized recalculation.
 - Seven report views, genuine structured XLSX downloads and branded browser print-to-PDF. Reports identify their preview status.
+- Exam and cycle evaluation leaderboards, auditor multiselect, automatic save, read-only corrector views, frozen archives and score = papers − correction errors × 5 − behavior errors × 3. Exam count is informational.
 - Audit history, before/after details, settings and role restrictions.
 - PWA manifest/icons and public offline fallback. The service worker does not cache financial pages or business/API data.
 
@@ -57,7 +58,7 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. A fresh browser context starts with empty operational collections and the separate preview system administrator. Existing v2 tabs retain their manually created data until reset.
+Open http://127.0.0.1:3000. A fresh browser context starts with empty operational collections and the separate preview system administrator. Existing v2 owner data upgrades to v3 with empty evaluation collections and remains intact until an explicit reset.
 
 ## Quality gates
 
@@ -72,7 +73,7 @@ npm run test:e2e
 
 `npm run check` runs lint, typecheck, unit tests and the production build. Browser tests launch the built application; build before running them. CI installs browser dependencies and runs the E2E suite. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` may select an existing headless Chromium in restricted environments; normal local/CI runs do not require it.
 
-Populated scenarios exist only in `tests/fixtures/populated-data.ts`. Tests explicitly opt into them through helpers. The normal preview never imports or restores those records. Shared browser helpers advance the real five-second welcome with Playwright's clock; the application has no test-only splash bypass.
+Broad populated regression scenarios remain in `tests/fixtures/populated-data.ts`. Six owner-requested test accounts are available through the explicit preview loader only. The normal startup remains empty. Tests explicitly opt into fixture data through helpers. Shared browser helpers advance the real five-second welcome with Playwright's clock; the application has no test-only splash bypass.
 
 Responsive coverage targets 360×800, 390×844, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900 and 1920×1080. Generated screenshots, PDFs and test reports remain ignored verification artifacts. The revised application passes all gates, including empty and populated workflows, attendance dialogs, accessibility, welcome timing, PWA and exports.
 
@@ -108,16 +109,17 @@ Phase 2 will add normalized Drizzle migrations, secure Super Admin bootstrap, pa
 - `src/components/demo-provider.tsx`: browser-only preview repository/session adapter and shared state guard.
 - `src/components/welcome-provider.tsx`: shared initial-load and post-login welcome lifecycle.
 - `src/lib/preview-config.ts`: versioned preview storage and separate system administrator identity.
-- `src/lib/mock-data.ts`: empty installation factory and preview date constants; no operational fixtures.
+- `src/lib/mock-data.ts`: empty installation factory, preview constants and explicit six-account test-data factory.
 - `src/lib/types.ts`: shared domain contracts.
-- `src/lib/payroll.ts`, `attendance.ts`, `permissions.ts`: independently testable preview rules.
+- `src/lib/payroll.ts`, `attendance.ts`, `evaluations.ts`, `permissions.ts`: independently testable preview rules.
 - `tests/fixtures/populated-data.ts`: test-only populated scenarios.
 - `tests/e2e/helpers/preview.ts`: explicit fixture seeding and splash-aware browser helpers.
 - `docs/MASTER_SPECIFICATION.txt`: original supplied specification, preserved verbatim.
 - `docs/PHASE1_REVISION_REQUEST.md`: later supplied change request, preserved verbatim.
 - `docs/UI_CONTRACT.md`: current frontend contracts and revision invariants.
 - `docs/BRAND.md`: identity provenance and asset constraints.
-- `docs/PATCH_ACCEPTANCE.md`: required-days patch delivery and verification evidence.
+- `docs/EVALUATION_PATCH_ACCEPTANCE.md`: current evaluation patch delivery and verification evidence.
+- `docs/PATCH_ACCEPTANCE.md`: prior required-days patch delivery and verification evidence.
 - `docs/PHASE1_ACCEPTANCE.md`: preceding Phase 1 revision and historical evidence.
 
 ## Security and data boundary

@@ -1,10 +1,12 @@
 import type { Page } from '@playwright/test';
+import { createInitialData } from '../../src/lib/mock-data';
 import type { DemoData } from '../../src/lib/types';
 import { createPopulatedTestData } from '../fixtures/populated-data';
-import { PREVIEW_SYSTEM_ADMIN, PREVIEW_SYSTEM_USERNAME } from '../../src/lib/preview-config';
+import { PREVIEW_SYSTEM_ADMIN } from '../../src/lib/preview-config';
 import { test, expect, gotoPreview, loginPreview, finishWelcome, seedPopulatedPreview, readPreviewData, readPreviewSession, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION } from './helpers/preview';
 
-const collections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit'] as const;
+const collections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit', 'evaluationCycles', 'evaluationExams', 'examEvaluations'] as const;
+const populatedFixtureCollections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit'] as const;
 function expectEmpty(data: DemoData) {
   for (const collection of collections) expect(data[collection], `${collection} must remain empty`).toEqual([]);
 }
@@ -27,7 +29,7 @@ async function addAccount(page: Page, name: string, username: string, role: 'EMP
   await expect(dialog).toBeHidden();
 }
 
-test('legacy v1 fictional records and session are discarded in favor of an empty v2 installation', async ({ page }) => {
+test('legacy v1 fictional records and session are discarded in favor of an empty v3 installation', async ({ page }) => {
   await page.addInitScript(({ key, fixture }) => {
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem('centerpro-ui-preview-v1', JSON.stringify({
@@ -41,8 +43,8 @@ test('legacy v1 fictional records and session are discarded in favor of an empty
   expect(await readPreviewSession(page)).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v1'))).toBeNull();
   expect(await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)!).version, PREVIEW_STORAGE_KEY)).toBe(PREVIEW_STORAGE_VERSION);
-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toHaveValue(PREVIEW_SYSTEM_USERNAME);
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
+  await expect(page.getByLabel('الحساب', { exact: true })).toHaveValue('SYSTEM');
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   expectEmpty(await readPreviewData(page));
@@ -51,11 +53,10 @@ test('legacy v1 fictional records and session are discarded in favor of an empty
 
 test('the system Super Admin enters without becoming an employee and uncreated roles stay disabled', async ({ page }) => {
   await gotoPreview(page, '/login');
-  await expect(page.getByRole('button', { name: 'المدير العام', exact: true })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeDisabled();
-  await expect(page.getByLabel('حساب المعاينة', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
+  const accountSelect = page.getByLabel('الحساب', { exact: true });
+  await expect(accountSelect).toHaveValue('SYSTEM');
+  await expect(accountSelect.locator('option')).toHaveCount(1);
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   const session = await readPreviewSession(page);
@@ -77,6 +78,8 @@ test('role choices become available only after the owner manually creates the co
   const department = page.getByRole('dialog', { name: 'إضافة قسم جديد', exact: true });
   await department.getByLabel('اسم القسم', { exact: false }).fill('قسم الحسابات اليدوية');
   await department.getByLabel('نوع الراتب', { exact: true }).selectOption('FIXED');
+  await department.getByLabel('قيمة اليومية', { exact: false }).fill('25000');
+  await department.getByLabel('خصم الغياب بدون عذر', { exact: false }).fill('50000');
   await department.getByLabel('الراتب القطعي', { exact: false }).fill('500000');
   await department.getByRole('button', { name: 'إضافة القسم', exact: true }).click();
   await expect(department).toBeHidden();
@@ -84,19 +87,15 @@ test('role choices become available only after the owner manually creates the co
 
   await addAccount(page, 'موظف يضاف يدوياً', 'MANUAL-EMP', 'EMPLOYEE', departmentId);
   await gotoPreview(page, '/login');
-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: 'موظف', exact: true }).click();
-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toHaveValue('MANUAL-EMP');
+  const employeeAccount = (await readPreviewData(page)).employees.find(item => item.username === 'MANUAL-EMP')!;
+  await expect(page.getByLabel('الحساب', { exact: true }).locator(`option[value="${employeeAccount.id}"]`)).toHaveCount(1);
 
   await loginPreview(page);
   await addAccount(page, 'مدير يضاف يدوياً', 'MANUAL-ADMIN', 'ADMIN', departmentId);
   await gotoPreview(page, '/login');
-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeEnabled();
-  await page.getByRole('button', { name: 'مدير العمليات', exact: true }).click();
-  await expect(page.getByLabel('اسم المستخدم', { exact: true })).toHaveValue('MANUAL-ADMIN');
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
+  const adminAccount = (await readPreviewData(page)).employees.find(item => item.username === 'MANUAL-ADMIN')!;
+  await page.getByLabel('الحساب', { exact: true }).selectOption(adminAccount.id);
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   const state = await readPreviewData(page);
@@ -109,12 +108,12 @@ test('reset clears every operational collection and replaces an employee-based a
   fixture.settings = { centerName: 'اسم معدل قبل إعادة الضبط', qrInterval: 60 };
   await seedPopulatedPreview(page, fixture);
   await gotoPreview(page, '/login');
-  await page.getByLabel('حساب المعاينة', { exact: true }).selectOption('CP-0012');
-  await page.getByRole('button', { name: 'دخول إلى المعاينة', exact: true }).click();
+  await page.getByLabel('الحساب', { exact: true }).selectOption('CP-0012');
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   expect(await readPreviewSession(page)).toMatchObject({ kind: 'EMPLOYEE', role: 'SUPER_ADMIN', employeeId: 'CP-0012' });
-  for (const collection of collections) expect((await readPreviewData(page))[collection].length).toBeGreaterThan(0);
+  for (const collection of populatedFixtureCollections) expect((await readPreviewData(page))[collection].length).toBeGreaterThan(0);
 
   await gotoPreview(page, '/settings');
   await page.getByRole('button', { name: 'تصفير بيانات المعاينة', exact: true }).click();
@@ -132,6 +131,40 @@ test('reset clears every operational collection and replaces an employee-based a
   expectEmpty(await readPreviewData(page));
   expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
   await gotoPreview(page, '/login');
-  await expect(page.getByRole('button', { name: 'مدير العمليات', exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'موظف', exact: true })).toBeDisabled();
+  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
 });
+
+
+test('v2 owner data and archived payroll migrate intact to v3 with empty evaluation collections', async ({ page }) => {
+  const fixture = createPopulatedTestData();
+  await page.addInitScript(({ key, fixture }) => {
+    if (sessionStorage.getItem(key)) return;
+    const legacy: Partial<typeof fixture> = { ...fixture };
+    delete legacy.evaluationCycles;
+    delete legacy.evaluationExams;
+    delete legacy.examEvaluations;
+    sessionStorage.setItem('centerpro-ui-preview-v2', JSON.stringify({ version: 2, data: legacy, session: { kind: 'SYSTEM', role: 'SUPER_ADMIN', name: 'مدير النظام' } }));
+  }, { key: PREVIEW_STORAGE_KEY, fixture });
+  await gotoPreview(page, '/payroll');
+  await expect(page.getByRole('heading', { name: 'الرواتب', exact: true })).toBeVisible();
+  expect(await readPreviewData(page)).toEqual(fixture);
+  expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
+  expect(await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)!).version, PREVIEW_STORAGE_KEY)).toBe(3);
+  expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v2'))).not.toBeNull();
+  await gotoPreview(page, '/login');
+  await expect(page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true })).toHaveCount(0);
+  expect(await readPreviewData(page)).toEqual(fixture);
+});
+
+for (const scenario of ['department-only', 'inactive-accounts']) {
+  test(`test-data loader cannot replace an existing ${scenario} installation`, async ({ page }) => {
+    const populated = createPopulatedTestData();
+    const fixture = scenario === 'department-only'
+      ? { ...createInitialData(), departments: [populated.departments[0]] }
+      : { ...populated, employees: populated.employees.map(employee => ({ ...employee, active: false })) };
+    await seedPopulatedPreview(page, fixture);
+    await gotoPreview(page, '/login');
+    await expect(page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true })).toHaveCount(0);
+    expect(await readPreviewData(page)).toEqual(fixture);
+  });
+}

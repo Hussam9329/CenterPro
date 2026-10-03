@@ -1,0 +1,92 @@
+.heroGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.toolbarGrid { display:grid; grid-template-columns:minmax(220px,.9fr) minmax(260px,1.1fr); gap:14px; align-items:end; }
+.multiSelect { position:relative; }
+.multiButton { width:100%; min-height:43px; border:1px solid #dedfe5; border-radius:7px; background:#fff; color:#555a65; padding:9px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:right; }
+.multiPanel { position:absolute; z-index:30; inset-inline:0; top:calc(100% + 7px); background:#fff; border:1px solid #e1e2e6; border-radius:10px; box-shadow:0 16px 45px #20151a18; padding:12px; max-height:320px; overflow:auto; }
+.multiActions { display:flex; gap:8px; padding-bottom:10px; border-bottom:1px solid #f0f0f2; margin-bottom:8px; }
+.multiOption { display:flex; align-items:center; gap:10px; min-height:39px; padding:7px 6px; border-radius:7px; color:#555b65; }
+.multiOption:hover { background:#faf7f8; }
+.multiOption input { accent-color:#a51c30; width:16px; height:16px; }
+.auditGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.auditCard { border:1px solid #e8e8ec; border-radius:11px; background:#fff; padding:17px; display:flex; flex-direction:column; gap:15px; min-width:0; container-type:inline-size; }
+.auditCardHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.employeeIdentity { display:flex; align-items:center; gap:10px; min-width:0; }
+.employeeIdentity strong { display:block; color:#333842; font-size:13px; }
+.employeeIdentity small { color:#6b707b; font-size:11px; }
+.editorFields { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:end; }
+/* Size the editor from its card, including when the sidebar narrows the workspace. */
+@container (max-width:460px) {
+  .editorFields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .numericField:first-child { grid-column:1 / -1; }
+}
+.numericField { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.numericLabel { color:#6b707a; font-size:11px; }
+.stepper { display:grid; grid-template-columns:39px minmax(55px,1fr) 39px; direction:ltr; border:1px solid #dedfe5; border-radius:8px; overflow:hidden; min-height:43px; background:#fff; }
+.stepper button { border:0; background:#fafafb; color:#606672; font-size:20px; line-height:1; display:grid; place-items:center; }
+.stepper button:hover:not(:disabled) { background:#f7ecef; color:#a51c30; }
+.stepper button:disabled { opacity:.35; cursor:not-allowed; }
+.stepper input { width:100%; min-width:0; border:0; border-inline:1px solid #ececf0; outline:none; text-align:center; color:#353a44; background:#fff; font-variant-numeric:tabular-nums; }
+.stepper input::placeholder { color:#6b707b; }
+.scoreStrip { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #f0f0f3; padding-top:12px; }
+.scoreStrip strong { color:#a51c30; font-size:15px; }
+.saveState { display:flex; align-items:center; gap:6px; color:#6b707b; font-size:11px; }
+.saveState[data-state='saved'] { color:#4d7f69; }
+.saveState[data-state='saving'] { color:#946925; }
+.metaLine { color:#6b707b; font-size:11px; line-height:1.8; }
+.examList { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.examCard { border:1px solid #e8e8ec; border-radius:10px; padding:16px; background:#fff; display:flex; flex-direction:column; gap:12px; }
+.examCardTop { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.examCard h3 { color:#333842; font-size:13px; }
+.examCard p { color:#6b707b; font-size:11px; }
+.examActions { display:flex; gap:7px; flex-wrap:wrap; }
+.leaderboardTable { width:100%; border-collapse:collapse; }
+.leaderboardTable th { font-size:11px; color:#6b707b; background:#fafafb; padding:10px 11px; text-align:right; white-space:nowrap; border-bottom:1px solid #ececf0; }
+.leaderboardTable td { padding:13px 11px; border-bottom:1px solid #f0f0f2; color:#5d626c; font-size:11px; vertical-align:middle; }
+.leaderboardTable tr:last-child td { border-bottom:0; }
+.rank { width:29px; height:29px; border-radius:8px; display:grid; place-items:center; background:#f5f5f7; color:#6b707b; font-weight:650; }
+.rankTop { color:#a51c30; background:#f9e9ed; }
+.score { font-weight:700; color:#a51c30; font-variant-numeric:tabular-nums; }
+.mobileLeaderboard { display:none; }
+.archiveList { display:flex; flex-direction:column; gap:10px; }
+.archiveDetails { border:1px solid #ececf0; border-radius:9px; background:#fff; overflow:hidden; }
+.archiveDetails > summary { list-style:none; cursor:pointer; }
+.archiveDetails > summary::-webkit-details-marker { display:none; }
+.archiveDetails[open] > summary { background:#fdf9fa; border-bottom:1px solid #ececf0; }
+.archiveRow { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 14px; }
+.archiveRow p { color:#6b707b; font-size:11px; }
+.ownHero { border:1px solid #eadde1; border-radius:12px; padding:22px; background:#fff; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); gap:20px; }
+.ownHero .heroGrid { grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); }
+.ownScore { background:#a51c30; color:white; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:center; }
+.ownScore span { color:#fff; font-size:11px; }
+.ownScore strong { font-size:34px; line-height:1.35; }
+.examBreakdown { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.examBreakdownItem { border:1px solid #ececf0; border-radius:9px; padding:13px; }
+.examBreakdownItem h4 { color:#4a4f59; font-size:11px; margin-bottom:7px; }
+.examBreakdownItem p { color:#6b707b; font-size:11px; }
+@media (max-width:1023px) { .heroGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } .auditGrid,.examList { grid-template-columns:1fr; } }
+@media (max-width:767px) {
+  .toolbarGrid { grid-template-columns:1fr; }
+  .heroGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .auditCard { padding:14px; }
+  .editorFields { grid-template-columns:1fr; }
+  .stepper { min-height:47px; grid-template-columns:48px minmax(70px,1fr) 48px; }
+  .stepper button { font-size:23px; }
+  .leaderboardTable { display:none; }
+  .mobileLeaderboard { display:flex; flex-direction:column; gap:9px; }
+  .mobileLeaderCard { border:1px solid #e9e9ed; border-radius:9px; padding:12px; display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:center; }
+  .mobileLeaderCard p { grid-column:2 / -1; color:#6b707b; font-size:11px; }
+  .ownHero { grid-template-columns:1fr; padding:15px; }
+  .examBreakdown { grid-template-columns:1fr; }
+  .multiPanel { position:fixed; inset-inline:14px; top:auto; bottom:82px; max-height:50dvh; }
+}
+
+/* Keep evaluation controls and historical tables usable across narrow layouts. */
+.heroGrid > *, .ownHero > *, .mobileLeaderCard > * { min-width:0; }
+.examCard, .examBreakdownItem, .archiveRow, .mobileLeaderCard { overflow-wrap:anywhere; }
+.archiveRow:focus-visible, .multiButton:focus-visible, .stepper button:focus-visible, .stepper input:focus-visible { outline:2px solid #a51c30; outline-offset:3px; }
+.leaderboardTable td:nth-child(2) { min-width:130px; }
+.leaderboardTable td:not(:nth-child(2)) { white-space:nowrap; }
+@media (max-width:767px) {
+  .archiveRow { flex-wrap:wrap; }
+  .ownScore { min-width:0; }
+}
