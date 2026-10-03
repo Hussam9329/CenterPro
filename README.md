@@ -10,9 +10,9 @@ This remains a browser-only frontend approval preview. It is not a live payroll 
 
 The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [required-days patch](docs/patches/required-days_employee-form_attendance.patch) changes the salary basis, employee contact fields, deactivation dates and attendance notes. The latest [audit and evaluation patch](docs/patches/audit-evaluation-testdata.patch) adds evaluation workflows, optional test accounts and direct name selection at login. Current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
 
-**Previous verified Preview (before the evaluation patch):** https://centerpro-2al22y1ye-hussam9329s-projects.vercel.app/login
+**Verified Preview:** https://centerpro-lmiza9hde-hussam9329s-projects.vercel.app/login
 
-**Previous verified application commit:** `ae7623330e86878cf0551936bbd4670ae3281813`. Lint, strict typecheck, 114 domain tests, all 69 browser tests and the production build pass in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/36601010200). See the [patch handoff](docs/PATCH_ACCEPTANCE.md) for verification and deployment evidence. The earlier revision remains documented in the [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
+**Application commit:** `a5f4f439dc01a4cfc7e040a948b6c13b56e2f41e`. Lint, strict typecheck, 173 domain tests, all 92 browser tests and the production build pass in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/37151045613). Coverage includes the eight evaluation screen sizes and both accessibility checks. See the [evaluation patch handoff](docs/EVALUATION_PATCH_ACCEPTANCE.md) for verification and deployment evidence. Earlier revisions remain documented in the [required-days patch handoff](docs/PATCH_ACCEPTANCE.md) and [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
 
 ## Starting the empty preview
 

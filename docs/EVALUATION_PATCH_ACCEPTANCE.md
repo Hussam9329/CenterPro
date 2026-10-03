@@ -51,3 +51,14 @@ This is the browser-only Phase 1 Preview. No additional Vercel environment varia
 - Final focused browser run: all ten evaluation responsive/accessibility tests passed, covering eight screen sizes from 360px to 1920px and two axe audits. GitHub CI runs the complete suite again on the published application commit.
 - Autosave, logout, exam closure, archive/reset, explicit test loading, existing-data preservation, required blank numbers and existing attendance/payroll/export flows passed their browser checks.
 - Supplied patch preserved byte-for-byte; credential marker scan found no credentials in repository files.
+
+## Published Preview
+
+- Application commit: `a5f4f439dc01a4cfc7e040a948b6c13b56e2f41e`, pushed to `main` and `preview/ui-approval`.
+- Verified login URL: https://centerpro-lmiza9hde-hussam9329s-projects.vercel.app/login
+- Vercel deployment: `dpl_9hs5XtMttH3ywJ7YzQAx5ckBmMqB`, READY, Preview (`target: null`).
+- Independent live browser verification: explicit six-account loading, direct system-admin entry, empty evaluation startup, cycle/exam creation, switching to جعفر علي and immediate autosave. Entering 100 papers, two correction errors and one behavior error produced 87 points and accuracy 97.00 / 100, with جعفر علي shown as the actor.
+- [Verified deployed auditor workspace](evaluation-preview.jpg). These verification records exist only in the browser's local preview session.
+- GitHub CI: https://github.com/Hussam9329/CenterPro/actions/runs/37151045613 — completed successfully. All quality steps passed: lint, strict typecheck, 173 unit tests, production build and the full 92-test browser suite. CI uploaded the browser report and verification artifacts.
+
+The final handoff commit contains documentation and the verified screenshot only. The published application remains tied to the application commit above. Real-device UI approval remains with the owner.
