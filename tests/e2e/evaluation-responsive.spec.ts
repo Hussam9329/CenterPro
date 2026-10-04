@@ -113,8 +113,8 @@ async function expectEditorsFit(page: Page, width: number) {
   }
 }
 
-async function screenshot(page: Page, testInfo: TestInfo, name: string) {
-  await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true });
+async function screenshot(page: Page, testInfo: TestInfo, name: string, fullPage = true) {
+  await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage });
 }
 
 for (const [width, height] of sizes) {
@@ -166,7 +166,11 @@ for (const [width, height] of sizes) {
     for (const name of ['ابرار حقي', 'هبة محمد', 'فاطمة فراس', 'مريم عصام']) {
       await expect(choices.getByRole('checkbox', { name, exact: true })).toBeChecked();
     }
-    await screenshot(page, testInfo, `${width}-auditor-multiselect`);
+    // Full-page capture can temporarily resize visualViewport to 1×1, which
+    // correctly dismisses an anchored panel whose trigger leaves that viewport.
+    // Capture this transient control in its actual viewport; pages stay full-size.
+    await screenshot(page, testInfo, `${width}-auditor-multiselect`, false);
+    await expect(choices).toBeVisible();
     await choices.getByRole('button', { name: 'إلغاء التحديد', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'لم تختر أي مصحح', exact: true })).toBeVisible();
     await choices.getByRole('checkbox', { name: 'ابرار حقي', exact: true }).check();

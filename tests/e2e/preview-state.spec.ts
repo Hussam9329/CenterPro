@@ -39,6 +39,8 @@ test('legacy v1 fictional records and session are discarded in favor of an empty
     }
   }, { key: PREVIEW_STORAGE_KEY, fixture: createPopulatedTestData() });
   await gotoPreview(page, '/login');
+  // The server-rendered login is visible before the preview store hydrates.
+  await expect(page.getByRole('button', { name: 'تسجيل الدخول', exact: true })).toBeEnabled();
   expectEmpty(await readPreviewData(page));
   expect(await readPreviewSession(page)).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v1'))).toBeNull();
