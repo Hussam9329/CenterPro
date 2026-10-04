@@ -9,6 +9,11 @@ const examId = 'responsive-evaluation-exam';
 const examName = 'امتحان الفصل الثالث — مراجعة التكاثر والأجهزة الحيوية';
 const auditorId = 'employee-jaafar-ali';
 const correctorId = 'employee-abrar-haqi';
+const managementSections = [
+  { path: '/evaluations/seasons', title: 'المواسم', control: 'إغلاق الموسم', screenshot: 'admin-seasons' },
+  { path: '/evaluations/cycles', title: 'دورات التقييم', control: 'إغلاق الدورة', screenshot: 'admin-cycles' },
+  { path: '/evaluations/exams', title: 'الامتحانات', control: 'إضافة امتحان', screenshot: 'admin-exams' },
+];
 
 /** Explicit evaluation scenario: never seed evaluations in the application's startup data. */
 function createEvaluationFixture(): DemoData {
@@ -44,6 +49,22 @@ async function loginAsAuditor(page: Page) {
   await expect(page).toHaveURL(/\/employee$/);
 }
 
+async function openManagementSection(page: Page, section: typeof managementSections[number]) {
+  await expect(page.locator('main h1')).toHaveText('التدقيق');
+  const card = page.locator(`main a[href="${section.path}"]`);
+  await expect(card.getByRole('heading', { name: section.title, exact: true })).toBeVisible();
+  await card.click();
+  await expect(page).toHaveURL(new RegExp(`${section.path}$`));
+  await expect(page.locator('main h1')).toHaveText(section.title);
+  await expect(page.getByRole('button', { name: section.control, exact: true })).toBeVisible();
+}
+
+async function returnToEvaluationHub(page: Page) {
+  await page.locator('main').getByRole('link', { name: 'التدقيق', exact: true }).click();
+  await expect(page).toHaveURL(/\/evaluations$/);
+  await expect(page.locator('main h1')).toHaveText('التدقيق');
+}
+
 async function expectSurfaceFits(surface: Locator, width: number, description: string) {
   await expect(surface).toBeVisible();
   const box = await surface.boundingBox();
@@ -61,7 +82,7 @@ async function expectEvaluationLayout(page: Page, width: number, description: st
 
   // Body-only checks miss clipped card content and undersized grids with overflow:hidden.
   // Deliberately allow a table's own scroll container, but require its enclosing card to fit.
-  const problems = await page.locator('main .card, main article, main section, main .stat-card').evaluateAll(elements => elements.flatMap(element => {
+  const problems = await page.locator('main .card, main article, main section, main .stat-card, main a:has(h2)').evaluateAll(elements => elements.flatMap(element => {
     const bounds = element.getBoundingClientRect();
     if (!bounds.width || !bounds.height || getComputedStyle(element).visibility === 'hidden') return [];
     const insideViewport = bounds.left >= -1 && bounds.right <= window.innerWidth + 1;
@@ -127,9 +148,15 @@ for (const [width, height] of sizes) {
     await loginPreview(page);
 
     await gotoPreview(page, '/evaluations');
-    await expect(page.getByRole('heading', { name: 'التدقيق والتقييم', exact: true })).toBeVisible();
-    await expectEvaluationLayout(page, width, 'إدارة التقييم');
+    await expect(page.locator('main h1')).toHaveText('التدقيق');
+    await expectEvaluationLayout(page, width, 'مركز التدقيق');
     await screenshot(page, testInfo, `${width}-admin-evaluations`);
+    for (const section of managementSections) {
+      await openManagementSection(page, section);
+      await expectEvaluationLayout(page, width, section.title);
+      await screenshot(page, testInfo, `${width}-${section.screenshot}`);
+      if (section.path !== '/evaluations/exams') await returnToEvaluationHub(page);
+    }
 
     await page.getByRole('button', { name: 'إضافة امتحان', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'إضافة امتحان', exact: true });
@@ -218,20 +245,32 @@ for (const [width, height] of [[390, 844], [1366, 768]]) {
       violations.push(...results.violations.map(violation => ({ page: label, id: violation.id, impact: violation.impact, nodes: violation.nodes.map(node => ({ target: node.target, summary: node.failureSummary })) })));
     }
     await gotoPreview(page, '/evaluations');
-    await scan('إدارة التقييم');
+    await expect(page.locator('main h1')).toHaveText('التدقيق');
+    await scan('مركز التدقيق');
+    for (const section of managementSections) {
+      await openManagementSection(page, section);
+      await scan(section.title);
+      if (section.path !== '/evaluations/exams') await returnToEvaluationHub(page);
+    }
     await page.getByRole('button', { name: 'إضافة امتحان', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'إضافة امتحان', exact: true })).toBeVisible();
     await scan('إضافة امتحان');
     await page.getByRole('dialog', { name: 'إضافة امتحان', exact: true }).getByRole('button', { name: 'إغلاق النافذة', exact: true }).click();
     await gotoPreview(page, `/evaluations/${examId}`);
+    await expect(page.locator('main h1')).toHaveText(examName);
     await scan('تفاصيل الامتحان');
     await loginAsAuditor(page);
     await gotoPreview(page, '/employee/audit');
+    await expect(page.locator('main h1')).toHaveText('التدقيق');
+    await expect(page.getByRole('button', { name: 'اختيار المصححين', exact: true })).toBeVisible();
     await scan('مساحة المدقق');
     await page.getByRole('button', { name: 'اختيار المصححين', exact: true }).click();
     await scan('اختيار عدة مصححين');
     await page.getByRole('button', { name: 'اختيار المصححين', exact: true }).press('Escape');
     await loginPreview(page, 'موظف');
     await gotoPreview(page, '/employee/evaluation');
+    await expect(page.locator('main h1')).toHaveText('التقييمات');
+    await expect(page.getByLabel('اختيار امتحان التقييم', { exact: true })).toBeVisible();
     await scan('تقييم المصحح');
     expect(violations).toEqual([]);
   });

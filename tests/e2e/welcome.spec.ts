@@ -7,6 +7,8 @@ test('fresh login page opens directly without a welcome splash', async ({ page }
   await gotoPreview(page, '/login');
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'CenterPro معك بكل خطوة.', exact: true })).toBeVisible();
+  await expect(page.locator('.login-form-copyright')).toHaveText('Kal-EL VISIONS © 2026');
   await page.clock.fastForward(WELCOME_PERIOD_MS);
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
 });

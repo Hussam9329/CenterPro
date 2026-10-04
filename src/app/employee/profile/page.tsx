@@ -16,7 +16,7 @@ export default function EmployeeProfilePage() {
   const contactFields = [{ label: 'رقم الهاتف', value: employee.phone }, { label: 'رقم هاتف ولي الأمر', value: employee.guardianPhone }, { label: 'معرف تيليغرام', value: employee.telegram ? `@${employee.telegram.replace(/^@+/, '')}` : '' }];
   const workFields = [{ label: 'رقم الموظف', value: employee.code, ltr: true }, { label: 'القسم', value: department?.name }, { label: 'تاريخ المباشرة', value: date(employee.startDate), ltr: true }, { label: 'الحالة', value: 'فعال' }, { label: 'اسم المستخدم', value: employee.username, ltr: true }, { label: 'نوع الحساب', value: 'موظف' }, { label: 'تاريخ إنشاء الحساب', value: `${date(employee.createdAt)} · ${time(employee.createdAt)}`, ltr: true }, { label: 'آخر تحديث', value: `${date(employee.updatedAt)} · ${time(employee.updatedAt)}`, ltr: true }];
   return <div className="page-stack">
-    <PageHeader eyebrow="مساحتك الشخصية" title="حسابي" description="بياناتك المسجلة لدى المركز. لتحديث أي معلومة، تواصل مع الإدارة." />
+    <PageHeader title="حسابي" />
     <Card><div className="list-row"><div className="inline"><Avatar name={employee.name} src={employee.photo} size={72} /><div><h2>{employee.name}</h2><p className="muted">{department?.name} · <bdi>{employee.code}</bdi></p></div></div><Badge tone="success">حساب فعال</Badge></div></Card>
     <div className="grid-2">
       <Card title="المعلومات الشخصية"><dl className="detail-grid">{personalFields.map(item => <div className="detail-item" key={item.label}><dt>{item.label}</dt><dd>{item.ltr ? <bdi>{item.value || 'غير مضاف'}</bdi> : item.value || 'غير مضاف'}</dd></div>)}</dl></Card>

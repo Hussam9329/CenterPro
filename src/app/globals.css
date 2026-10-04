@@ -323,16 +323,16 @@ fieldset { min-width: 0; }
 /* Sign-in / explicit preview role selection */
 .login-page { display: grid; grid-template-columns: 45% 55%; min-height: 100dvh; direction: ltr; background: #fff; }
 .login-story { direction: rtl; background: var(--brand); color: white; padding: clamp(38px,5vw,78px); display: flex; flex-direction: column; min-width: 0; position: relative; }
-.login-story-inner { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; flex: 1; padding-block: 45px; }
+.login-story-inner { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; padding-block:45px; text-align:center; }
 .login-story .brand { align-self: flex-end; }
 .login-story .brand img { width: 183px; }
 .login-story-kicker { font-size: 11px; color: #dfb0ba; letter-spacing: .2px; margin-bottom: 22px; }
-.login-story-title, .login-story h1 { color: #fff; font-size: clamp(28px,3vw,42px); font-weight: 650; line-height: 1.8; letter-spacing: -.8px; max-width: 430px; margin-bottom: 23px; }
+.login-story-title, .login-story h1 { color:#fff; font-size:clamp(30px,3vw,44px); font-weight:680; line-height:1.55; letter-spacing:-.8px; max-width:520px; margin:0; text-wrap:balance; }
 .login-story-copy, .login-story > p, .login-story-inner > p { color: #e0b4bd; font-size: 13px; line-height: 2.2; max-width: 375px; }
 .login-story-points { display: flex; flex-direction: column; gap: 20px; margin-top: 40px; padding: 0; list-style: none; font-size: 12px; color: #f1d6dc; }
 .login-story-points > * { display: flex; align-items: center; gap: 12px; }
 .login-story-points svg { opacity: .75; width: 19px; }
-.login-story-footer { color: #ce99a4; font-size: 10px; line-height: 1.9; padding-top: 25px; border-top: 1px solid #ffffff22; }
+.login-story-footer { color:#e8bcc5; font-size:10px; line-height:1.9; padding-top:25px; border-top:1px solid #ffffff22; text-align:center; direction:ltr; }
 .login-form-side { direction: rtl; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 55px; min-width: 0; }
 .login-form-wrap { width: 100%; max-width: 405px; }
 .login-form-wrap > .brand { display: none; }
@@ -858,3 +858,5 @@ html[data-theme='dark'] .brand .brand-logo-dark { display:block; }
   html[data-theme='dark'] .brand .brand-logo-light { display:block; }
   html[data-theme='dark'] .brand .brand-logo-dark { display:none; }
 }
+
+.login-form-copyright { margin-top:22px; padding-top:16px; border-top:1px solid var(--border,#e8e8ec); color:var(--muted,#8a8e96); font:500 9px/1.6 'Inter Variable',sans-serif; text-align:center; direction:ltr; }

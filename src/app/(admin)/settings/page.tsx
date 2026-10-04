@@ -73,10 +73,10 @@ export default function SettingsPage() {
   if (session?.role !== 'SUPER_ADMIN') return <EmptyState title="هذه الصفحة متاحة لـ Super Admin فقط" description="يمكن للإدارة العليا تعديل إعدادات المركز والاطلاع على صلاحيات الأدوار." />;
 
   return <div className="page-stack">
-    <PageHeader eyebrow="إدارة النظام" title="الإعدادات" description="إعدادات المركز والصلاحيات، بوضوح وفي مكان واحد." actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
+    <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
     <div className="notice"><ShieldCheck size={18} /><span>معاينة الواجهات: التغييرات تخص هذه الجلسة في المتصفح، ولا تغيّر إعدادات نظام فعلي.</span></div>
     <div className="grid-2">
-      <Card title="إعدادات المركز" description="يُسجّل كل تعديل تحفظه في سجل العمليات التجريبي.">
+      <Card title="إعدادات المركز">
         <form onSubmit={save} className="stack">
           <Field label="اسم المركز" required error={errors.name}><Input value={centerName} onChange={event => setCenterName(event.target.value)} autoComplete="organization" aria-invalid={Boolean(errors.name)} /></Field>
           <Field label="تجديد رمز الحضور" required hint="من 30 إلى 60 ثانية. القيمة الافتراضية 45 ثانية." error={errors.interval}><div className="inline"><Input type="number" min={30} max={60} step={1} value={qrInterval} onChange={event => setQrInterval(event.target.value)} dir="ltr" aria-invalid={Boolean(errors.interval)} /><span className="muted">ثانية</span></div></Field>
@@ -84,7 +84,7 @@ export default function SettingsPage() {
           <div className="form-actions"><Button type="submit" disabled={!dirty}><Save size={17} />حفظ الإعدادات</Button>{dirty && <Button variant="secondary" onClick={() => { setCenterName(data.settings.centerName); setQrInterval(String(data.settings.qrInterval)); setErrors({}); }}>إلغاء التغييرات</Button>}</div>
         </form>
       </Card>
-      <Card title="أساسيات النظام" description="لغة الواجهة، المظهر والمنطقة الزمنية.">
+      <Card title="أساسيات النظام">
         <div className="stack">
           <div className="list-row"><div className="inline"><Globe2 size={19} /><div><strong>لغة الواجهة</strong><div className="muted">العربية · من اليمين إلى اليسار</div></div></div><Badge>ثابت</Badge></div>
           <div className="list-row"><div className="inline">{theme === 'dark' ? <Moon size={19} /> : <Sun size={19} />}<div><strong>مظهر الواجهة</strong><div className="muted">{theme === 'dark' ? 'داكن' : 'فاتح'} · هوية CenterPro</div></div></div><Badge>حسب اختيارك</Badge></div>
@@ -93,14 +93,14 @@ export default function SettingsPage() {
         </div>
       </Card>
     </div>
-    <Card title="الأدوار والصلاحيات" description="الصلاحيات المحددة لكل دور في مواصفات النظام. هذه المصفوفة للعرض.">
+    <Card title="الأدوار والصلاحيات">
       <div className="table-wrap" role="region" aria-label="جدول الصلاحيات" tabIndex={0}><table className="data-table"><thead><tr><th scope="col">الصلاحية</th><th scope="col" dir="ltr">Super Admin</th><th scope="col" dir="ltr">Admin / Manager</th><th scope="col">موظف</th></tr></thead><tbody>{permissions.map(permission => <tr key={permission.label}><th scope="row">{permission.label}</th><td><AccessLabel access={permission.superAdmin} /></td><td><AccessLabel access={permission.admin} /></td><td><AccessLabel access={permission.employee} /></td></tr>)}</tbody></table></div>
       <div className="notice">يسجل الموظف حضوره بنفسه من قارئ QR، ويطّلع على بياناته فقط. إدارة حسابات الإدارة والأدوار متاحة لـ Super Admin من ملف الموظف.</div>
     </Card>
-    <Card title="حسابات الإدارة" description="افتح ملف الحساب لإدارة بياناته، دوره أو كلمة مروره." action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>
+    <Card title="حسابات الإدارة" action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>
       <div className="stack"><div className="notice"><ShieldCheck size={20}/><div><strong>مدير النظام — حساب معاينة مستقل</strong><p>خارج قائمة الموظفين والأقسام والحضور والرواتب. يُستبدل بتهيئة المصادقة الفعلية في المرحلة الثانية.</p></div></div>{!adminAccounts.length && <EmptyState title="لم تُضف حسابات إدارة بعد" description="يمكنك تعيين دور إداري لحساب موظف تضيفه بنفسك."/>}{adminAccounts.map(account => <div className="list-row" key={account.id}><div className="inline"><Avatar name={account.name} src={account.photo} /><div><Link href={`/employees/${account.id}`} className="button-link">{account.name}</Link><div className="muted" dir="ltr">{account.code} · {account.username}</div></div></div><div className="inline"><Badge tone={account.active ? 'brand' : 'neutral'}>{account.active ? roleLabels[account.role] : 'غير نشط'}</Badge><Link href={`/employees/${account.id}`} className="button-link" aria-label={`إدارة حساب ${account.name}`}><ChevronLeft size={18} /></Link></div></div>)}</div>
     </Card>
-    <Card title="إعادة ضبط المعاينة" description="احذف بيانات جلسة المعاينة وابدأ من الصفر.">
+    <Card title="إعادة ضبط المعاينة">
       <div className="list-row"><p className="muted">تُحذف كل الأقسام والموظفين وأيام الحضور والبيانات المالية والسجل. يبقى حساب مدير النظام المستقل متاحاً.</p><Button variant="danger" onClick={() => { setResetWord(''); setResetOpen(true); }}><RotateCcw size={17} />تصفير بيانات المعاينة</Button></div>
     </Card>
     <Dialog open={resetOpen} onClose={() => setResetOpen(false)} title="إعادة ضبط جميع بيانات المعاينة؟" description="ستُحذف إضافاتك وتعديلاتك على الموظفين والحضور والرواتب والإعدادات وسجل العمليات في هذه الجلسة. ستعود إلى حالة فارغة تماماً، ولن تُضاف أي سجلات تجريبية. لا يمكن التراجع عن هذا الإجراء.">

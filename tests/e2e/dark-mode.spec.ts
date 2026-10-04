@@ -46,7 +46,28 @@ for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
         await scan('تفاصيل يوم الحضور');
       }
     }
-    await page.screenshot({ path: testInfo.outputPath('dark-admin-season.png'), fullPage: true });
+    await expect(page.locator('main h1')).toHaveText('التدقيق');
+    for (const section of [
+      { path: '/evaluations/seasons', title: 'المواسم', control: 'إغلاق الموسم' },
+      { path: '/evaluations/cycles', title: 'دورات التقييم', control: 'إغلاق الدورة' },
+      { path: '/evaluations/exams', title: 'الامتحانات', control: 'إضافة امتحان' },
+    ]) {
+      const card = page.locator(`main a[href="${section.path}"]`);
+      await expect(card.getByRole('heading', { name: section.title, exact: true })).toBeVisible();
+      await card.click();
+      await expect(page).toHaveURL(new RegExp(`${section.path}$`));
+      await expect(page.locator('main h1')).toHaveText(section.title);
+      await expect(page.getByRole('button', { name: section.control, exact: true })).toBeVisible();
+      await scan(section.path);
+      if (section.path === '/evaluations/seasons') {
+        await page.screenshot({ path: testInfo.outputPath('dark-admin-season.png'), fullPage: true });
+      }
+      if (section.path !== '/evaluations/exams') {
+        await page.locator('main').getByRole('link', { name: 'التدقيق', exact: true }).click();
+        await expect(page).toHaveURL(/\/evaluations$/);
+        await expect(page.locator('main h1')).toHaveText('التدقيق');
+      }
+    }
 
     await page.getByRole('button', { name: 'إضافة امتحان', exact: true }).click();
     const examDialog = page.getByRole('dialog', { name: 'إضافة امتحان', exact: true });

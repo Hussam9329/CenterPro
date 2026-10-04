@@ -36,16 +36,27 @@ function row(container: Locator, name = 'ابرار حقي') {
   return container.getByRole('row').filter({ hasText: name });
 }
 
-async function openSeasonAndCycle(page: Page) {
+async function openManagement(page: Page, section: 'seasons' | 'cycles' | 'exams') {
+  const title = { seasons: 'المواسم', cycles: 'دورات التقييم', exams: 'الامتحانات' }[section];
   await gotoPreview(page, '/evaluations');
-  await page.getByRole('button', { name: 'فتح موسم جديد', exact: true }).first().click();
+  await expect(page.getByRole('heading', { name: 'التدقيق', exact: true })).toBeVisible();
+  await page.getByRole('main').getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) }).click();
+  await expect(page).toHaveURL(new RegExp(`/evaluations/${section}$`));
+  await expect(page.getByRole('heading', { name: title, level: 1, exact: true })).toBeVisible();
+}
+
+async function openSeasonAndCycle(page: Page) {
+  await openManagement(page, 'seasons');
+  await page.getByRole('button', { name: 'فتح موسم', exact: true }).click();
   const seasonDialog = page.getByRole('dialog', { name: 'فتح موسم جديد', exact: true });
   await seasonDialog.getByLabel('اسم الموسم', { exact: false }).fill('موسم الاختبار');
   await seasonDialog.getByLabel('تاريخ بداية الموسم', { exact: false }).fill('2026-09-01');
   await seasonDialog.getByRole('button', { name: 'فتح الموسم', exact: true }).click();
   await expect(seasonDialog).toBeHidden();
-  await page.getByRole('button', { name: 'فتح دورة تقييم', exact: true }).first().click();
-  await expect(page.getByRole('button', { name: 'إغلاق الموسم', exact: true })).toHaveCount(0);
+  await openManagement(page, 'cycles');
+  await page.getByRole('button', { name: 'فتح دورة', exact: true }).click();
+  await openManagement(page, 'seasons');
+  await expect(page.getByRole('button', { name: 'إغلاق الموسم', exact: true })).toBeDisabled();
   const state = await readPreviewData(page);
   expect(state.evaluationSeasons).toHaveLength(1);
   expect(state.evaluationCycles).toHaveLength(1);
@@ -53,11 +64,12 @@ async function openSeasonAndCycle(page: Page) {
 }
 
 async function addExam(page: Page, name: string) {
+  await openManagement(page, 'exams');
   await page.getByRole('button', { name: 'إضافة امتحان', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'إضافة امتحان', exact: true });
   await dialog.getByLabel('اسم الامتحان', { exact: false }).fill(name);
   await dialog.getByLabel('تاريخ الامتحان', { exact: false }).fill('2026-09-18');
-  await dialog.getByRole('button', { name: 'إضافة وفتح للتدقيق', exact: true }).click();
+  await dialog.getByRole('button', { name: 'إضافة الامتحان', exact: true }).click();
   await expect(dialog).toBeHidden();
   return (await readPreviewData(page)).evaluationExams.find(exam => exam.name === name)!;
 }
@@ -100,7 +112,7 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await recordEvaluation(page, 513);
 
     await enterAccount(page);
-    await gotoPreview(page, '/evaluations');
+    await openManagement(page, 'seasons');
     await expect(row(card(page, 'Leaderboard الموسم')).getByRole('cell').nth(3)).toHaveText('500');
 
     await enterAccount(page, correctorId);
@@ -157,13 +169,13 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await recordEvaluation(page, 100);
     await closeExamAsAdmin(page, firstExam.id);
 
-    await gotoPreview(page, '/evaluations');
+    await openManagement(page, 'cycles');
     await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
     const closeCycle = page.getByRole('dialog', { name: 'إغلاق وأرشفة دورة التقييم؟', exact: true });
     await closeCycle.getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
     await expect(closeCycle).toBeHidden();
     const archivedCycle = (await readPreviewData(page)).evaluationCycles[0];
-    await page.getByRole('button', { name: 'فتح دورة تقييم', exact: true }).first().click();
+    await page.getByRole('button', { name: 'فتح دورة', exact: true }).click();
     const secondExam = await addExam(page, 'امتحان الدورة الثانية');
 
     await enterAccount(page, auditorId);
@@ -173,7 +185,7 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await page.clock.runFor(500);
 
     await enterAccount(page);
-    await gotoPreview(page, '/evaluations');
+    await openManagement(page, 'seasons');
     const seasonBoard = card(page, 'Leaderboard الموسم');
     await expect(row(seasonBoard).getByRole('cell').nth(3)).toHaveText('107');
 
@@ -188,9 +200,10 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await expect(page.getByText('107 pts', { exact: true }).first()).toBeVisible();
 
     await enterAccount(page);
-    await gotoPreview(page, '/evaluations');
+    await openManagement(page, 'cycles');
     await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
     await page.getByRole('dialog', { name: 'إغلاق وأرشفة دورة التقييم؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
+    await openManagement(page, 'seasons');
     await page.getByRole('button', { name: 'إغلاق الموسم', exact: true }).click();
     await page.getByRole('dialog', { name: 'إغلاق وأرشفة الموسم؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الموسم', exact: true }).click();
     const archived = (await readPreviewData(page)).evaluationSeasons[0];
@@ -200,7 +213,7 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     expect(archived.snapshot?.cycleIds).toHaveLength(2);
     expect((await readPreviewData(page)).evaluationCycles.find(item => item.id === archivedCycle.id)).toEqual(archivedCycle);
 
-    await page.getByRole('button', { name: 'فتح موسم جديد', exact: true }).first().click();
+    await page.getByRole('button', { name: 'فتح موسم', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'فتح موسم جديد', exact: true });
     await dialog.getByLabel('اسم الموسم', { exact: false }).fill('الموسم الجديد');
     await dialog.getByRole('button', { name: 'فتح الموسم', exact: true }).click();
@@ -229,16 +242,21 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     fixture.examEvaluations.push({ id: 'legacy-evaluation', examId: 'legacy-exam', employeeId: correctorId, papers: 50, correctionErrors: 1, behaviorErrors: 2, note: '', createdBy: 'جعفر علي', createdAt: timestamp, updatedBy: 'جعفر علي', updatedAt: timestamp });
     await seedPopulatedPreview(page, fixture);
     await enterAccount(page);
-    await gotoPreview(page, '/evaluations');
+    await openManagement(page, 'cycles');
     await expect(page.getByText('دورة سابقة بلا موسم', { exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'تفاصيل الامتحان', exact: true })).toBeVisible();
+    await page.getByRole('main').getByRole('link', { name: 'الامتحانات', exact: true }).click();
+    await expect(page).toHaveURL(/\/evaluations\/exams\?cycle=legacy-cycle$/);
+    await expect(page.getByRole('heading', { name: 'امتحان محفوظ قبل المواسم', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'التفاصيل', exact: true })).toBeVisible();
+    await openManagement(page, 'cycles');
     await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
     await page.getByRole('dialog', { name: 'إغلاق وأرشفة دورة التقييم؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
     const archivedCycle = (await readPreviewData(page)).evaluationCycles[0];
     expect(archivedCycle.state).toBe('ARCHIVED');
     expect(archivedCycle.snapshot?.rows.find(item => item.employeeId === correctorId)?.score).toBe(39);
     expect((await readPreviewData(page)).evaluationSeasons).toEqual([]);
-    await page.getByRole('button', { name: 'فتح موسم جديد', exact: true }).first().click();
+    await openManagement(page, 'seasons');
+    await page.getByRole('button', { name: 'فتح موسم', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'فتح موسم جديد', exact: true });
     await dialog.getByLabel('اسم الموسم', { exact: false }).fill('الموسم الحالي');
     await dialog.getByLabel('تاريخ بداية الموسم', { exact: false }).fill('2026-09-21');

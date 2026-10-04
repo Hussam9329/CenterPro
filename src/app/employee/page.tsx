@@ -9,7 +9,7 @@ import { useDemo } from '@/components/demo-provider';
 import { DEMO_MONTH, DEMO_TODAY } from '@/lib/mock-data';
 import { getEmployeePayroll } from '@/lib/payroll';
 import { getOpenWorkday, isExpected, statusLabel } from '@/lib/attendance';
-import { date, duration, money, monthLabel, time } from '@/lib/format';
+import { date, money, monthLabel, time } from '@/lib/format';
 import { formatAccuracy, formatAveragePapers, getLatestEvaluationSeason, getRankProgress, getSeasonLeaderboard, isCorrectionEmployee } from '@/lib/evaluations';
 
 export default function EmployeeHomePage() {
@@ -35,8 +35,8 @@ export default function EmployeeHomePage() {
     ...data.bonuses.filter(item => item.employeeId === employee.id && item.date.startsWith(DEMO_MONTH)).map(item => ({ ...item, kind: 'bonus' as const })),
   ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   return <div className="page-stack">
-    <PageHeader eyebrow="مساحتك الشخصية" title={`مرحباً بك، ${employee.name.split(' ')[0]}`} description="موظفنا المميز في CenterPro" actions={<Badge tone="brand">{monthLabel(DEMO_MONTH)}</Badge>} />
-    {season && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
+    <PageHeader title={`مرحباً بك، ${employee.name.split(' ')[0]}`} actions={<Badge tone="brand">{monthLabel(DEMO_MONTH)}</Badge>} />
+    {season && seasonRow && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
       <RankBadge score={seasonRow?.score ?? 0} size="lg" animated/>
       <div className={styles.employeeSeasonMain}><span className="eyebrow">{season.name}</span><h2 dir="ltr">{rankProgress.rank.name}</h2><strong className={styles.seasonPoints} dir="ltr">{seasonRow?.score ?? 0} pts</strong>{rankProgress.rank.next !== null ? <><div className={styles.rankProgress} role="progressbar" aria-label="التقدم إلى الرتبة التالية" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rankProgress.progress} aria-valuetext={`متبقي ${rankProgress.pointsToNext} نقطة`}><span style={{ width:`${rankProgress.progress}%` }}/></div><small>متبقي <bdi dir="ltr">{rankProgress.pointsToNext}</bdi> نقطة إلى {getRankProgress(rankProgress.rank.next).rank.name}</small></> : <small>أعلى رتبة موسمية</small>}</div>
       <div className={styles.employeeSeasonStats}><div><span>الترتيب</span><strong dir="ltr">{seasonPosition ? `#${seasonPosition}` : '—'}</strong></div><div><span>الدورات</span><strong dir="ltr">{seasonRow?.cyclesEvaluated ?? 0}</strong></div><div><span>الامتحانات</span><strong dir="ltr">{seasonRow?.examsEvaluated ?? 0}</strong></div><div><span>أيام الحضور</span><strong dir="ltr">{seasonRow?.attendanceDays ?? 0}</strong></div><div><span>متوسط اليوم</span><strong dir="ltr">{formatAveragePapers(seasonRow?.averagePapersPerDay ?? null)}</strong></div><div><span>الدقة</span><strong dir="ltr">{formatAccuracy(seasonRow?.accuracy ?? null)}</strong></div></div>
@@ -49,22 +49,22 @@ export default function EmployeeHomePage() {
     </section>
     {result.paymentStatus === 'REVIEW' && <div className="notice notice-warning" role="status"><strong>راتبك يحتاج إلى مراجعة بعد الصرف</strong><p>المصروف سابقاً <bdi dir="ltr">{money(result.paidAmount)}</bdi> · الفرق <bdi dir="ltr">{money(result.difference)}</bdi></p></div>}
     <div className="stats-grid">
-      <StatCard label="الأيام المطلوبة" value={result.requiredDays} icon={<CalendarCheck size={20} />} hint="الأيام التي كنت مطلوباً فيها للدوام" /><StatCard label="أيام الحضور" value={result.attendanceDays} hint="الحضور المسجّل هذا الشهر" />
-      <StatCard label="غياب بعذر" value={result.excusedDays} icon={<UserRoundCheck size={20} />} hint={`الأثر المالي ${money(result.excusedDeduction)}`} />
-      <StatCard label="غياب بدون عذر" value={result.unexcusedDays} icon={<ReceiptText size={20} />} hint={`الأثر المالي ${money(result.unexcusedDeduction)}`} />
-      <StatCard label="مرات التأخير" value={result.lateDays} icon={<Clock3 size={20} />} hint={`إجمالي التأخير: ${result.latenessSeconds ? duration(result.latenessSeconds) : '0 ثانية'}`} />
+      <StatCard label="الأيام المطلوبة" value={result.requiredDays} icon={<CalendarCheck size={20} />} /><StatCard label="أيام الحضور" value={result.attendanceDays} />
+      <StatCard label="غياب بعذر" value={result.excusedDays} icon={<UserRoundCheck size={20} />} />
+      <StatCard label="غياب بدون عذر" value={result.unexcusedDays} icon={<ReceiptText size={20} />} />
+      <StatCard label="مرات التأخير" value={result.lateDays} icon={<Clock3 size={20} />} />
     </div>
     <div className="grid-3">
-      <StatCard label="راتبك الأساسي" value={money(result.baseSalary)} icon={<Wallet size={20} />} hint={result.salaryMode === 'FIXED' ? result.partialMonth ? 'قطعي · شهر عمل جزئي' : 'قطعي' : 'حسب قوانين قسمك'} />
-      <StatCard label="الخصومات الأخرى" value={money(result.otherDeductions)} icon={<CircleDollarSign size={20} />} hint="أسباب جميع الخصومات متاحة في كشفك" />
-      <StatCard label="المكافآت" value={money(result.bonuses)} icon={<Gift size={20} />} hint="تُضاف إلى صافي راتبك" />
+      <StatCard label="راتبك الأساسي" value={money(result.baseSalary)} icon={<Wallet size={20} />} />
+      <StatCard label="الخصومات الأخرى" value={money(result.otherDeductions)} icon={<CircleDollarSign size={20} />} />
+      <StatCard label="المكافآت" value={money(result.bonuses)} icon={<Gift size={20} />} />
     </div>
     <div className="grid-2">
-      <Card title="حضورك الأخير" description="آخر سجلات الحضور الخاصة بك" action={<Link href="/employee/attendance" className="button-link">عرض الكل <ArrowLeft size={16} /></Link>}>
-        {recentAttendance.length ? <div className="stack">{recentAttendance.map(({ record, workday }) => <div className="list-row" key={record.id}><div><strong><bdi>{date(workday!.date)}</bdi></strong><p className="muted">{record.checkIn ? time(record.checkIn) : record.status === 'UNRESOLVED' ? 'بانتظار تحديد الحالة' : 'لا يوجد وقت دخول'}</p></div><Badge tone={record.status === 'PRESENT' ? 'success' : record.status === 'UNEXCUSED' ? 'danger' : record.status === 'UNRESOLVED' ? 'warning' : 'neutral'}>{statusLabel(record.status)}</Badge></div>)}</div> : <EmptyState title="لا توجد سجلات حضور" description="سيظهر حضورك هنا بعد تسجيله." />}
+      <Card title="حضورك الأخير" action={<Link href="/employee/attendance" className="button-link">عرض الكل <ArrowLeft size={16} /></Link>}>
+        {recentAttendance.length ? <div className="stack">{recentAttendance.map(({ record, workday }) => <div className="list-row" key={record.id}><div><strong><bdi>{date(workday!.date)}</bdi></strong><p className="muted">{record.checkIn ? time(record.checkIn) : record.status === 'UNRESOLVED' ? 'بانتظار تحديد الحالة' : 'لا يوجد وقت دخول'}</p></div><Badge tone={record.status === 'PRESENT' ? 'success' : record.status === 'UNEXCUSED' ? 'danger' : record.status === 'UNRESOLVED' ? 'warning' : 'neutral'}>{statusLabel(record.status)}</Badge></div>)}</div> : <EmptyState title="لا توجد سجلات حضور" />}
       </Card>
-      <Card title="حركاتك المالية" description="الخصومات والمكافآت لهذا الشهر" action={<Link href="/employee/salary" className="button-link">كشف الراتب <ArrowLeft size={16} /></Link>}>
-        {movements.length ? <div className="stack">{movements.map(item => <div className="list-row" key={`${item.kind}-${item.id}`}><div><strong>{item.kind === 'bonus' ? 'مكافأة' : 'خصم'}</strong><p className="muted">{item.reason}</p><small className="muted"><bdi>{date(item.date)}</bdi></small></div><strong className={item.kind === 'deduction' ? 'amount text-danger' : 'amount'}><bdi dir="ltr">{item.kind === 'bonus' ? '+' : '−'}{money(item.amount)}</bdi></strong></div>)}</div> : <EmptyState title="لا توجد حركات مالية لهذا الشهر" description="ستظهر هنا أسباب أي مكافآت أو خصومات تُضاف إلى حسابك." />}
+      <Card title="حركاتك المالية" action={<Link href="/employee/salary" className="button-link">كشف الراتب <ArrowLeft size={16} /></Link>}>
+        {movements.length ? <div className="stack">{movements.map(item => <div className="list-row" key={`${item.kind}-${item.id}`}><div><strong>{item.kind === 'bonus' ? 'مكافأة' : 'خصم'}</strong><p className="muted">{item.reason}</p><small className="muted"><bdi>{date(item.date)}</bdi></small></div><strong className={item.kind === 'deduction' ? 'amount text-danger' : 'amount'}><bdi dir="ltr">{item.kind === 'bonus' ? '+' : '−'}{money(item.amount)}</bdi></strong></div>)}</div> : <EmptyState title="لا توجد حركات مالية لهذا الشهر" />}
       </Card>
     </div>
   </div>;

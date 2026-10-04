@@ -15,7 +15,7 @@ export default function EvaluationExamAdminPage() {
   const { data, session, updateData } = useDemo();
   const toast = useToast();
   const exam = data.evaluationExams.find(item => item.id === params.id);
-  if (!exam) return <div className="page-stack"><EmptyState title="الامتحان غير موجود" action={<Button variant="secondary" onClick={() => router.push('/evaluations')}>العودة للتدقيق</Button>}/></div>;
+  if (!exam) return <div className="page-stack"><EmptyState title="الامتحان غير موجود" action={<Button variant="secondary" onClick={() => router.push('/evaluations/exams')}>العودة إلى الامتحانات</Button>}/></div>;
   const cycle = data.evaluationCycles.find(item => item.id === exam.cycleId);
   const archivedExam = cycle?.state === 'ARCHIVED' ? cycle.snapshot?.exams.find(item => item.id === exam.id) : undefined;
   const rows = cycle?.state === 'ARCHIVED'
@@ -36,8 +36,8 @@ export default function EvaluationExamAdminPage() {
     toast(nextState === 'CLOSED' ? 'تم إغلاق الامتحان للتدقيق.' : 'تمت إعادة فتح الامتحان للتدقيق.');
   }
   return <div className="page-stack">
-    <Link href="/evaluations" className="button-link"><ArrowRight size={15}/>العودة إلى التدقيق</Link>
-    <PageHeader eyebrow={cycle?.name || 'التدقيق'} title={archivedExam?.name ?? exam.name} description={`${date(archivedExam?.date ?? exam.date)}${exam.note ? ` · ${exam.note}` : ''}`} actions={<div className="inline"><Badge tone={exam.state === 'OPEN' ? 'success' : 'neutral'}>{exam.state === 'OPEN' ? 'مفتوح للتدقيق' : 'مغلق'}</Badge>{canToggle && <Button variant="secondary" onClick={toggle}>{exam.state === 'OPEN' ? <><LockKeyhole size={16}/>إغلاق التدقيق</> : <><UnlockKeyhole size={16}/>إعادة الفتح</>}</Button>}</div>}/>
+    <Link href={{ pathname:'/evaluations/exams', query:{cycle:exam.cycleId} }} className="button-link"><ArrowRight size={15}/>العودة إلى الامتحانات</Link>
+    <PageHeader eyebrow={cycle?.name || 'التدقيق'} title={archivedExam?.name ?? exam.name} actions={<div className="inline"><Badge tone={exam.state === 'OPEN' ? 'success' : 'neutral'}>{exam.state === 'OPEN' ? 'مفتوح للتدقيق' : 'مغلق'}</Badge>{canToggle && <Button variant="secondary" onClick={toggle}>{exam.state === 'OPEN' ? <><LockKeyhole size={16}/>إغلاق التدقيق</> : <><UnlockKeyhole size={16}/>إعادة الفتح</>}</Button>}</div>}/>
     <Card title="Leaderboard الامتحان"><Leaderboard rows={rows}/></Card>
     <Card title="سجل إدخالات المدققين">{!evaluations.length ? <EmptyState title="لم تُدخل بيانات تدقيق بعد"/> : <div className="stack">{evaluations.map(item => { const employee = data.employees.find(employee => employee.id === item.employeeId); const archivedName = archivedExam?.rows.find(row => row.employeeId === item.employeeId)?.employeeName; return <div className="list-row" key={item.id}><div><strong>{archivedName ?? employee?.name ?? 'موظف'}</strong><p className="muted">{item.papers ?? '—'} ورقة · {item.correctionErrors ?? '—'} خطأ تصحيح · {item.behaviorErrors ?? '—'} خطأ سلوك</p></div><div className="muted">آخر تعديل: {item.updatedBy} · <span dir="ltr">{date(item.updatedAt)}</span></div></div>; })}</div>}</Card>
   </div>;

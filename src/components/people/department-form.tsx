@@ -63,7 +63,7 @@ export function DepartmentForm({ department, onClose }: { department?: Departmen
     if (department && JSON.stringify(department.salary) !== JSON.stringify(salary)) setConfirmation(true); else save();
   };
   return <>
-    <Dialog open onClose={onClose} title={department ? `إعدادات قسم ${department.name}` : 'إضافة قسم جديد'} description="قواعد مستقلة وواضحة لكل قسم في المركز." wide>
+    <Dialog open onClose={onClose} title={department ? `إعدادات قسم ${department.name}` : 'إضافة قسم جديد'} wide>
       <form onSubmit={submit} noValidate>
         <div className="form-grid"><Field label="اسم القسم" required><Input value={name} autoFocus onChange={event => setName(event.target.value)} placeholder="اسم القسم" /></Field><Field label="نوع الراتب"><Select value={salary.mode} onChange={event => change('mode', event.target.value as SalaryConfig['mode'])}><option value="TIERED">غير قطعي</option><option value="FIXED">قطعي</option></Select></Field><div className="field-span-2"><Field label="وصف القسم"><Textarea value={description} onChange={event => setDescription(event.target.value)} rows={2} placeholder="وصف مختصر لطبيعة عمل القسم" /></Field></div></div>
         <hr className={styles.sectionRule} />

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CalendarCheck2, Database, Moon, ShieldCheck, Sun, UsersRound, Wallet } from 'lucide-react';
+import { ArrowLeft, Database, Moon, Sun } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import { Button, Field, Select } from '@/components/ui';
 import { canLoadTestData, useDemo } from '@/components/demo-provider';
@@ -44,17 +44,15 @@ export default function LoginPage() {
     <section className="login-story">
       <Brand reversed/>
       <div className="login-story-inner">
-        <div className="login-story-kicker">منظومة إدارة المركز</div>
-        <h1 className="login-story-title">كل التفاصيل.<br/>في مكان واحد.</h1>
-        <div className="login-story-points"><div><UsersRound size={20}/><span>فريق واحد. إدارة أكثر وضوحاً.</span></div><div><CalendarCheck2 size={20}/><span>حضور دقيق، ومتابعة مستمرة.</span></div><div><Wallet size={20}/><span>رواتب وتقييمات مفصّلة.</span></div></div>
+        <h1 className="login-story-title">CenterPro معك بكل خطوة.</h1>
       </div>
-      <div className="login-story-footer">CenterPro © 2026</div>
+      <div className="login-story-footer">Kal-EL VISIONS © 2026</div>
     </section>
 
     <section className="login-form-side">
       <div className="login-form-wrap">
         <div className="login-mobile-brand"><Brand/></div>
-        <div className="login-heading"><span className="eyebrow">معاينة CenterPro</span><h2>تسجيل الدخول</h2></div>
+        <div className="login-heading"><h2>تسجيل الدخول</h2></div>
         <form onSubmit={enter} className="stack">
           <Field label="الحساب" required>
             <Select value={accountId} onChange={event => setAccountId(event.target.value)} disabled={loading}>
@@ -69,9 +67,8 @@ export default function LoginPage() {
           <Button type="submit" loading={loading} disabled={!ready}>تسجيل الدخول<ArrowLeft size={17}/></Button>
         </form>
 
-        <div className="login-preview-note"><ShieldCheck size={17}/><div><strong>معاينة الواجهات</strong></div></div>
         {canLoadTestData(data) && <div className="login-test-data"><Database size={20}/><div><strong>بيانات الاختبار</strong><p>4 مصححين و3 مدققين مع سجلات الحضور.</p></div><Button type="button" variant="secondary" disabled={!ready || loading} onClick={loadFixture}><Database size={16}/>تحميل بيانات الاختبار</Button></div>}
-        <div className="login-footer">مركز واحد. تجربة متكاملة.</div>
+        <div className="login-form-copyright">Kal-EL VISIONS © 2026</div>
       </div>
     </section>
   </main>;

@@ -39,7 +39,9 @@ Correctors can view their own breakdown and full read-only cycle/exam leaderboar
 
 Evaluation seasons sit above cycles and are independent from payroll months. Only one season may be open. Admin opens a season, opens/archives cycles inside it, then archives the season only when no cycle remains open. The season snapshot freezes its final rows and cycle IDs. Admin/auditor totals are live; corrector-visible totals publish closed exams only. Seasonal attendance is the count of `PRESENT` dates within the season; average papers/day is season papers divided by those days (or unavailable at zero days). Both are informational only.
 
-Season rank is based only on seasonal score: Bronze 1/2/3 at 0/500/1000; Silver at 1500/2000/2500; Gold at 3000/3500/4000; Platinum at 4500/5000/5500; Diamond at 6000/6500/7000; Emerald at 7500/8000/8500; Master at 9000/10000/11000; Grandmaster at 12000+. The rank emblem uses the approved Hassan Falah SVG geometry with tier colors and a restrained shine animation.
+Season rank is based only on seasonal score: Bronze 1/2/3 at 0/500/1000; Silver at 1500/2000/2500; Gold at 3000/3500/4000; Platinum at 4500/5000/5500; Diamond at 6000/6500/7000; Emerald at 7500/8000/8500; Master at 9000/10000/11000; Grandmaster at 12000+. The later owner-supplied `patches/rank-assets-audit-hub-ui-cleanup.patch` replaces generated rank vectors with its exact 22 PNG assets in `public/ranks`. Preserve their proportions and bytes. Animated badges use a restrained shine masked to the corresponding image alpha; reduced motion disables the animation.
+
+Admin corrector profiles show live seasonal rank, progress, totals and a link to the current or specific archived season. Corrector home totals remain limited to published exams. Auditors do not receive corrector rank cards, and a person absent from an archived snapshot must not receive an invented zero-point rank. The login slogan is **CenterPro معك بكل خطوة.** and login/app copyright is **Kal-EL VISIONS © 2026**.
 
 ## Welcome lifecycle
 
@@ -93,7 +95,9 @@ At most one `OPEN` attendance day may exist system-wide, including across dates/
 
 ## Routes and navigation
 
-Admin routes: `/dashboard`, `/employees`, `/employees/[id]`, `/departments`, `/attendance`, `/attendance/[id]`, `/payroll`, `/deductions`, `/bonuses`, `/reports`, `/audit`, `/settings`, `/evaluations`, `/evaluations/[id]`.
+Admin routes: `/dashboard`, `/employees`, `/employees/[id]`, `/departments`, `/attendance`, `/attendance/[id]`, `/payroll`, `/deductions`, `/bonuses`, `/reports`, `/audit`, `/settings`, `/evaluations`, `/evaluations/seasons`, `/evaluations/cycles`, `/evaluations/exams`, `/evaluations/[id]`.
+
+`/evaluations` is the three-card administration hub. Seasons, cycles and exams have dedicated management pages. Historical season → cycle → exam navigation retains its context through query parameters; archived lists use frozen snapshots. Legacy seasonless cycles remain visible, reviewable and closable without inventing a season. Season closure sets its Baghdad end date before calculating the frozen snapshot.
 
 There is one attendance navigation concept, **الحضور**. `/attendance` is the days hub; `/attendance?open=new` opens the creation flow or the current-open-day explanation. `/attendance/[id]` handles all settings and review for one day. `/workdays` redirects to `/attendance`; its legacy create query forwards safely. It is not a second management UI or navigation item.
 

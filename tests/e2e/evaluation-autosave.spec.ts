@@ -162,6 +162,8 @@ test.describe('Evaluation autosave', () => {
 
     await loginPreview(page);
     await gotoPreview(page, '/evaluations');
+    await page.getByRole('main').getByRole('link').filter({ has: page.getByRole('heading', { name: 'دورات التقييم', exact: true }) }).click();
+    await expect(page).toHaveURL(/\/evaluations\/cycles$/);
     await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
     const archived = await readPreviewData(page);
