@@ -10,9 +10,9 @@ This remains a browser-only frontend approval preview. It is not a live payroll 
 
 The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [required-days patch](docs/patches/required-days_employee-form_attendance.patch) changes the salary basis, employee contact fields, deactivation dates and attendance notes. The [audit and evaluation patch](docs/patches/audit-evaluation-testdata.patch) adds evaluation workflows, optional test accounts and direct name selection at login. The latest owner-approved season/rank/theme changes are recorded in [SEASON_RANK_UI_REVISION.md](docs/SEASON_RANK_UI_REVISION.md) and override older welcome/theme/evaluation presentation rules. Current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
 
-**Previous verified Preview (before this patch):** https://centerpro-lmiza9hde-hussam9329s-projects.vercel.app/login
+**Verified Preview:** https://centerpro-ljm9fmqr0-hussam9329s-projects.vercel.app/login
 
-**Application commit:** `a5f4f439dc01a4cfc7e040a948b6c13b56e2f41e`. Lint, strict typecheck, 173 domain tests, all 92 browser tests and the production build pass in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/37151045613). Coverage includes the eight evaluation screen sizes and both accessibility checks. See the [evaluation patch handoff](docs/EVALUATION_PATCH_ACCEPTANCE.md) for verification and deployment evidence. Earlier revisions remain documented in the [required-days patch handoff](docs/PATCH_ACCEPTANCE.md) and [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
+**Application commit:** `0c19d79193d5fff0647826277615fec6a970d0db`. **Verification commit:** `a279abbb3050657c7936b1ef4727a3c980f7643b` (two test files only; deployed application unchanged). Lint, strict typecheck, 196 domain/unit tests, all 110 browser tests and the production build pass in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/37178400246). See the [seasons, ranks and dark mode handoff](docs/SEASONS_PATCH_ACCEPTANCE.md) for the supplied patch, integration corrections, live Preview evidence and screenshot. Earlier revisions remain documented in the [evaluation handoff](docs/EVALUATION_PATCH_ACCEPTANCE.md), [required-days handoff](docs/PATCH_ACCEPTANCE.md) and [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
 
 ## Starting the empty preview
 
@@ -76,7 +76,7 @@ npm run test:e2e
 
 Broad populated regression scenarios remain in `tests/fixtures/populated-data.ts`. Seven owner-requested test accounts are available through the explicit preview loader only. The normal startup remains empty. Tests explicitly opt into fixture data through helpers. Shared browser helpers advance the real three-second post-login welcome with Playwright's clock; the application has no test-only splash bypass.
 
-Responsive coverage targets 360×800, 390×844, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900 and 1920×1080. Generated screenshots, PDFs and test reports remain ignored verification artifacts. The previous published baseline passed its recorded gates. This patch adds new domain and browser coverage for seasons, ranks, theme/session persistence, result publication and anchored auditor filtering; rerun the full quality gates before publishing a new Preview.
+Responsive coverage targets 360×800, 390×844, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900 and 1920×1080. Generated screenshots, PDFs and test reports remain ignored verification artifacts. All 196 unit/domain tests and 110 browser scenarios pass. Coverage includes seasons, rank thresholds, archived snapshots, legacy-data migration, explicit theme/session persistence, result publication/reopening, anchored keyboard filtering, eight responsive widths and light/dark accessibility checks.
 
 ## Vercel Preview
 

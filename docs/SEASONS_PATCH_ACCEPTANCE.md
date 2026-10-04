@@ -42,4 +42,30 @@ No Neon connection, production authentication, database mutations or real QR val
 - Responsive evaluation coverage spans 360, 390, 430, 768, 1024, 1366, 1440 and 1920 pixels; authored dark-theme accessibility also passes at 390, 768 and 1366 pixels. No accessibility rules were disabled.
 - Supplied patch SHA-256 matches the preserved file. Whitespace checks and repository secret-marker scan passed.
 
-Deployment and exact-commit CI evidence will be recorded after publishing.
+## Published Preview
+
+- Application commit: `0c19d79193d5fff0647826277615fec6a970d0db`.
+- Preview: https://centerpro-ljm9fmqr0-hussam9329s-projects.vercel.app/login
+- Vercel deployment: `dpl_9aWYBLtyUrs39BMEanwKtAh8gAVY`, `READY`, `target: null` (Preview).
+- `main` and `preview/ui-approval` received the application commit. `main` also contains the test-only verification correction `a279abbb3050657c7936b1ef4727a3c980f7643b`; its application assets are identical to the deployed commit. The final documentation commit only updates evidence on `main`.
+- Live browser verification: immediate login page; authored dark mode; explicit seven-account loader; Dania's 18 present days/no absences; three-second login welcome; season → cycle → exam creation; auditor automatic save; hidden corrector totals before exam closure and Gold 1 / 3,200 points after closure.
+- Screenshot: [seasons-preview.jpg](seasons-preview.jpg), captured from the published Preview. Records in the screenshot are local test data from this verification, not default startup data.
+- No Vercel environment variables added or required. Production and backend integration remain outside this delivery.
+
+## CI test stabilization
+
+The first GitHub run passed 107/110 browser scenarios and every lint, type, unit and build gate. Three browser failures identified test synchronization issues: the legacy v1 migration assertion ran before the store was ready, and full-page screenshot instrumentation temporarily resized the visual viewport to 1×1 while an anchored popup was open. The popup correctly closed because its trigger had left that artificial viewport.
+
+The test-only follow-up waits for the enabled login button, captures the open popup in its actual viewport, and retains every migration, anchoring and selection assertion. All 22 affected scenarios passed locally after that correction, together with a fresh `npm run check` (196 unit tests and production build). Application source and the published Preview are unchanged.
+
+## Final verification
+
+[GitHub quality run 37178400246](https://github.com/Hussam9329/CenterPro/actions/runs/37178400246) completed successfully for `a279abbb3050657c7936b1ef4727a3c980f7643b` on 2026-10-04:
+
+- ESLint: passed.
+- Strict TypeScript/type generation: passed.
+- Unit/domain tests: **196 passed** across seven files.
+- Production build: passed.
+- Full Chromium browser suite: **110 passed**; no disabled accessibility rules or weakened assertions.
+
+`git diff 0c19d79193d5fff0647826277615fec6a970d0db a279abbb3050657c7936b1ef4727a3c980f7643b` contains only the two E2E test files described above. The CI-verified application source is identical to the published Preview. `preview/ui-approval` remains at that deployed application commit; `main` also carries the verification and final documentation commits.

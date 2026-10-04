@@ -2,6 +2,8 @@
 
 Date: 2026-10-03. Phase 1 frontend approval Preview.
 
+Historical handoff. The current published revision and verification evidence are in [SEASONS_PATCH_ACCEPTANCE.md](SEASONS_PATCH_ACCEPTANCE.md).
+
 ## Source
 
 The supplied `CenterPro_audit_evaluation_testdata(1).patch` applied cleanly to `90f9a2f01f4f03a9627add8440a2d6e338b08f3d`. Its exact 1,472 lines are preserved in [patches/audit-evaluation-testdata.patch](patches/audit-evaluation-testdata.patch).
