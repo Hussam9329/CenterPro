@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
-import { Check, ChevronLeft, Clock3, Globe2, LockKeyhole, RotateCcw, Save, ShieldCheck, Sun, UsersRound, X } from 'lucide-react';
+import { Check, ChevronLeft, Clock3, Globe2, LockKeyhole, Moon, RotateCcw, Save, ShieldCheck, Sun, UsersRound, X } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { useTheme } from '@/components/theme-provider';
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, Field, Input, PageHeader } from '@/components/ui';
 import type { Role } from '@/lib/types';
 
@@ -33,6 +34,7 @@ function AccessLabel({ access }: { access: Access }) {
 
 export default function SettingsPage() {
   const { data, session, updateData, resetDemo } = useDemo();
+  const { theme } = useTheme();
   const toast = useToast();
   const [centerName, setCenterName] = useState(data.settings.centerName);
   const [qrInterval, setQrInterval] = useState(String(data.settings.qrInterval));
@@ -82,17 +84,17 @@ export default function SettingsPage() {
           <div className="form-actions"><Button type="submit" disabled={!dirty}><Save size={17} />حفظ الإعدادات</Button>{dirty && <Button variant="secondary" onClick={() => { setCenterName(data.settings.centerName); setQrInterval(String(data.settings.qrInterval)); setErrors({}); }}>إلغاء التغييرات</Button>}</div>
         </form>
       </Card>
-      <Card title="أساسيات النظام" description="إعدادات ثابتة حسب مواصفات CenterPro.">
+      <Card title="أساسيات النظام" description="لغة الواجهة، المظهر والمنطقة الزمنية.">
         <div className="stack">
           <div className="list-row"><div className="inline"><Globe2 size={19} /><div><strong>لغة الواجهة</strong><div className="muted">العربية · من اليمين إلى اليسار</div></div></div><Badge>ثابت</Badge></div>
-          <div className="list-row"><div className="inline"><Sun size={19} /><div><strong>مظهر الواجهة</strong><div className="muted">فاتح · هوية CenterPro</div></div></div><Badge>ثابت</Badge></div>
+          <div className="list-row"><div className="inline">{theme === 'dark' ? <Moon size={19} /> : <Sun size={19} />}<div><strong>مظهر الواجهة</strong><div className="muted">{theme === 'dark' ? 'داكن' : 'فاتح'} · هوية CenterPro</div></div></div><Badge>حسب اختيارك</Badge></div>
           <div className="list-row"><div className="inline"><Clock3 size={19} /><div><strong>المنطقة الزمنية</strong><div className="muted">بغداد <span dir="ltr">(Asia/Baghdad)</span></div></div></div><Badge>ثابت</Badge></div>
           <div className="notice"><LockKeyhole size={18} /><span>تسجيل الحضور لا يشترط GPS أو الاتصال بشبكة Wi-Fi محددة.</span></div>
         </div>
       </Card>
     </div>
     <Card title="الأدوار والصلاحيات" description="الصلاحيات المحددة لكل دور في مواصفات النظام. هذه المصفوفة للعرض.">
-      <div className="table-wrap"><table className="data-table"><thead><tr><th scope="col">الصلاحية</th><th scope="col" dir="ltr">Super Admin</th><th scope="col" dir="ltr">Admin / Manager</th><th scope="col">موظف</th></tr></thead><tbody>{permissions.map(permission => <tr key={permission.label}><th scope="row">{permission.label}</th><td><AccessLabel access={permission.superAdmin} /></td><td><AccessLabel access={permission.admin} /></td><td><AccessLabel access={permission.employee} /></td></tr>)}</tbody></table></div>
+      <div className="table-wrap" role="region" aria-label="جدول الصلاحيات" tabIndex={0}><table className="data-table"><thead><tr><th scope="col">الصلاحية</th><th scope="col" dir="ltr">Super Admin</th><th scope="col" dir="ltr">Admin / Manager</th><th scope="col">موظف</th></tr></thead><tbody>{permissions.map(permission => <tr key={permission.label}><th scope="row">{permission.label}</th><td><AccessLabel access={permission.superAdmin} /></td><td><AccessLabel access={permission.admin} /></td><td><AccessLabel access={permission.employee} /></td></tr>)}</tbody></table></div>
       <div className="notice">يسجل الموظف حضوره بنفسه من قارئ QR، ويطّلع على بياناته فقط. إدارة حسابات الإدارة والأدوار متاحة لـ Super Admin من ملف الموظف.</div>
     </Card>
     <Card title="حسابات الإدارة" description="افتح ملف الحساب لإدارة بياناته، دوره أو كلمة مروره." action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>

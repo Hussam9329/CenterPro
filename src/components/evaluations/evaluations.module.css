@@ -1,69 +1,153 @@
 .heroGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
 .toolbarGrid { display:grid; grid-template-columns:minmax(220px,.9fr) minmax(260px,1.1fr); gap:14px; align-items:end; }
+
+/* Anchored filters */
 .multiSelect { position:relative; }
-.multiButton { width:100%; min-height:43px; border:1px solid #dedfe5; border-radius:7px; background:#fff; color:#555a65; padding:9px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:right; }
-.multiPanel { position:absolute; z-index:30; inset-inline:0; top:calc(100% + 7px); background:#fff; border:1px solid #e1e2e6; border-radius:10px; box-shadow:0 16px 45px #20151a18; padding:12px; max-height:320px; overflow:auto; }
-.multiActions { display:flex; gap:8px; padding-bottom:10px; border-bottom:1px solid #f0f0f2; margin-bottom:8px; }
-.multiOption { display:flex; align-items:center; gap:10px; min-height:39px; padding:7px 6px; border-radius:7px; color:#555b65; }
-.multiOption:hover { background:#faf7f8; }
-.multiOption input { accent-color:#a51c30; width:16px; height:16px; }
+.multiButton { width:100%; min-height:43px; border:1px solid var(--border,#dedfe5); border-radius:8px; background:var(--surface,#fff); color:var(--muted,#555a65); padding:9px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:right; }
+.multiButton:hover { border-color:#d4a6af; background:color-mix(in srgb,var(--surface,#fff) 94%,#a51c30 6%); }
+.multiPanel { box-sizing:border-box; z-index:80; background:var(--surface,#fff); border:1px solid var(--border,#e1e2e6); border-radius:10px; box-shadow:0 18px 48px #20151a22; padding:12px; overflow:auto; overscroll-behavior:contain; }
+.multiActions { display:flex; gap:8px; padding-bottom:10px; border-bottom:1px solid var(--border,#f0f0f2); margin-bottom:8px; }
+.multiOption { display:flex; align-items:center; gap:10px; min-height:39px; padding:7px 6px; border-radius:7px; color:var(--text,#555b65); }
+.multiOption:hover { background:color-mix(in srgb,var(--surface,#fff) 92%,#a51c30 8%); }
+.multiOption input { accent-color:var(--brand-text,#a51c30); width:16px; height:16px; }
+
+/* Auditor editor */
 .auditGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
-.auditCard { border:1px solid #e8e8ec; border-radius:11px; background:#fff; padding:17px; display:flex; flex-direction:column; gap:15px; min-width:0; container-type:inline-size; }
+.auditCard { border:1px solid var(--border,#e8e8ec); border-radius:12px; background:var(--surface,#fff); padding:17px; display:flex; flex-direction:column; gap:15px; min-width:0; container-type:inline-size; box-shadow:0 4px 16px #22141a08; }
 .auditCardHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .employeeIdentity { display:flex; align-items:center; gap:10px; min-width:0; }
-.employeeIdentity strong { display:block; color:#333842; font-size:13px; }
-.employeeIdentity small { color:#6b707b; font-size:11px; }
+.employeeIdentity strong { display:block; color:var(--text,#333842); font-size:13px; }
+.employeeIdentity small { color:var(--muted,#6b707b); font-size:11px; }
 .editorFields { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:end; }
-/* Size the editor from its card, including when the sidebar narrows the workspace. */
 @container (max-width:460px) {
   .editorFields { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .numericField:first-child { grid-column:1 / -1; }
 }
 .numericField { display:flex; flex-direction:column; gap:6px; min-width:0; }
-.numericLabel { color:#6b707a; font-size:11px; }
-.stepper { display:grid; grid-template-columns:39px minmax(55px,1fr) 39px; direction:ltr; border:1px solid #dedfe5; border-radius:8px; overflow:hidden; min-height:43px; background:#fff; }
-.stepper button { border:0; background:#fafafb; color:#606672; font-size:20px; line-height:1; display:grid; place-items:center; }
-.stepper button:hover:not(:disabled) { background:#f7ecef; color:#a51c30; }
+.numericLabel { color:var(--muted,#6b707a); font-size:11px; }
+.stepper { display:grid; grid-template-columns:39px minmax(55px,1fr) 39px; direction:ltr; border:1px solid var(--border,#dedfe5); border-radius:8px; overflow:hidden; min-height:43px; background:var(--surface,#fff); }
+.stepper button { border:0; background:color-mix(in srgb,var(--surface,#fff) 94%,#a51c30 6%); color:var(--brand-text,#a51c30); font-size:20px; line-height:1; display:grid; place-items:center; }
+.stepper button svg { stroke:currentColor; stroke-width:2.2; }
+.stepper button:hover:not(:disabled) { background:#a51c30; color:#fff; }
+.stepper button:hover:not(:disabled) svg { stroke:#fff; }
+.stepper button:active:not(:disabled) { background:#861627; }
 .stepper button:disabled { opacity:.35; cursor:not-allowed; }
-.stepper input { width:100%; min-width:0; border:0; border-inline:1px solid #ececf0; outline:none; text-align:center; color:#353a44; background:#fff; font-variant-numeric:tabular-nums; }
-.stepper input::placeholder { color:#6b707b; }
-.scoreStrip { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #f0f0f3; padding-top:12px; }
-.scoreStrip strong { color:#a51c30; font-size:15px; }
-.saveState { display:flex; align-items:center; gap:6px; color:#6b707b; font-size:11px; }
-.saveState[data-state='saved'] { color:#4d7f69; }
-.saveState[data-state='saving'] { color:#946925; }
-.metaLine { color:#6b707b; font-size:11px; line-height:1.8; }
+.stepper input { width:100%; min-width:0; border:0; border-inline:1px solid var(--border,#ececf0); outline:none; text-align:center; color:var(--text,#353a44); background:var(--surface,#fff); font-variant-numeric:tabular-nums; }
+.stepper input::placeholder { color:var(--muted,#6b707b); }
+.scoreStrip { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid var(--border,#f0f0f3); padding-top:12px; }
+.scoreStrip strong { color:var(--brand-text,#a51c30); font-size:17px; }
+.saveState { display:flex; align-items:center; gap:6px; color:var(--muted,#6b707b); font-size:11px; }
+.saveState[data-state='saved'] { color:var(--success,#34735a); }
+.saveState[data-state='saving'] { color:var(--warning,#946925); }
+.metaLine { color:var(--muted,#6b707b); font-size:11px; line-height:1.8; }
+
+/* Exams */
 .examList { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
-.examCard { border:1px solid #e8e8ec; border-radius:10px; padding:16px; background:#fff; display:flex; flex-direction:column; gap:12px; }
+.examCard { border:1px solid var(--border,#e8e8ec); border-radius:11px; padding:16px; background:var(--surface,#fff); display:flex; flex-direction:column; gap:12px; }
 .examCardTop { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-.examCard h3 { color:#333842; font-size:13px; }
-.examCard p { color:#6b707b; font-size:11px; }
+.examCard h3 { color:var(--text,#333842); font-size:13px; }
+.examCard p { color:var(--muted,#6b707b); font-size:11px; }
 .examActions { display:flex; gap:7px; flex-wrap:wrap; }
-.leaderboardTable { width:100%; border-collapse:collapse; }
-.leaderboardTable th { font-size:11px; color:#6b707b; background:#fafafb; padding:10px 11px; text-align:right; white-space:nowrap; border-bottom:1px solid #ececf0; }
-.leaderboardTable td { padding:13px 11px; border-bottom:1px solid #f0f0f2; color:#5d626c; font-size:11px; vertical-align:middle; }
-.leaderboardTable tr:last-child td { border-bottom:0; }
-.rank { width:29px; height:29px; border-radius:8px; display:grid; place-items:center; background:#f5f5f7; color:#6b707b; font-weight:650; }
-.rankTop { color:#a51c30; background:#f9e9ed; }
-.score { font-weight:700; color:#a51c30; font-variant-numeric:tabular-nums; }
+
+/* Standard leaderboards */
+.leaderboardTable,.seasonTable { width:100%; border-collapse:collapse; }
+.leaderboardTable th,.seasonTable th { font-size:11px; color:var(--muted,#6b707b); background:color-mix(in srgb,var(--surface,#fff) 96%,#a51c30 4%); padding:11px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border,#ececf0); }
+.leaderboardTable td,.seasonTable td { padding:13px 11px; border-bottom:1px solid var(--border,#f0f0f2); color:var(--text,#5d626c); font-size:11px; vertical-align:middle; }
+.leaderboardTable tr:last-child td,.seasonTable tr:last-child td { border-bottom:0; }
+.seasonTable tbody tr { transition:background .16s ease; }
+.seasonTable tbody tr:hover { background:color-mix(in srgb,var(--surface,#fff) 94%,#a51c30 6%); }
+.highlightRow { background:color-mix(in srgb,var(--surface,#fff) 91%,#a51c30 9%) !important; }
+.rank { width:29px; height:29px; border-radius:8px; display:grid; place-items:center; background:color-mix(in srgb,var(--surface,#fff) 91%,#111318 9%); color:var(--muted,#6b707b); font-weight:650; }
+.rankTop { color:var(--brand-text,#a51c30); background:color-mix(in srgb,var(--surface,#fff) 84%,#a51c30 16%); }
+.score { font-weight:750; color:var(--brand-text,#a51c30); font-variant-numeric:tabular-nums; }
 .mobileLeaderboard { display:none; }
+.highlightCard { border-color:#d7aab3 !important; background:color-mix(in srgb,var(--surface,#fff) 94%,#a51c30 6%) !important; }
+:global(html:not([data-theme='dark'])) .highlightRow,
+:global(html:not([data-theme='dark'])) .highlightCard { --muted:#616671; }
+
+/* Rank emblem — exact Hassan Falah source shape, colorized by tier */
+.rankBadgeWrap { --rank-primary:var(--rank-primary-light,#9a6b16); --rank-secondary:var(--rank-secondary-light,#e2b84b); --rank-text:var(--rank-text-light,#8a5e10); display:inline-flex; align-items:center; gap:10px; direction:ltr; min-width:0; }
+.rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:hidden; filter:drop-shadow(0 8px 14px #11131816); }
+.rankBadgeIcon svg { display:block; width:100%; height:100%; overflow:visible; }
+.rankBadgeSM .rankBadgeIcon { width:37px; height:31px; }
+.rankBadgeMD .rankBadgeIcon { width:58px; height:48px; }
+.rankBadgeLG .rankBadgeIcon { width:108px; height:88px; }
+.rankBadgeLabel { min-width:0; color:var(--rank-text); font-family:'Inter Variable',sans-serif; font-size:12px; line-height:1.2; white-space:nowrap; }
+.rankBadgeMD .rankBadgeLabel { font-size:14px; }
+.rankBadgeLG .rankBadgeLabel { font-size:18px; }
+.rankLevel { position:absolute; inset-inline-end:2px; inset-block-end:0; min-width:19px; height:19px; border-radius:999px; display:grid; place-items:center; padding-inline:5px; background:var(--surface,#fff); color:var(--rank-text); border:1px solid color-mix(in srgb,var(--rank-primary) 50%,var(--surface,#fff)); box-shadow:0 2px 8px #11131820; font:750 10px/1 'Inter Variable',sans-serif; }
+.rankShine { position:absolute; inset:-35% auto -35% -55%; width:32%; pointer-events:none; opacity:0; transform:skewX(-18deg); background:linear-gradient(90deg,transparent,#ffffffcc,transparent); }
+.rankBadgeAnimated .rankShine { animation:rankShine 4.8s ease-in-out infinite; }
+@keyframes rankShine { 0%,67% { left:-55%; opacity:0; } 72% { opacity:.8; } 84% { left:120%; opacity:0; } 100% { left:120%; opacity:0; } }
+
+/* Season admin */
+.seasonAdminHero { display:grid; grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(130px,.45fr)); gap:14px; padding:21px 22px; border:1px solid #e8d5da; border-inline-start:4px solid #a51c30; border-radius:13px; background:color-mix(in srgb,var(--surface,#fff) 96%,#a51c30 4%); align-items:center; }
+.seasonAdminHero h2 { font-size:20px; margin-bottom:6px; }
+.seasonHeroMetric { border-inline-start:1px solid var(--border,#e9e9ed); padding-inline-start:18px; display:flex; flex-direction:column; gap:4px; }
+.seasonHeroMetric span { font-size:10px; color:var(--muted,#6b707b); }
+.seasonHeroMetric strong { font-size:24px; color:var(--brand-text,#a51c30); font-family:'Inter Variable',sans-serif; }
+
+/* Employee season hero */
+.employeeSeasonCard { position:relative; display:grid; grid-template-columns:minmax(160px,.7fr) minmax(180px,.8fr) minmax(0,1.6fr); gap:24px; align-items:center; min-width:0; padding:24px 26px; border:1px solid #ead8dc; border-radius:15px; background:var(--surface,#fff); box-shadow:0 8px 28px #2311170a; overflow:hidden; }
+.employeeSeasonCard::before { content:''; position:absolute; inset-inline:0; top:0; height:3px; background:#a51c30; }
+.employeeSeasonMain { min-width:0; }
+.employeeSeasonMain h2 { font-family:'Inter Variable',sans-serif; font-size:22px; line-height:1.2; margin:0 0 6px; }
+.seasonPoints { display:block; color:var(--brand-text,#a51c30); font:750 28px/1.25 'Inter Variable',sans-serif; margin-bottom:12px; }
+.rankProgress { height:7px; border-radius:999px; overflow:hidden; background:color-mix(in srgb,var(--surface,#fff) 86%,#111318 14%); margin-bottom:7px; }
+.rankProgress span { display:block; height:100%; border-radius:inherit; background:#a51c30; transition:width .3s ease; }
+.employeeSeasonMain small { color:var(--muted,#6b707b); font-size:10px; }
+.employeeSeasonStats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; min-width:0; }
+.employeeSeasonStats > div { min-width:0; padding:10px 11px; border-radius:9px; background:color-mix(in srgb,var(--surface,#fff) 96%,#a51c30 4%); border:1px solid color-mix(in srgb,var(--border,#e9e9ed) 86%,#a51c30 14%); }
+.employeeSeasonStats span { display:block; font-size:9px; color:var(--muted,#6b707b); margin-bottom:3px; }
+.employeeSeasonStats strong { display:block; color:var(--text,#313640); font-size:12px; overflow-wrap:anywhere; }
+.employeeSeasonPhrase { position:absolute; inset-inline-start:26px; bottom:11px; color:var(--brand-text,#a51c30); font-size:10px; font-weight:650; }
+.employeeSeasonCard > :global(.button-link) { align-self:start; white-space:nowrap; color:var(--brand-text,#a51c30); }
+
+/* Personal evaluation */
+.ownHero { border:1px solid #eadde1; border-radius:13px; padding:22px; background:var(--surface,#fff); display:grid; grid-template-columns:minmax(0,1.2fr) minmax(220px,.55fr); gap:20px; box-shadow:0 5px 18px #22151a06; }
+.ownHero .heroGrid { grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); }
+.employeeEvaluationName { margin-bottom:16px; font-size:20px; }
+.ownScore { position:relative; overflow:hidden; background:#a51c30; color:white; border-radius:12px; padding:25px 24px; display:flex; flex-direction:column; justify-content:center; min-height:170px; }
+.ownScore::after { content:''; position:absolute; width:135px; height:135px; border:28px solid #ffffff0e; border-radius:50%; inset-inline-end:-55px; top:-54px; }
+.ownScore span { color:#f5dce1; font-size:11px; font-weight:600; }
+.ownScore strong { position:relative; z-index:1; font:780 clamp(42px,5vw,64px)/1.15 'Inter Variable',sans-serif; letter-spacing:-1.5px; margin:7px 0; }
+.ownScore small { color:#f0cbd2; font-size:10px; }
+.examBreakdown { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.examBreakdownItem { border:1px solid var(--border,#ececf0); border-radius:10px; padding:14px; background:var(--surface,#fff); }
+.examBreakdownItem h4 { color:var(--text,#4a4f59); font-size:11px; margin-bottom:7px; }
+.examBreakdownItem p { color:var(--muted,#6b707b); font-size:11px; display:flex; align-items:center; gap:6px; }
+
+/* Archives */
 .archiveList { display:flex; flex-direction:column; gap:10px; }
-.archiveDetails { border:1px solid #ececf0; border-radius:9px; background:#fff; overflow:hidden; }
+.archiveDetails { border:1px solid var(--border,#ececf0); border-radius:9px; background:var(--surface,#fff); overflow:hidden; }
 .archiveDetails > summary { list-style:none; cursor:pointer; }
 .archiveDetails > summary::-webkit-details-marker { display:none; }
-.archiveDetails[open] > summary { background:#fdf9fa; border-bottom:1px solid #ececf0; }
+.archiveDetails[open] > summary { background:color-mix(in srgb,var(--surface,#fff) 95%,#a51c30 5%); border-bottom:1px solid var(--border,#ececf0); }
 .archiveRow { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 14px; }
-.archiveRow p { color:#6b707b; font-size:11px; }
-.ownHero { border:1px solid #eadde1; border-radius:12px; padding:22px; background:#fff; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); gap:20px; }
-.ownHero .heroGrid { grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); }
-.ownScore { background:#a51c30; color:white; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:center; }
-.ownScore span { color:#fff; font-size:11px; }
-.ownScore strong { font-size:34px; line-height:1.35; }
-.examBreakdown { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-.examBreakdownItem { border:1px solid #ececf0; border-radius:9px; padding:13px; }
-.examBreakdownItem h4 { color:#4a4f59; font-size:11px; margin-bottom:7px; }
-.examBreakdownItem p { color:#6b707b; font-size:11px; }
-@media (max-width:1023px) { .heroGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } .auditGrid,.examList { grid-template-columns:1fr; } }
+.archiveRow p { color:var(--muted,#6b707b); font-size:11px; }
+
+.heroGrid > *, .ownHero > *, .mobileLeaderCard > * { min-width:0; }
+.examCard, .examBreakdownItem, .archiveRow, .mobileLeaderCard { overflow-wrap:anywhere; }
+.archiveRow:focus-visible, .multiButton:focus-visible, .stepper button:focus-visible, .stepper input:focus-visible, .multiOption input:focus-visible, .multiActions button:focus-visible { outline:2px solid var(--focus,#a51c30); outline-offset:3px; }
+.leaderboardTable td:nth-child(2),.seasonTable td:nth-child(2) { min-width:130px; }
+.leaderboardTable td:not(:nth-child(2)),.seasonTable td:not(:nth-child(2)) { white-space:nowrap; }
+
+@media (max-width:1180px) {
+  .employeeSeasonCard { grid-template-columns:minmax(0,.8fr) minmax(0,1fr); }
+  .employeeSeasonStats { grid-column:1 / -1; }
+  .employeeSeasonCard > :global(.button-link) { grid-column:2 / -1; justify-self:start; }
+  .employeeSeasonStats { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .employeeSeasonPhrase { position:static; grid-column:1 / -1; text-align:center; }
+}
+@media (max-width:1023px) {
+  .heroGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .auditGrid,.examList { grid-template-columns:1fr; }
+  .seasonAdminHero { grid-template-columns:minmax(0,1fr) repeat(2,minmax(100px,.35fr)); }
+  .employeeSeasonCard { grid-template-columns:auto minmax(0,1fr); align-items:start; }
+  .employeeSeasonStats { grid-column:1 / -1; grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .employeeSeasonCard > :global(.button-link) { grid-column:2; }
+  .employeeSeasonPhrase { position:static; grid-column:1 / -1; text-align:center; }
+}
 @media (max-width:767px) {
   .toolbarGrid { grid-template-columns:1fr; }
   .heroGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
@@ -71,22 +155,74 @@
   .editorFields { grid-template-columns:1fr; }
   .stepper { min-height:47px; grid-template-columns:48px minmax(70px,1fr) 48px; }
   .stepper button { font-size:23px; }
-  .leaderboardTable { display:none; }
+  .leaderboardTable,.seasonTable { display:none; }
   .mobileLeaderboard { display:flex; flex-direction:column; gap:9px; }
-  .mobileLeaderCard { border:1px solid #e9e9ed; border-radius:9px; padding:12px; display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:center; }
-  .mobileLeaderCard p { grid-column:2 / -1; color:#6b707b; font-size:11px; }
+  .mobileLeaderCard { border:1px solid var(--border,#e9e9ed); border-radius:10px; padding:12px; display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:9px; align-items:center; background:var(--surface,#fff); }
+  .mobileLeaderCard p { grid-column:2 / -1; color:var(--muted,#6b707b); font-size:10px; }
+  .mobileLeaderCard > .score { grid-column:2; }
   .ownHero { grid-template-columns:1fr; padding:15px; }
+  .ownScore { min-height:145px; }
   .examBreakdown { grid-template-columns:1fr; }
-  .multiPanel { position:fixed; inset-inline:14px; top:auto; bottom:82px; max-height:50dvh; }
+  .archiveRow { flex-wrap:wrap; }
+  .seasonAdminHero { grid-template-columns:1fr 1fr; padding:17px; }
+  .seasonAdminHero > :first-child { grid-column:1 / -1; }
+  .seasonHeroMetric { border-inline-start:0; border-top:1px solid var(--border,#e9e9ed); padding:11px 0 0; }
+  .employeeSeasonCard { grid-template-columns:1fr; text-align:center; justify-items:center; gap:15px; padding:22px 16px 18px; }
+  .employeeSeasonCard > .rankBadgeWrap { justify-content:center; }
+  .employeeSeasonMain { width:min(100%,430px); }
+  .employeeSeasonStats { grid-column:1; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; }
+  .employeeSeasonStats > div { padding:9px 6px; }
+  .employeeSeasonCard > :global(.button-link) { grid-column:1; justify-self:center; }
+  .employeeSeasonPhrase { grid-column:1; }
+  .rankBadgeLG .rankBadgeIcon { width:94px; height:76px; }
+  .multiPanel { /* position/side is calculated from trigger in JS */ }
+}
+@media (max-width:430px) {
+  .employeeSeasonStats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .seasonPoints { font-size:25px; }
+  .ownScore strong { font-size:48px; }
 }
 
-/* Keep evaluation controls and historical tables usable across narrow layouts. */
-.heroGrid > *, .ownHero > *, .mobileLeaderCard > * { min-width:0; }
-.examCard, .examBreakdownItem, .archiveRow, .mobileLeaderCard { overflow-wrap:anywhere; }
-.archiveRow:focus-visible, .multiButton:focus-visible, .stepper button:focus-visible, .stepper input:focus-visible { outline:2px solid #a51c30; outline-offset:3px; }
-.leaderboardTable td:nth-child(2) { min-width:130px; }
-.leaderboardTable td:not(:nth-child(2)) { white-space:nowrap; }
-@media (max-width:767px) {
-  .archiveRow { flex-wrap:wrap; }
-  .ownScore { min-width:0; }
+/* Dark-mode details specific to evaluation screens. */
+:global(html[data-theme='dark']) .multiButton,
+:global(html[data-theme='dark']) .multiPanel,
+:global(html[data-theme='dark']) .auditCard,
+:global(html[data-theme='dark']) .stepper,
+:global(html[data-theme='dark']) .stepper input,
+:global(html[data-theme='dark']) .examCard,
+:global(html[data-theme='dark']) .archiveDetails,
+:global(html[data-theme='dark']) .employeeSeasonCard,
+:global(html[data-theme='dark']) .ownHero,
+:global(html[data-theme='dark']) .examBreakdownItem,
+:global(html[data-theme='dark']) .mobileLeaderCard { background:#181b20; border-color:#2b3038; }
+:global(html[data-theme='dark']) .stepper button { background:#241b20; }
+:global(html[data-theme='dark']) .stepper button:hover:not(:disabled) { background:#a51c30; }
+:global(html[data-theme='dark']) .leaderboardTable th,
+:global(html[data-theme='dark']) .seasonTable th { background:#1d2026; color:#abb1bb; border-color:#30343c; }
+:global(html[data-theme='dark']) .leaderboardTable td,
+:global(html[data-theme='dark']) .seasonTable td { color:#d8dbe0; border-color:#292e35; }
+:global(html[data-theme='dark']) .seasonAdminHero { background:#181b20; border-color:#52313a; border-inline-start-color:var(--brand-text,#a51c30); }
+:global(html[data-theme='dark']) .employeeSeasonStats > div { background:#1f1b20; border-color:#3a2930; }
+:global(html[data-theme='dark']) .rankLevel { background:#181b20; }
+:global(html[data-theme='dark']) .rankProgress { background:#32363d; }
+:global(html[data-theme='dark']) .highlightRow,
+:global(html[data-theme='dark']) .highlightCard { background:#291c21 !important; }
+
+@media (prefers-reduced-motion:reduce) { .rankBadgeAnimated .rankShine { animation:none; display:none; } }
+
+/* Compact controls keep their keyboard ring inside their clipping boundary. */
+.stepper button:focus-visible, .stepper input:focus-visible { outline-offset:-3px; }
+.employeeSeasonCard > .rankBadgeWrap { flex-direction:column; justify-self:center; }
+.employeeSeasonMain h2, .rankBadgeLabel { overflow-wrap:anywhere; }
+.employeeSeasonStats span { overflow-wrap:anywhere; }
+.examBreakdownItem p { flex-wrap:wrap; }
+:global(html[data-theme='dark']) .rankBadgeWrap { --rank-primary:var(--rank-primary-dark); --rank-secondary:var(--rank-secondary-dark); --rank-text:var(--rank-text-dark); }
+:global(html[data-theme='dark']) .rank { background:#2a2e35; }
+:global(html[data-theme='dark']) .rankTop { color:var(--brand-text); background:#39212a; }
+:global(html[data-theme='dark']) .rankProgress span { background:#db6077; }
+:global(html[data-theme='dark']) .stepper button { color:var(--brand-text); }
+:global(html[data-theme='dark']) .stepper button:hover:not(:disabled) { color:#fff; }
+@media(max-width:767px) {
+  .mobileLeaderCard > .rankBadgeWrap { flex-direction:column; gap:5px; max-width:115px; }
+  .mobileLeaderCard .rankBadgeLabel { white-space:normal; text-align:center; font-size:11px; }
 }

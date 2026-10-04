@@ -5,7 +5,7 @@ import type { DemoData, DemoSession } from '../../../src/lib/types';
 
 export { expect, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION };
 export const PREVIEW_TEST_TIME = new Date('2026-09-28T11:00:00.000Z');
-export const WELCOME_PERIOD_MS = 5_000;
+export const WELCOME_PERIOD_MS = 3_000;
 
 // The clock advances the real welcome experience; no application bypass is used.
 // Populated records are deliberately opt-in so onboarding exercises clean startup.
@@ -30,10 +30,9 @@ export async function finishWelcome(page: Page) {
 }
 
 export async function gotoPreview(page: Page, url: string) {
-  const response = await page.goto(url);
-  await finishWelcome(page);
-  return response;
+  return page.goto(url);
 }
+
 
 export async function loginPreview(
   page: Page,

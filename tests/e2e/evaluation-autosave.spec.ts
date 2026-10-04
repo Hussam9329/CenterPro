@@ -11,7 +11,8 @@ const correctorName = 'علي محمد حسن';
 function evaluationFixture() {
   const data = createPopulatedTestData();
   const timestamp = '2026-09-28T08:00:00.000Z';
-  data.evaluationCycles = [{ id: 'autosave-cycle', name: 'دورة اختبار الحفظ التلقائي', state: 'OPEN', openedAt: timestamp, openedBy: 'مدير النظام' }];
+  data.evaluationSeasons = [{ id: 'autosave-season', name: 'موسم اختبار الحفظ التلقائي', startDate: '2026-09-01', state: 'OPEN', openedAt: timestamp, openedBy: 'مدير النظام' }];
+  data.evaluationCycles = [{ id: 'autosave-cycle', seasonId: 'autosave-season', name: 'دورة اختبار الحفظ التلقائي', state: 'OPEN', openedAt: timestamp, openedBy: 'مدير النظام' }];
   data.evaluationExams = [
     { id: firstExam, cycleId: 'autosave-cycle', name: 'الامتحان الأول', date: '2026-09-28', state: 'OPEN', note: '', createdBy: 'مدير النظام', createdAt: timestamp },
     { id: secondExam, cycleId: 'autosave-cycle', name: 'الامتحان الثاني', date: '2026-09-27', state: 'OPEN', note: '', createdBy: 'مدير النظام', createdAt: timestamp },
@@ -116,7 +117,6 @@ test.describe('Evaluation autosave', () => {
     await editor(page).getByLabel('أخطاء السلوك', { exact: true }).fill('4');
     // Reload without blurring the input exercises the page lifecycle flush.
     await page.reload();
-    await finishWelcome(page);
     await expect(editor(page).getByLabel('أخطاء السلوك', { exact: true })).toHaveValue('4');
     expect(await currentEvaluation(page)).toMatchObject({ papers: 61, behaviorErrors: 4 });
   });
@@ -162,7 +162,7 @@ test.describe('Evaluation autosave', () => {
 
     await loginPreview(page);
     await gotoPreview(page, '/evaluations');
-    await page.getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
+    await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
     const archived = await readPreviewData(page);
     expect(archived.evaluationCycles[0].state).toBe('ARCHIVED');

@@ -4,31 +4,31 @@ Arabic-first, RTL employee, attendance and payroll management for one physical c
 
 ## Current scope: revised Phase 1 — UI approval preview
 
-The current revision starts as an **empty installation**. Departments, employees, attendance days and records, deductions, bonuses, payroll archives, payments and audit events all begin at zero. The owner can create records manually or explicitly load the six attendance test accounts from the login screen. Evaluation cycles, exams and scores always start empty.
+The current revision starts as an **empty installation**. Departments, employees, attendance days and records, deductions, bonuses, payroll archives, payments and audit events all begin at zero. The owner can create records manually or explicitly load the seven attendance test accounts from the login screen. Evaluation cycles, exams and scores always start empty.
 
 This remains a browser-only frontend approval preview. It is not a live payroll or authentication system. Explicit UI approval is required before Neon, production authentication, server-side permissions, financial persistence or secure QR validation can be implemented.
 
-The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [required-days patch](docs/patches/required-days_employee-form_attendance.patch) changes the salary basis, employee contact fields, deactivation dates and attendance notes. The latest [audit and evaluation patch](docs/patches/audit-evaluation-testdata.patch) adds evaluation workflows, optional test accounts and direct name selection at login. Current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
+The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [required-days patch](docs/patches/required-days_employee-form_attendance.patch) changes the salary basis, employee contact fields, deactivation dates and attendance notes. The [audit and evaluation patch](docs/patches/audit-evaluation-testdata.patch) adds evaluation workflows, optional test accounts and direct name selection at login. The latest owner-approved season/rank/theme changes are recorded in [SEASON_RANK_UI_REVISION.md](docs/SEASON_RANK_UI_REVISION.md) and override older welcome/theme/evaluation presentation rules. Current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
 
-**Verified Preview:** https://centerpro-lmiza9hde-hussam9329s-projects.vercel.app/login
+**Previous verified Preview (before this patch):** https://centerpro-lmiza9hde-hussam9329s-projects.vercel.app/login
 
 **Application commit:** `a5f4f439dc01a4cfc7e040a948b6c13b56e2f41e`. Lint, strict typecheck, 173 domain tests, all 92 browser tests and the production build pass in [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/37151045613). Coverage includes the eight evaluation screen sizes and both accessibility checks. See the [evaluation patch handoff](docs/EVALUATION_PATCH_ACCEPTANCE.md) for verification and deployment evidence. Earlier revisions remain documented in the [required-days patch handoff](docs/PATCH_ACCEPTANCE.md) and [Phase 1 handoff](docs/PHASE1_ACCEPTANCE.md).
 
 ## Starting the empty preview
 
-1. Open the application and wait for the five-second CenterPro welcome screen.
-2. Select **مدير النظام — Super Admin** and click **تسجيل الدخول**. The preview-only system administrator has no employee record, department, attendance or payroll entry. No real password is required.
+1. Open the application; the login screen appears directly with no welcome splash.
+2. Select **مدير النظام — Super Admin** and click **تسجيل الدخول**. A centered three-second CenterPro welcome appears only after this successful login. The preview-only system administrator has no employee record, department, attendance or payroll entry. No real password is required.
 3. Create the first department, then its employees.
 4. Open an attendance day from **الحضور** and manage it from its dedicated details page.
 
-The account selector shows existing active employees. From an empty installation, **تحميل بيانات الاختبار** adds ابرار حقي، هبة محمد، فاطمة فراس، مريم عصام (التصحيح) and جعفر علي، مريم فهد (التدقيق), with the requested attendance scenarios and no exams/evaluations. Role switching never fabricates accounts. A successful login shows the five-second welcome screen before navigation to the destination.
+The account selector shows existing active employees. From an empty installation, **تحميل بيانات الاختبار** adds ابرار حقي، هبة محمد، فاطمة فراس، مريم عصام (التصحيح) and جعفر علي، مريم فهد، دانيا اياد (التدقيق), with the requested attendance scenarios and no exams/evaluations. Role switching never fabricates accounts. **ابقني مسجلاً** keeps a preview session on the same device without storing a password; a restored session does not replay the welcome.
 
-Changes persist in the current tab's `sessionStorage`, using key `centerpro-ui-preview-v3` and storage version `3`. Valid v2 owner data migrates without resetting employees, attendance or archived payroll. Old v1 fixtures are not restored. The Settings reset action returns the installation to the same empty state and retains the separate system administrator access. No credentials are stored.
+Changes persist in the current tab's `sessionStorage`, using key `centerpro-ui-preview-v3` and storage version `3`; remembered sessions use `centerpro-ui-preview-remembered-v1`, while their durable preview records use `centerpro-ui-preview-data-v1`. Logout clears remembered sign-in without deleting those records; Settings reset clears the data. Valid v2 owner data migrates without resetting employees, attendance or archived payroll. Old v1 fixtures are not restored. The Settings reset action returns the installation to the same empty state and retains the separate system administrator access. No credentials are stored.
 
 ## Revised workflows
 
-- Official CenterPro logo, Arabic RTL, Latin digits, Baghdad dates/times, light theme, locally bundled Noto Sans Arabic and Inter.
-- Five-second welcome on every full page load and successful login, with the exact message **مرحباً بك موظفنا المميز**. Ordinary client navigation does not replay it. Reduced motion keeps the duration and simplifies animation.
+- Official CenterPro logo, Arabic RTL, Latin digits, Baghdad dates/times, locally bundled Noto Sans Arabic and Inter. Light is default, with a user-controlled saved Light/Dark toggle; the app does not follow the OS theme automatically.
+- No pre-login welcome. A successful explicit login shows a centered three-second welcome with **اهلاً بيك** / **موظفنا الـ مو عادي**. Refresh, normal navigation and remembered-session restore do not replay it. Reduced motion keeps the timing and simplifies animation.
 - Guided empty states, prerequisite checks and setup links. Employee creation requires a department; financial adjustments require an employee.
 - Salary type labels are only **قطعي** (`FIXED`) and **غير قطعي** (`TIERED`). Department configuration uses **قوانين القسم**, **إضافة قانون** and **القانون 1**. Stable internal domain names remain unchanged.
 - Employee create/edit, profile, employment/account details, photo preview, activation and salary overrides. Both phones require fixed `07` plus nine editable digits; Telegram uses a fixed `@`. Email and editable employment end date are removed. Deactivation sets the end date; reactivation clears it.
@@ -39,7 +39,8 @@ Changes persist in the current tab's `sessionStorage`, using key `centerpro-ui-p
 - Standalone `/attendance-display` uses the single open day. Camera decoding and rotating QR remain preview-only simulations.
 - Payroll salary laws now use required days (present, excused/unexcused absence and unresolved required days), followed by deductions and bonuses. EXEMPT days do not count. Partial fixed salary uses required days × daily rate up to the fixed salary; full-month fixed salary is unchanged. Archived financial snapshots and payment history stay frozen until explicit authorized recalculation.
 - Seven report views, genuine structured XLSX downloads and branded browser print-to-PDF. Reports identify their preview status.
-- Exam and cycle evaluation leaderboards, auditor multiselect, automatic save, read-only corrector views, frozen archives and score = papers − correction errors × 5 − behavior errors × 3. Exam count is informational.
+- Exam and cycle evaluation leaderboards, auditor multiselect, automatic save, read-only corrector views, frozen archives and score = papers − correction errors × 5 − behavior errors × 3. Exam count is informational. Open-exam results stay hidden from correctors until Admin closes the exam.
+- Evaluation seasons aggregate multiple cycles independently of payroll months. Seasonal ranks progress Bronze → Silver → Gold → Platinum → Diamond → Emerald → Master → Grandmaster (12,000+). Rank badges use the approved Hassan Falah vector shape; seasonal attendance days and papers/day are informational only.
 - Audit history, before/after details, settings and role restrictions.
 - PWA manifest/icons and public offline fallback. The service worker does not cache financial pages or business/API data.
 
@@ -73,9 +74,9 @@ npm run test:e2e
 
 `npm run check` runs lint, typecheck, unit tests and the production build. Browser tests launch the built application; build before running them. CI installs browser dependencies and runs the E2E suite. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` may select an existing headless Chromium in restricted environments; normal local/CI runs do not require it.
 
-Broad populated regression scenarios remain in `tests/fixtures/populated-data.ts`. Six owner-requested test accounts are available through the explicit preview loader only. The normal startup remains empty. Tests explicitly opt into fixture data through helpers. Shared browser helpers advance the real five-second welcome with Playwright's clock; the application has no test-only splash bypass.
+Broad populated regression scenarios remain in `tests/fixtures/populated-data.ts`. Seven owner-requested test accounts are available through the explicit preview loader only. The normal startup remains empty. Tests explicitly opt into fixture data through helpers. Shared browser helpers advance the real three-second post-login welcome with Playwright's clock; the application has no test-only splash bypass.
 
-Responsive coverage targets 360×800, 390×844, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900 and 1920×1080. Generated screenshots, PDFs and test reports remain ignored verification artifacts. The revised application passes all gates, including empty and populated workflows, attendance dialogs, accessibility, welcome timing, PWA and exports.
+Responsive coverage targets 360×800, 390×844, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900 and 1920×1080. Generated screenshots, PDFs and test reports remain ignored verification artifacts. The previous published baseline passed its recorded gates. This patch adds new domain and browser coverage for seasons, ranks, theme/session persistence, result publication and anchored auditor filtering; rerun the full quality gates before publishing a new Preview.
 
 ## Vercel Preview
 
@@ -107,9 +108,10 @@ Phase 2 will add normalized Drizzle migrations, secure Super Admin bootstrap, pa
 - `src/app`: final application routes, unified attendance hub/details, employee workspace and standalone attendance display.
 - `src/components/ui.tsx`: shared accessible primitives.
 - `src/components/demo-provider.tsx`: browser-only preview repository/session adapter and shared state guard.
-- `src/components/welcome-provider.tsx`: shared initial-load and post-login welcome lifecycle.
+- `src/components/welcome-provider.tsx`: post-login-only three-second welcome lifecycle.
+- `src/components/theme-provider.tsx`: explicit saved Light/Dark theme choice.
 - `src/lib/preview-config.ts`: versioned preview storage and separate system administrator identity.
-- `src/lib/mock-data.ts`: empty installation factory, preview constants and explicit six-account test-data factory.
+- `src/lib/mock-data.ts`: empty installation factory, preview constants and explicit seven-account test-data factory.
 - `src/lib/types.ts`: shared domain contracts.
 - `src/lib/payroll.ts`, `attendance.ts`, `evaluations.ts`, `permissions.ts`: independently testable preview rules.
 - `tests/fixtures/populated-data.ts`: test-only populated scenarios.
@@ -118,7 +120,8 @@ Phase 2 will add normalized Drizzle migrations, secure Super Admin bootstrap, pa
 - `docs/PHASE1_REVISION_REQUEST.md`: later supplied change request, preserved verbatim.
 - `docs/UI_CONTRACT.md`: current frontend contracts and revision invariants.
 - `docs/BRAND.md`: identity provenance and asset constraints.
-- `docs/EVALUATION_PATCH_ACCEPTANCE.md`: current evaluation patch delivery and verification evidence.
+- `docs/EVALUATION_PATCH_ACCEPTANCE.md`: previous evaluation patch delivery and verification evidence.
+- `docs/SEASON_RANK_UI_REVISION.md`: latest season, rank, publication, theme, session and UI rules.
 - `docs/PATCH_ACCEPTANCE.md`: prior required-days patch delivery and verification evidence.
 - `docs/PHASE1_ACCEPTANCE.md`: preceding Phase 1 revision and historical evidence.
 

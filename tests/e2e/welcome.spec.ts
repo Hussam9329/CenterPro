@@ -1,117 +1,90 @@
 import { mkdir } from 'node:fs/promises';
-import { test, expect, gotoPreview, loginPreview, waitForWelcome, finishWelcome, PREVIEW_TEST_TIME } from './helpers/preview';
+import { test, expect, gotoPreview, waitForWelcome, finishWelcome, readPreviewSession, PREVIEW_TEST_TIME, WELCOME_PERIOD_MS } from './helpers/preview';
 
 const sizes = [[360, 800], [390, 844], [430, 932], [768, 1024], [1024, 1366], [1366, 768], [1440, 900], [1920, 1080]];
 
-test('fresh load covers login for the full five seconds with the exact welcome message', async ({ page }) => {
-  await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 60_000));
-  await page.goto('/login');
-  const welcome = await waitForWelcome(page);
-  await expect(welcome).toHaveAttribute('data-welcome-sequence', 'initial');
-  await expect(welcome.getByText('مرحباً بك موظفنا المميز', { exact: true })).toBeVisible();
-  await expect(welcome.getByRole('img', { name: 'CenterPro', exact: true })).toBeVisible();
-  await expect(page.getByLabel('الحساب', { exact: true })).toBeHidden();
-  await page.clock.fastForward(4_900);
-  await expect(welcome).toBeVisible();
-  await page.clock.fastForward(99);
-  await expect(welcome).toBeVisible();
-  await page.clock.fastForward(1);
-  await expect(welcome).toBeHidden();
+test('fresh login page opens directly without a welcome splash', async ({ page }) => {
+  await gotoPreview(page, '/login');
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await page.clock.fastForward(WELCOME_PERIOD_MS);
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
 });
 
-test('login shows five seconds before dashboard, internal navigation stays clear, reload welcomes again', async ({ page }) => {
+test('loading test data does not sign in or show a welcome until the user submits login', async ({ page }) => {
   await gotoPreview(page, '/login');
-  await page.clock.pauseAt(new Date(await page.evaluate(() => Date.now()) + 1_000));
+  await page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true }).click();
+  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(8);
+  await expect(page).toHaveURL(/\/login$/);
+  expect(await readPreviewSession(page)).toBeNull();
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await finishWelcome(page);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await finishWelcome(page);
+  await expect(page).toHaveURL(/\/dashboard$/);
+});
+
+test('successful login shows the centered three-second welcome and internal navigation/reload do not replay it', async ({ page }) => {
+  await gotoPreview(page, '/login');
+  await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 1_000));
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   const welcome = await waitForWelcome(page);
   await expect(welcome).toHaveAttribute('data-welcome-sequence', 'login');
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole('heading', { name: 'لوحة المتابعة', exact: true })).toHaveCount(0);
-  await page.clock.fastForward(4_900);
+  await expect(welcome.getByText('اهلاً بيك', { exact: true })).toBeVisible();
+  await expect(welcome.getByText('موظفنا الـ مو عادي', { exact: true })).toBeVisible();
+  await expect(welcome.getByRole('img', { name: 'CenterPro', exact: true })).toBeVisible();
+  await page.clock.fastForward(WELCOME_PERIOD_MS - 1);
   await expect(welcome).toBeVisible();
-  await expect(page).toHaveURL(/\/login$/);
-  await page.clock.fastForward(100);
+  await page.clock.fastForward(1);
   await expect(welcome).toBeHidden();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  for (const [label, path] of [['الموظفون', '/employees'], ['الحضور', '/attendance'], ['الرواتب', '/payroll']]) {
-    await page.getByRole('navigation', { name: 'القائمة الرئيسية' }).getByRole('link', { name: label, exact: true }).click();
-    await expect(page).toHaveURL(path);
-    await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
-    await page.clock.fastForward(5_000);
-    await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
-  }
-
+  await page.getByRole('navigation', { name: 'القائمة الرئيسية' }).getByRole('link', { name: 'الموظفون', exact: true }).click();
+  await expect(page).toHaveURL('/employees');
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await page.reload();
-  const reloadedWelcome = await waitForWelcome(page);
-  await expect(reloadedWelcome).toHaveAttribute('data-welcome-sequence', 'initial');
-  await expect(page.getByRole('heading', { name: 'الرواتب', exact: true })).toBeHidden();
-  await finishWelcome(page);
-  await expect(page).toHaveURL(/\/payroll$/);
-  await expect(page.getByRole('heading', { name: 'الرواتب', exact: true })).toBeVisible();
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/employees$/);
 });
 
-test('authenticated full navigation welcomes before the requested destination', async ({ page }) => {
-  await loginPreview(page);
-  await page.goto('/attendance');
-  const welcome = await waitForWelcome(page);
-  await expect(welcome).toHaveAttribute('data-welcome-sequence', 'initial');
-  await expect(page.getByRole('heading', { name: 'الحضور', exact: true })).toBeHidden();
-  await finishWelcome(page);
-  await expect(page).toHaveURL(/\/attendance$/);
-  await expect(page.getByRole('heading', { name: 'الحضور', exact: true })).toBeVisible();
-});
-
-test('logo motion composes once and reduced motion preserves the welcome duration', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 60_000));
-  await page.goto('/login');
-  const welcome = await waitForWelcome(page);
-  const animations = await welcome.evaluate(element => element.getAnimations({ subtree: true }).map(animation => {
-    const timing = animation.effect?.getTiming();
-    return { duration: timing?.duration, iterations: timing?.iterations };
-  }));
-  expect(animations.length).toBeGreaterThan(0);
-  expect(animations.every(animation => animation.duration === 5_000 && animation.iterations === 1)).toBeTruthy();
+test('reduced motion keeps the three-second post-login welcome without complex animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await gotoPreview(page, '/login');
+  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  const welcome = await waitForWelcome(page);
   expect(await welcome.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
-  await expect(welcome.getByText('مرحباً بك موظفنا المميز', { exact: true })).toHaveCSS('opacity', '1');
-  await page.clock.fastForward(4_900);
-  await expect(welcome).toBeVisible();
-  await page.clock.fastForward(100);
-  await expect(welcome).toBeHidden();
+  await expect(welcome.getByText('موظفنا الـ مو عادي', { exact: true })).toBeVisible();
+  await finishWelcome(page);
+  await expect(page).toHaveURL(/\/dashboard$/);
 });
 
 for (const [width, height] of sizes) {
-  test(`welcome logo and message fit ${width}x${height} with reduced motion`, async ({ page }) => {
+  test(`post-login welcome remains centered and fits ${width}x${height}`, async ({ page }) => {
     await mkdir('qa-artifacts', { recursive: true });
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 60_000));
-    await page.goto('/login');
+    await gotoPreview(page, '/login');
+    await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
     const welcome = await waitForWelcome(page);
     await page.evaluate(() => document.fonts.ready);
     const logo = await welcome.getByRole('img', { name: 'CenterPro', exact: true }).boundingBox();
-    const message = await welcome.getByText('مرحباً بك موظفنا المميز', { exact: true }).boundingBox();
-    expect(logo).not.toBeNull();
-    expect(message).not.toBeNull();
-    expect(logo!.width / logo!.height).toBeCloseTo(175 / 51, 1);
-    for (const [label, box] of [['logo', logo!], ['message', message!]] as const) {
-      expect(box.x, `${label} starts within the viewport`).toBeGreaterThanOrEqual(0);
-      expect(box.y, `${label} starts within the viewport`).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width, `${label} ends within the viewport`).toBeLessThanOrEqual(width + 1);
-      expect(box.y + box.height, `${label} ends within the viewport`).toBeLessThanOrEqual(height + 1);
+    const line1 = await welcome.getByText('اهلاً بيك', { exact: true }).boundingBox();
+    const line2 = await welcome.getByText('موظفنا الـ مو عادي', { exact: true }).boundingBox();
+    for (const [label, box] of [['logo', logo], ['line1', line1], ['line2', line2]] as const) {
+      expect(box, `${label} exists`).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(height + 1);
     }
-    expect(message!.y).toBeGreaterThanOrEqual(logo!.y + logo!.height);
-    expect(await welcome.getByText('مرحباً بك موظفنا المميز', { exact: true }).evaluate(element => {
-      const range = document.createRange();
-      range.selectNodeContents(element);
-      return range.getClientRects().length;
-    })).toBe(1);
+    expect(line1!.y).toBeGreaterThanOrEqual(logo!.y + logo!.height);
+    expect(line2!.y).toBeGreaterThan(line1!.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
-    await page.screenshot({ path: `qa-artifacts/welcome-reduced-${width}.png` });
+    await page.screenshot({ path: `qa-artifacts/welcome-login-${width}.png` });
     await finishWelcome(page);
-    await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
   });
 }

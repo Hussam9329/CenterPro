@@ -6,7 +6,7 @@ import type { EvaluationLeaderboardRow } from '@/lib/types';
 import styles from './evaluations.module.css';
 
 export function Leaderboard({ rows, emptyTitle = 'لا توجد بيانات تقييم حتى الآن' }: { rows: EvaluationLeaderboardRow[]; emptyTitle?: string }) {
-  if (!rows.length) return <EmptyState title={emptyTitle} description="ستظهر النتائج هنا بعد توفر موظفي التصحيح وبيانات التدقيق." />;
+  if (!rows.length) return <EmptyState title={emptyTitle} />;
   return <>
     <div className="table-wrap">
       <table className={styles.leaderboardTable} aria-label="ترتيب المصححين">

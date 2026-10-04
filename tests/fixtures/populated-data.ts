@@ -146,7 +146,7 @@ export function createPopulatedTestData(): DemoData {
       { id: 'audit-006', actor: 'حسن أحمد فلاح', role: 'SUPER_ADMIN', action: 'أرشفة رواتب الشهر', entity: 'payroll_month', entityId: 'pm-2026-08', oldValues: { state: 'OPEN' }, newValues: { state: 'ARCHIVED', month: '2026-08' }, timestamp: '2026-08-31T16:00:00.000Z' },
       { id: 'audit-007', actor: 'أحمد كريم مهند', role: 'ADMIN', action: 'إنهاء خدمة موظف', entity: 'employee', entityId: 'CP-0014', employeeId: 'CP-0014', oldValues: { active: true }, newValues: { active: false, endDate: '2026-09-14' }, timestamp: '2026-09-14T16:10:00.000Z' },
     ] satisfies DemoData['audit']).sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
-    evaluationCycles: [], evaluationExams: [], examEvaluations: [],
+    evaluationSeasons: [], evaluationCycles: [], evaluationExams: [], examEvaluations: [],
     settings: { centerName: 'CenterPro', qrInterval: 45 },
   };
   for (const month of data.months.filter((item) => item.state === 'ARCHIVED')) {

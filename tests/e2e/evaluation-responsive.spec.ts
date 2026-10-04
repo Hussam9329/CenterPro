@@ -14,8 +14,9 @@ const correctorId = 'employee-abrar-haqi';
 function createEvaluationFixture(): DemoData {
   const fixture = createTestData();
   const timestamp = '2026-09-28T10:00:00.000Z';
+  fixture.evaluationSeasons.push({ id: 'responsive-season', name: 'موسم الاختبار', startDate: '2026-09-01', state: 'OPEN', openedAt: timestamp, openedBy: 'المدير العام' });
   fixture.evaluationCycles.push({
-    id: 'responsive-evaluation-cycle', name: 'دورة تقييم المصححين — المراجعة الشاملة للفصل الثالث',
+    id: 'responsive-evaluation-cycle', seasonId: 'responsive-season', name: 'دورة تقييم المصححين — المراجعة الشاملة للفصل الثالث',
     state: 'OPEN', openedAt: timestamp, openedBy: 'المدير العام',
   });
   fixture.evaluationExams.push({
@@ -154,6 +155,13 @@ for (const [width, height] of sizes) {
     await chooser.click();
     const choices = page.getByRole('group', { name: 'المصححون المختارون', exact: true });
     await expectSurfaceFits(choices, width, 'قائمة اختيار المصححين');
+    const triggerBox = await chooser.boundingBox();
+    const panelBox = await choices.boundingBox();
+    expect(triggerBox).not.toBeNull();
+    expect(panelBox).not.toBeNull();
+    const anchoredBelow = Math.abs(panelBox!.y - (triggerBox!.y + triggerBox!.height + 7)) <= 3;
+    const anchoredAbove = Math.abs((panelBox!.y + panelBox!.height + 7) - triggerBox!.y) <= 3;
+    expect(anchoredBelow || anchoredAbove, 'قائمة المصححين يجب أن تخرج من نفس حقل الفلتر لا من أسفل الشاشة').toBeTruthy();
     await expect(choices.getByRole('checkbox')).toHaveCount(4);
     for (const name of ['ابرار حقي', 'هبة محمد', 'فاطمة فراس', 'مريم عصام']) {
       await expect(choices.getByRole('checkbox', { name, exact: true })).toBeChecked();

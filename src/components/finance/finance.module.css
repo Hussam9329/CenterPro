@@ -79,3 +79,37 @@
 
 .salaryRules { border-top: 1px solid #eff0f2; padding-top: 12px; font-size: 12px; }
 .salaryRules summary { cursor: pointer; color: #a51c30; padding-block: 5px; }
+
+/* Screen theme is independent of the printable white report. */
+@media screen {
+  :global(html[data-theme='dark']) .breakdownRow,
+  :global(html[data-theme='dark']) .record,
+  :global(html[data-theme='dark']) .salaryRules { border-color:var(--border); }
+  :global(html[data-theme='dark']) .rowName { color:var(--text); }
+  :global(html[data-theme='dark']) .record small,
+  :global(html[data-theme='dark']) .rowName small,
+  :global(html[data-theme='dark']) .small,
+  :global(html[data-theme='dark']) .compactMetrics span,
+  :global(html[data-theme='dark']) .reportFooter { color:var(--muted); }
+  :global(html[data-theme='dark']) .compactMetrics > div,
+  :global(html[data-theme='dark']) .confirmDetails { background:var(--surface-soft); }
+  :global(html[data-theme='dark']) .reportType { background:var(--surface); color:var(--text); border-color:var(--border); }
+  :global(html[data-theme='dark']) .reportType:hover,
+  :global(html[data-theme='dark']) .reportType[aria-pressed='true'] { color:var(--brand-text); background:var(--brand-light); border-color:#d76b82; }
+  :global(html[data-theme='dark']) .report { background:var(--surface); border-color:var(--border); color:var(--text); }
+  :global(html[data-theme='dark']) .reportLogo { background:#fff; padding:5px; border-radius:5px; }
+  :global(html[data-theme='dark']) .reportTable th { background:var(--surface-soft); color:var(--text); }
+  :global(html[data-theme='dark']) .reportTable td { border-color:var(--border); }
+  :global(html[data-theme='dark']) .financialNotice { background:var(--brand-light); color:var(--brand-text); border-color:#60303c; }
+  :global(html[data-theme='dark']) .review { background:#2b2417; border-color:#66502b; }
+  :global(html[data-theme='dark']) .amountNegative,
+  :global(html[data-theme='dark']) .rowName:hover,
+  :global(html[data-theme='dark']) .salaryRules summary,
+  :global(html[data-theme='dark']) .reportsPreviewOnly { color:var(--brand-text); }
+}
+@media print {
+  :global(html[data-theme='dark']) .report { --text:#23252b; --muted:#6b707b; --ink:#111318; --brand-text:#a51c30; --surface:#fff; --border:#e7e8eb; color:#111318; color-scheme:light; }
+  :global(html[data-theme='dark']) .report h2,
+  :global(html[data-theme='dark']) .report h3 { color:#111318; }
+  :global(html[data-theme='dark']) .report :global(.muted) { color:#6b707b; }
+}

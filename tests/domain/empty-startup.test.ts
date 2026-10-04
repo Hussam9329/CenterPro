@@ -7,7 +7,7 @@ describe('clean preview installation', () => {
   it('starts with no operational records, departments, accounts or payroll periods', () => {
     expect(createInitialData()).toEqual({
       employees: [], departments: [], workdays: [], attendance: [], deductions: [],
-      bonuses: [], months: [], payments: [], audit: [], evaluationCycles: [], evaluationExams: [], examEvaluations: [],
+      bonuses: [], months: [], payments: [], audit: [], evaluationSeasons: [], evaluationCycles: [], evaluationExams: [], examEvaluations: [],
       settings: { centerName: 'CenterPro', qrInterval: 45 },
     });
   });

@@ -13,13 +13,14 @@ describe('explicit preview test data', () => {
     expect(createInitialData()).toEqual(empty);
   });
 
-  it('creates exactly four correction and two audit employees with unique accounts and no evaluation fixtures', () => {
+  it('creates exactly four correction and three audit employees with unique accounts and no evaluation fixtures', () => {
     const data = createTestData();
-    expect(data.employees.map(item => item.name)).toEqual(['ابرار حقي', 'هبة محمد', 'فاطمة فراس', 'مريم عصام', 'جعفر علي', 'مريم فهد']);
+    expect(data.employees.map(item => item.name)).toEqual(['ابرار حقي', 'هبة محمد', 'فاطمة فراس', 'مريم عصام', 'جعفر علي', 'مريم فهد', 'دانيا اياد']);
     expect(getCorrectionEmployees(data)).toHaveLength(4);
-    expect(data.employees.filter(item => isAuditEmployee(data, item))).toHaveLength(2);
+    expect(data.employees.filter(item => isAuditEmployee(data, item))).toHaveLength(3);
     expect(data.employees.every(item => item.active && item.role === 'EMPLOYEE')).toBe(true);
-    for (const field of ['id', 'code', 'username'] as const) expect(new Set(data.employees.map(item => item[field])).size).toBe(6);
+    for (const field of ['id', 'code', 'username'] as const) expect(new Set(data.employees.map(item => item[field])).size).toBe(7);
+    expect(data.evaluationSeasons).toEqual([]);
     expect(data.evaluationCycles).toEqual([]);
     expect(data.evaluationExams).toEqual([]);
     expect(data.examEvaluations).toEqual([]);
@@ -31,8 +32,8 @@ describe('explicit preview test data', () => {
     expect(data.workdays).toHaveLength(18);
     expect(new Set(data.workdays.map(item => item.date)).size).toBe(18);
     expect(data.workdays.every(item => item.state === 'CLOSED')).toBe(true);
-    expect(data.attendance).toHaveLength(108);
-    expect(new Set(data.attendance.map(item => `${item.employeeId}:${item.workdayId}`)).size).toBe(108);
+    expect(data.attendance).toHaveLength(126);
+    expect(new Set(data.attendance.map(item => `${item.employeeId}:${item.workdayId}`)).size).toBe(126);
     for (const record of data.attendance) {
       expect(data.employees.some(item => item.id === record.employeeId)).toBe(true);
       expect(data.workdays.some(item => item.id === record.workdayId)).toBe(true);
@@ -49,6 +50,7 @@ describe('explicit preview test data', () => {
     ['employee-maryam-issam', 18, 0, 0, 18, 450_000, 0, 0, 450_000],
     ['employee-jaafar-ali', 17, 0, 0, 17, 425_000, 0, 0, 425_000],
     ['employee-maryam-fahad', 4, 2, 0, 6, 200_000, 50_000, 0, 150_000],
+    ['employee-dania-iyad', 18, 0, 0, 18, 450_000, 0, 0, 450_000],
   ] as const)('matches required-day law and absence deductions for %s', (id, attendanceDays, excusedDays, unexcusedDays, requiredDays, baseSalary, excusedDeduction, unexcusedDeduction, finalSalary) => {
     const result = calculateEmployeePayroll(createTestData(), id, DEMO_MONTH);
     expect(result).toMatchObject({ attendanceDays, excusedDays, unexcusedDays, requiredDays, baseSalary, excusedDeduction, unexcusedDeduction, finalSalary, unresolvedDays: 0, otherDeductions: 0, bonuses: 0, lateDays: 0, latenessSeconds: 0, paymentStatus: 'UNPAID' });
@@ -62,7 +64,7 @@ describe('explicit preview test data', () => {
     data.evaluationExams.push({ id: 'exam', cycleId: 'cycle', name: 'امتحان', date: '2026-10-01', note: '', state: 'OPEN', createdAt: '2026-10-01T00:00:00.000Z', createdBy: 'المدير' });
     data.examEvaluations.push({ id: 'evaluation', examId: 'exam', employeeId: 'employee-abrar-haqi', papers: 500, correctionErrors: 10, behaviorErrors: 5, note: '', createdBy: 'جعفر علي', createdAt: '2026-10-01T00:00:00.000Z', updatedBy: 'جعفر علي', updatedAt: '2026-10-01T00:00:00.000Z' });
     expect(getMonthPayroll(data, DEMO_MONTH)).toEqual(before);
-    expect(before.reduce((sum, row) => sum + row.finalSalary, 0)).toBe(2_150_000);
+    expect(before.reduce((sum, row) => sum + row.finalSalary, 0)).toBe(2_600_000);
   });
 
   it('returns independent copies that cannot contaminate future loads', () => {

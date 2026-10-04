@@ -1,151 +1,26 @@
-.contentBlocked {
-  visibility: hidden;
-}
-
-.contentReady {
-  animation: contentArrive 180ms ease-out both;
-}
-
-.screen {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  min-height: 100svh;
-  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
-  overflow: hidden;
-  background: #fff;
-  color: #111318;
-  outline: none;
-  isolation: isolate;
-  overscroll-behavior: none;
-}
-
-.screen:focus { outline: none; }
-
-.composition {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(21px, 3.2vw, 37px);
-  width: min(100%, 660px);
-  min-width: 0;
-  margin: 0 auto;
-  text-align: center;
-  animation: compositionExit var(--welcome-duration) ease-in-out both;
-}
-
-.logo {
-  display: block;
-  flex: none;
-  width: clamp(242px, 43vw, 410px);
-  max-width: 100%;
-  height: auto;
-  aspect-ratio: 175 / 51;
-  overflow: visible;
-  direction: ltr;
-}
-
-.letterC,
-.letterP {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation-duration: var(--welcome-duration);
-  animation-timing-function: cubic-bezier(.3, 0, .2, 1);
-  animation-fill-mode: both;
-  animation-iteration-count: 1;
-}
-
-.letterC { animation-name: constructC; }
-.letterP { animation-name: constructP; }
-
-.wordmark {
-  animation: resolveWordmark var(--welcome-duration) ease-out both;
-}
-
-.message {
-  max-width: 100%;
-  margin: 0;
-  color: #111318;
-  font-family: 'Noto Sans Arabic Variable', 'Noto Sans Arabic', sans-serif;
-  font-size: clamp(18px, 2.8vw, 29px);
-  font-weight: 550;
-  line-height: 1.85;
-  white-space: nowrap;
-  animation: welcomeMessage var(--welcome-duration) ease-out both;
-}
-
-@keyframes constructC {
-  0% { stroke-dashoffset: 1; }
-  27%, 100% { stroke-dashoffset: 0; }
-}
-
-@keyframes constructP {
-  0%, 13% { stroke-dashoffset: 1; }
-  34%, 100% { stroke-dashoffset: 0; }
-}
-
-@keyframes resolveWordmark {
-  0%, 27% { opacity: 0; }
-  46%, 100% { opacity: 1; }
-}
-
-@keyframes welcomeMessage {
-  0%, 37% { opacity: 0; transform: translateY(8px); }
-  52%, 100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes compositionExit {
-  0%, 91% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@keyframes contentArrive {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@media (max-width: 374px) {
-  .screen { padding-inline: 20px; }
-  .logo { width: 242px; }
-  .message { font-size: 18px; }
-}
-
-@media (min-width: 1700px) {
-  .logo { width: 450px; }
-  .message { font-size: 31px; }
-  .composition { gap: 39px; }
-}
-
-@media (max-height: 450px) {
-  .logo { width: min(280px, 55vw); }
-  .composition { gap: 16px; }
-  .message { font-size: 18px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .letterC,
-  .letterP,
-  .wordmark,
-  .message,
-  .composition,
-  .contentReady {
-    animation: none;
-  }
-
-  .letterC,
-  .letterP { stroke-dashoffset: 0; }
-  .wordmark,
-  .message,
-  .composition { opacity: 1; transform: none; }
-}
-
-@media print {
-  .screen { display: none; }
-  .contentBlocked,
-  .contentReady { visibility: visible; animation: none; }
-}
+.contentBlocked { visibility:hidden; }
+.contentReady { animation:contentArrive 180ms ease-out both; }
+.screen { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; width:100%; height:100%; min-height:100svh; padding:max(24px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); overflow:hidden; background:var(--surface,#fff); color:var(--ink,#111318); outline:none; isolation:isolate; overscroll-behavior:none; }
+.screen:focus { outline:none; }
+.composition { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(20px,3vw,34px); width:min(100%,660px); min-width:0; margin:0 auto; text-align:center; animation:compositionExit var(--welcome-duration) ease-in-out both; }
+.logo { display:block; flex:none; width:clamp(242px,43vw,410px); max-width:100%; height:auto; aspect-ratio:175/51; overflow:visible; direction:ltr; color:var(--ink,#111318); }
+.letterC,.letterP { stroke-dasharray:1; stroke-dashoffset:1; animation-duration:var(--welcome-duration); animation-timing-function:cubic-bezier(.3,0,.2,1); animation-fill-mode:both; animation-iteration-count:1; }
+.letterC { animation-name:constructC; }
+.letterP { animation-name:constructP; }
+.wordmark { animation:resolveWordmark var(--welcome-duration) ease-out both; }
+.message { max-width:100%; margin:0; color:var(--ink,#111318); font-family:'Noto Sans Arabic Variable','Noto Sans Arabic',sans-serif; line-height:1.55; white-space:nowrap; animation:welcomeMessage var(--welcome-duration) ease-out both; display:flex; flex-direction:column; align-items:center; gap:3px; }
+.message span { font-size:clamp(16px,2.2vw,22px); font-weight:450; color:var(--muted,#6b707b); }
+.message strong { font-size:clamp(21px,3.2vw,32px); font-weight:750; color:var(--ink,#111318); letter-spacing:-.3px; }
+@keyframes constructC { 0% { stroke-dashoffset:1; } 27%,100% { stroke-dashoffset:0; } }
+@keyframes constructP { 0%,13% { stroke-dashoffset:1; } 34%,100% { stroke-dashoffset:0; } }
+@keyframes resolveWordmark { 0%,27% { opacity:0; } 46%,100% { opacity:1; } }
+@keyframes welcomeMessage { 0%,34% { opacity:0; transform:translateY(8px); } 50%,100% { opacity:1; transform:translateY(0); } }
+@keyframes compositionExit { 0%,88% { opacity:1; } 100% { opacity:0; } }
+@keyframes contentArrive { from { opacity:0; } to { opacity:1; } }
+@media(max-width:374px) { .screen { padding-inline:20px; } .logo { width:242px; } .message span { font-size:16px; } .message strong { font-size:21px; } }
+@media(min-width:1700px) { .composition { width:720px; } .logo { width:430px; } }
+:global(html[data-theme='dark']) .screen { background:#111318; color:#f6f4f2; }
+:global(html[data-theme='dark']) .logo { color:#f6f4f2; }
+:global(html[data-theme='dark']) .message strong { color:#f7f4f5; }
+:global(html[data-theme='dark']) .message span { color:#b6bbc4; }
+@media(prefers-reduced-motion:reduce) { .letterC,.letterP { stroke-dashoffset:0; animation:none; } .wordmark,.message,.composition { animation:none; opacity:1; transform:none; } }

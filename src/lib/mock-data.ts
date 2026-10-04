@@ -15,6 +15,7 @@ export function createInitialData(): DemoData {
     months: [],
     payments: [],
     audit: [],
+    evaluationSeasons: [],
     evaluationCycles: [],
     evaluationExams: [],
     examEvaluations: [],
@@ -79,6 +80,7 @@ const testEmployees: Employee[] = [
   testEmployee({ id: 'employee-maryam-issam', code: 'CP-0004', name: 'مريم عصام', username: 'MARYAME1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000004', guardianPhone: '07800000004' }),
   testEmployee({ id: 'employee-jaafar-ali', code: 'CP-0005', name: 'جعفر علي', username: 'JAAFAR1', departmentId: 'department-audit-test', gender: 'MALE', phone: '07700000005', guardianPhone: '07800000005' }),
   testEmployee({ id: 'employee-maryam-fahad', code: 'CP-0006', name: 'مريم فهد', username: 'MARYAMF1', departmentId: 'department-audit-test', gender: 'FEMALE', phone: '07700000006', guardianPhone: '07800000006' }),
+  testEmployee({ id: 'employee-dania-iyad', code: 'CP-0007', name: 'دانيا اياد', username: 'DANIA1', departmentId: 'department-audit-test', gender: 'FEMALE', phone: '07700000007', guardianPhone: '07800000007' }),
 ];
 
 function day(index: number): Workday {
@@ -131,6 +133,7 @@ export function createTestData(): DemoData {
     ...recordsFor('employee-maryam-issam', Array.from({ length: 18 }, (_, index) => index + 1)),
     ...recordsFor('employee-jaafar-ali', Array.from({ length: 17 }, (_, index) => index + 1)),
     ...recordsFor('employee-maryam-fahad', [1, 2, 3, 4], [5, 6]),
+    ...recordsFor('employee-dania-iyad', Array.from({ length: 18 }, (_, index) => index + 1)),
   ];
   return {
     ...createInitialData(),

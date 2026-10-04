@@ -62,3 +62,31 @@
 .prefixedInput { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; direction: ltr; }
 .prefixedInput :global(.input) { border-start-start-radius: 0; border-end-start-radius: 0; min-width: 0; }
 .inputPrefix { display: grid; place-items: center; min-width: 48px; padding-inline: 12px; border: 1px solid #d9d5d8; border-inline-end: 0; border-start-start-radius: 9px; border-end-start-radius: 9px; background: #f7f6f7; color: #3f3b40; font-family: "Inter Variable", sans-serif; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* People directory, profile and salary form details. */
+:global(html[data-theme='dark']) .code,
+:global(html[data-theme='dark']) .mobileMeta,
+:global(html[data-theme='dark']) .formIntro p,
+:global(html[data-theme='dark']) .profileMeta,
+:global(html[data-theme='dark']) .detail dt,
+:global(html[data-theme='dark']) .departmentDescription,
+:global(html[data-theme='dark']) .departmentFacts span,
+:global(html[data-theme='dark']) .mutedNote,
+:global(html[data-theme='dark']) .sortLine,
+:global(html[data-theme='dark']) .salaryType { color:var(--muted); }
+:global(html[data-theme='dark']) .step { background:var(--surface-soft); color:var(--text); }
+:global(html[data-theme='dark']) .step[aria-current='step'] { background:var(--brand); color:#fff; }
+:global(html[data-theme='dark']) .tier { background:var(--surface-soft); border-color:var(--border); }
+:global(html[data-theme='dark']) .inputPrefix { background:var(--surface-soft); color:var(--text); border-color:#343943; }
+:global(html[data-theme='dark']) .departmentIcon,
+:global(html[data-theme='dark']) .error { background:var(--brand-light); color:var(--brand-text); border-color:#653240; }
+:global(html[data-theme='dark']) .personName:hover,
+:global(html[data-theme='dark']) .balance:last-child { color:var(--brand-text); }
+:global(html[data-theme='dark']) .mobilePerson,
+:global(html[data-theme='dark']) .formSteps,
+:global(html[data-theme='dark']) .photoUpload,
+:global(html[data-theme='dark']) .balance,
+:global(html[data-theme='dark']) .departmentFacts,
+:global(html[data-theme='dark']) .sectionRule,
+:global(html[data-theme='dark']) .historyCard,
+:global(html[data-theme='dark']) .salaryType { border-color:var(--border); }

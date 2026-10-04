@@ -37,6 +37,7 @@ export interface EvaluationCycleSnapshot {
 }
 export interface EvaluationCycle {
   id: string;
+  seasonId?: string;
   name: string;
   state: 'OPEN' | 'ARCHIVED';
   openedAt: string;
@@ -71,6 +72,28 @@ export interface ExamEvaluation {
   updatedAt: string;
 }
 
+export interface SeasonLeaderboardRow extends EvaluationLeaderboardRow {
+  cyclesEvaluated: number;
+  attendanceDays: number;
+  averagePapersPerDay: number | null;
+}
+export interface EvaluationSeasonSnapshot {
+  rows: SeasonLeaderboardRow[];
+  cycleIds: string[];
+}
+export interface EvaluationSeason {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate?: string;
+  state: 'OPEN' | 'ARCHIVED';
+  openedAt: string;
+  openedBy: string;
+  closedAt?: string;
+  closedBy?: string;
+  snapshot?: EvaluationSeasonSnapshot;
+}
+
 export interface DemoSettings { centerName: string; qrInterval: number }
 export interface DemoData {
   employees: Employee[];
@@ -82,6 +105,7 @@ export interface DemoData {
   months: PayrollMonth[];
   payments: Payment[];
   audit: AuditEntry[];
+  evaluationSeasons: EvaluationSeason[];
   evaluationCycles: EvaluationCycle[];
   evaluationExams: EvaluationExam[];
   examEvaluations: ExamEvaluation[];

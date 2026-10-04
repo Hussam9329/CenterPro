@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { ArrowLeft, CalendarCheck, CircleDollarSign, Clock3, Gift, QrCode, ReceiptText, UserRoundCheck, Wallet } from 'lucide-react';
 import { Avatar, Badge, Card, EmptyState, PageHeader, Skeleton, StatCard } from '@/components/ui';
+import { RankBadge } from '@/components/evaluations/rank-badge';
+import styles from '@/components/evaluations/evaluations.module.css';
 import { useDemo } from '@/components/demo-provider';
 import { DEMO_MONTH, DEMO_TODAY } from '@/lib/mock-data';
 import { getEmployeePayroll } from '@/lib/payroll';
 import { getOpenWorkday, isExpected, statusLabel } from '@/lib/attendance';
 import { date, duration, money, monthLabel, time } from '@/lib/format';
+import { formatAccuracy, formatAveragePapers, getLatestEvaluationSeason, getRankProgress, getSeasonLeaderboard, isCorrectionEmployee } from '@/lib/evaluations';
 
 export default function EmployeeHomePage() {
   const { data, session, ready } = useDemo();
@@ -21,6 +24,11 @@ export default function EmployeeHomePage() {
   const expected = today ? isExpected(employee, today) : false;
   const registered = todayAttendance?.status === 'PRESENT';
   const department = data.departments.find(item => item.id === employee.departmentId);
+  const season = isCorrectionEmployee(data, employee) ? getLatestEvaluationSeason(data) : undefined;
+  const seasonRows = season ? getSeasonLeaderboard(data, season.id, { publishedOnly: true }) : [];
+  const seasonRow = seasonRows.find(row => row.employeeId === employee.id);
+  const seasonPosition = seasonRows.findIndex(row => row.employeeId === employee.id) + 1;
+  const rankProgress = getRankProgress(seasonRow?.score ?? 0);
   const recentAttendance = data.attendance.filter(item => item.employeeId === employee.id).map(record => ({ record, workday: data.workdays.find(item => item.id === record.workdayId) })).filter(item => item.workday).sort((a, b) => b.workday!.date.localeCompare(a.workday!.date)).slice(0, 5);
   const movements = [
     ...data.deductions.filter(item => item.employeeId === employee.id && item.date.startsWith(DEMO_MONTH)).map(item => ({ ...item, kind: 'deduction' as const })),
@@ -28,6 +36,13 @@ export default function EmployeeHomePage() {
   ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   return <div className="page-stack">
     <PageHeader eyebrow="مساحتك الشخصية" title={`مرحباً بك، ${employee.name.split(' ')[0]}`} description="موظفنا المميز في CenterPro" actions={<Badge tone="brand">{monthLabel(DEMO_MONTH)}</Badge>} />
+    {season && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
+      <RankBadge score={seasonRow?.score ?? 0} size="lg" animated/>
+      <div className={styles.employeeSeasonMain}><span className="eyebrow">{season.name}</span><h2 dir="ltr">{rankProgress.rank.name}</h2><strong className={styles.seasonPoints} dir="ltr">{seasonRow?.score ?? 0} pts</strong>{rankProgress.rank.next !== null ? <><div className={styles.rankProgress} role="progressbar" aria-label="التقدم إلى الرتبة التالية" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rankProgress.progress} aria-valuetext={`متبقي ${rankProgress.pointsToNext} نقطة`}><span style={{ width:`${rankProgress.progress}%` }}/></div><small>متبقي <bdi dir="ltr">{rankProgress.pointsToNext}</bdi> نقطة إلى {getRankProgress(rankProgress.rank.next).rank.name}</small></> : <small>أعلى رتبة موسمية</small>}</div>
+      <div className={styles.employeeSeasonStats}><div><span>الترتيب</span><strong dir="ltr">{seasonPosition ? `#${seasonPosition}` : '—'}</strong></div><div><span>الدورات</span><strong dir="ltr">{seasonRow?.cyclesEvaluated ?? 0}</strong></div><div><span>الامتحانات</span><strong dir="ltr">{seasonRow?.examsEvaluated ?? 0}</strong></div><div><span>أيام الحضور</span><strong dir="ltr">{seasonRow?.attendanceDays ?? 0}</strong></div><div><span>متوسط اليوم</span><strong dir="ltr">{formatAveragePapers(seasonRow?.averagePapersPerDay ?? null)}</strong></div><div><span>الدقة</span><strong dir="ltr">{formatAccuracy(seasonRow?.accuracy ?? null)}</strong></div></div>
+      <div className={styles.employeeSeasonPhrase}>انت موظف مو عادي !</div>
+      <Link href="/employee/evaluation" className="button-link">عرض التقييمات <ArrowLeft size={16}/></Link>
+    </section>}
     <section className="employee-hero" aria-label="ملخص راتبك وحضورك">
       <div className="employee-hero-main"><div className="inline"><Avatar name={employee.name} src={employee.photo} size={52} /><div><strong>{employee.name}</strong><p>{department?.name} · <bdi>{employee.code}</bdi></p></div></div><div className="employee-salary"><span>صافي راتبك المتوقع</span><strong><bdi dir="ltr">{money(result.finalSalary)}</bdi></strong><span>بعد احتساب الغياب والخصومات والمكافآت</span></div><Link href="/employee/salary" className="button-link">عرض تفاصيل الراتب <ArrowLeft size={17} /></Link></div>
       <div className="employee-hero-scan"><div className="employee-scan-icon"><QrCode size={38} strokeWidth={1.5} /></div><h2>{registered ? 'تم تسجيل حضورك لهذا اليوم' : 'سجّل حضورك بسهولة'}</h2><p>{registered ? `وقت الدخول: ${time(todayAttendance.checkIn ?? '')}` : today?.state === 'OPEN' && expected ? `يبدأ الدوام المفتوح ${time(today.startTime)}` : !today ? 'لا يوجد يوم حضور مفتوح حالياً.' : !expected ? 'أنت مستثنى من دوام هذا اليوم.' : 'يوم الحضور مغلق حالياً.'}</p><Link href="/employee/scan" className="btn btn-primary"><QrCode size={18} />{registered ? 'عرض حالة تسجيل الحضور' : 'تسجيل الحضور'}</Link><span className="muted">{date(today?.date || DEMO_TODAY)} · بتوقيت بغداد</span></div>

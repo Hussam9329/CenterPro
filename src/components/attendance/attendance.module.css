@@ -9,3 +9,38 @@
 @media(min-width:1600px){.dayList{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1100px){.dayList{grid-template-columns:1fr}.dayInformation{grid-template-columns:repeat(2,minmax(0,1fr))}.dayCardMetrics{grid-template-columns:repeat(6,minmax(0,1fr))}.currentDayBanner{flex-wrap:wrap}.dayStatusStrip{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.dayCard{padding:16px}.dayCardTop{gap:10px}.dayCardArrow{width:15px}.dayCardMetrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dayCard .calendarTile{min-width:48px;width:48px}.currentDayBanner{padding:16px;gap:12px}.currentDayBanner>div{gap:10px}.currentDayBanner>a{width:100%}.dayInformation{gap:17px;grid-template-columns:1fr 1fr}.dayInformation strong{font-size:12px}.dayStatusStrip{padding:15px;gap:12px}.dayStatusStrip>span{font-size:10px;gap:7px}.dayStatusStrip b{font-size:17px}.recordNote{max-width:none}.openDayBlock{padding:20px 8px}.openDayBlock h3{font-size:16px}}
+
+/* Authored dark attendance surfaces; the scannable QR retains its white field. */
+:global(html[data-theme='dark']) .currentDayBanner,
+:global(html[data-theme='dark']) .dayCard,
+:global(html[data-theme='dark']) .dayStatusStrip,
+:global(html[data-theme='dark']) .demoControls { background:var(--surface); border-color:var(--border); }
+:global(html[data-theme='dark']) .calendarTile { background:var(--brand-light); color:var(--brand-text); }
+:global(html[data-theme='dark']) .dayCard:hover { border-color:#955061; }
+:global(html[data-theme='dark']) .cardMetrics,
+:global(html[data-theme='dark']) .dayCardMetrics span,
+:global(html[data-theme='dark']) .dayInformation span,
+:global(html[data-theme='dark']) .dayStatusStrip > span,
+:global(html[data-theme='dark']) .recordNote,
+:global(html[data-theme='dark']) .previewNotice,
+:global(html[data-theme='dark']) .scannerFootnote,
+:global(html[data-theme='dark']) .openDayBlock p,
+:global(html[data-theme='dark']) .scanOutcome p { color:var(--muted); }
+:global(html[data-theme='dark']) .dayCardMetrics { border-color:var(--border); }
+:global(html[data-theme='dark']) .cardMetrics b,
+:global(html[data-theme='dark']) .dayCardMetrics b,
+:global(html[data-theme='dark']) .dayStatusStrip b { color:var(--text); }
+:global(html[data-theme='dark']) .openDayBlock { color:var(--brand-text); }
+:global(html[data-theme='dark']) .scanSuccess { background:#173329; border-color:#345c49; }
+:global(html[data-theme='dark']) .scanWarning { background:#2b2417; border-color:#66502b; }
+:global(html[data-theme='dark']) .scanSuccess .outcomeIcon { color:var(--success); }
+:global(html[data-theme='dark']) .scanWarning .outcomeIcon { color:var(--warning); }
+:global(html[data-theme='dark']) .display { background:var(--canvas); color:var(--text); color-scheme:dark; }
+:global(html[data-theme='dark']) .wordmark { color:var(--ink); }
+:global(html[data-theme='dark']) .displaySubtitle,
+:global(html[data-theme='dark']) .displayNote,
+:global(html[data-theme='dark']) .displayFooter,
+:global(html[data-theme='dark']) .refreshIndicator { color:var(--muted); }
+:global(html[data-theme='dark']) .refreshIndicator b { color:var(--brand-text); }
+:global(html[data-theme='dark']) .displayFooter { border-color:var(--border); }
+.dayCard:focus-visible { outline-color:var(--focus); }
