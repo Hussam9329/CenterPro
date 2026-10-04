@@ -2,7 +2,7 @@
 
 ## Authoritative revision
 
-`MASTER_SPECIFICATION.txt` remains the unchanged original specification. `PHASE1_REVISION_REQUEST.md` is the later owner-approved addendum and takes precedence for startup data, preview administrator, salary terminology, attendance architecture and the single-open-day rule. The later owner-supplied `patches/required-days_employee-form_attendance.patch` overrides salary-basis, employee-form and attendance-note requirements as described below. The October 3 `patches/audit-evaluation-testdata.patch` adds evaluation workflows, explicit preview test data and name-based preview login. `SEASON_RANK_UI_REVISION.md` is the latest owner-approved addendum and overrides older welcome, theme, test-account-count and evaluation-publication presentation rules. No Phase 2 work is authorized.
+`MASTER_SPECIFICATION.txt` remains the unchanged original specification. `PHASE1_REVISION_REQUEST.md` is the later owner-approved addendum and takes precedence for startup data, preview administrator, salary terminology, attendance architecture and the single-open-day rule. The later owner-supplied `patches/required-days_employee-form_attendance.patch` overrides salary-basis, employee-form and attendance-note requirements as described below. The October 3 `patches/audit-evaluation-testdata.patch` adds evaluation workflows, explicit preview test data and name-based preview login. `SEASON_RANK_UI_REVISION.md` overrides older welcome, theme, test-account-count and evaluation-publication presentation rules. The subsequent `patches/rank-assets-audit-hub-ui-cleanup.patch` replaces rank assets, splits audit administration pages and updates profile/login presentation as described below. No Phase 2 work is authorized.
 
 ## Preview state and identity
 
