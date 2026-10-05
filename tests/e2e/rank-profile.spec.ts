@@ -63,7 +63,8 @@ test('admin profile rank includes live scores while the corrector rank and place
   const profile = profileRank(page);
   await expect(profile).toBeVisible();
   await expect(profile.getByText('850 pts', { exact: true })).toBeVisible();
-  await expect(profile.locator('[data-rank-tier] img')).toHaveAttribute('src', '/ranks/bronze-2.png');
+  await expect(profile.locator('[data-rank-tier="bronze"][data-rank-level="2"] svg')).toBeVisible();
+  await expect(profile.getByText('Bronze 2', { exact: true })).toHaveCount(1);
   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '70');
   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuetext', 'متبقي 150 نقطة');
   for (const [label, value] of [['الترتيب', '#1'], ['الأوراق', '876'], ['الامتحانات', '2'], ['الدورات', '1'], ['أيام الحضور', '16'], ['متوسط اليوم', '54.8'], ['أخطاء التصحيح', '4'], ['أخطاء السلوك', '2'], ['معدل الدقة', '99.32 / 100']]) {
@@ -74,7 +75,9 @@ test('admin profile rank includes live scores while the corrector rank and place
   await enterAccount(page, correctorId);
   const home = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
   await expect(home.getByText('250 pts', { exact: true })).toBeVisible();
-  await expect(home.locator('[data-rank-tier] img')).toHaveAttribute('src', '/ranks/bronze-1.png');
+  await expect(home.locator('[data-rank-tier="bronze"][data-rank-level="1"] svg')).toBeVisible();
+  await expect(home.getByText('Bronze 1', { exact: true })).toHaveCount(1);
+  await expect(home.getByText('انت موظف مو عادي !', { exact: true })).toHaveCount(0);
   await expect(home.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
   await expect(metric(home, 'الترتيب')).toHaveText('#2');
   await expect(metric(home, 'الامتحانات')).toHaveText('1');
@@ -140,3 +143,56 @@ test('legacy seasonless cycles do not fabricate a season or a profile rank', asy
   await enterAccount(page, correctorId);
   await expect(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true })).toHaveCount(0);
 });
+
+for (const [width, height, theme] of [[360, 800, 'light'], [768, 1024, 'dark']] as const) {
+  test(`people profile and department content remain readable at ${width}px in ${theme} mode`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.addInitScript(value => localStorage.setItem('centerpro-theme', value), theme);
+    const data = rankScenario();
+    data.employees[0].name = 'ابرار حقي عبد الرحمن الحسيني للمراجعة والتصحيح';
+    const description = 'يتولى الفريق مراجعة الأجوبة وتصحيحها، ومتابعة ملاحظات المشرف قبل تسليم النتائج النهائية إلى الإدارة.';
+    data.departments[0].description = description;
+    data.departments[1].description = '';
+    await seedPopulatedPreview(page, data);
+    await enterAccount(page);
+
+    async function fits(container: Locator) {
+      await expect(container).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      const dimensions = await container.evaluate(element => {
+        const box = element.getBoundingClientRect();
+        return { left: box.left, right: box.right, width: element.clientWidth, scrollWidth: element.scrollWidth };
+      });
+      expect(dimensions.left).toBeGreaterThanOrEqual(-1);
+      expect(dimensions.right).toBeLessThanOrEqual(width + 1);
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+    }
+
+    await gotoPreview(page, `/employees/${correctorId}`);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+    await expect(page.getByRole('heading', { name: data.employees[0].name, exact: true })).toBeVisible();
+    const profile = profileRank(page);
+    await fits(profile);
+    await expect(profile.getByText('Bronze 2', { exact: true })).toHaveCount(1);
+    await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '70');
+    await page.getByRole('button', { name: 'تعديل الملف', exact: true }).click();
+    const editor = page.getByRole('dialog', { name: 'تعديل بيانات الموظف', exact: true });
+    await editor.getByRole('button', { name: /معلومات الاتصال/ }).click();
+    await expect(editor.getByText('اكتب 9 أرقام فقط بعد 07.', { exact: true }).first()).toBeVisible();
+    await fits(editor);
+    await editor.getByRole('button', { name: 'إغلاق النافذة', exact: true }).click();
+
+    await gotoPreview(page, '/departments');
+    const department = page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'التصحيح', exact: true }) });
+    await expect(department.getByText(description, { exact: true })).toBeVisible();
+    await expect(page.getByText('قسم مستقل ضمن مركز CenterPro.', { exact: true })).toHaveCount(0);
+    await fits(department);
+
+    await enterAccount(page, correctorId);
+    const home = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
+    await fits(home);
+    await expect(home.getByText('Bronze 1', { exact: true })).toHaveCount(1);
+    await expect(home.getByText('انت موظف مو عادي !', { exact: true })).toHaveCount(0);
+  });
+}

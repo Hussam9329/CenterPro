@@ -7,6 +7,7 @@ import { useDemo, useToast } from '@/components/demo-provider';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, Field, Input, PageHeader } from '@/components/ui';
 import type { Role } from '@/lib/types';
+import styles from './settings.module.css';
 
 type Access = 'yes' | 'no' | 'own' | 'employees';
 interface PermissionRow { label: string; superAdmin: Access; admin: Access; employee: Access }
@@ -98,7 +99,17 @@ export default function SettingsPage() {
       <div className="notice">يسجل الموظف حضوره بنفسه من قارئ QR، ويطّلع على بياناته فقط. إدارة حسابات الإدارة والأدوار متاحة لـ Super Admin من ملف الموظف.</div>
     </Card>
     <Card title="حسابات الإدارة" action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>
-      <div className="stack"><div className="notice"><ShieldCheck size={20}/><div><strong>مدير النظام — حساب معاينة مستقل</strong><p>خارج قائمة الموظفين والأقسام والحضور والرواتب. يُستبدل بتهيئة المصادقة الفعلية في المرحلة الثانية.</p></div></div>{!adminAccounts.length && <EmptyState title="لم تُضف حسابات إدارة بعد" description="يمكنك تعيين دور إداري لحساب موظف تضيفه بنفسك."/>}{adminAccounts.map(account => <div className="list-row" key={account.id}><div className="inline"><Avatar name={account.name} src={account.photo} /><div><Link href={`/employees/${account.id}`} className="button-link">{account.name}</Link><div className="muted" dir="ltr">{account.code} · {account.username}</div></div></div><div className="inline"><Badge tone={account.active ? 'brand' : 'neutral'}>{account.active ? roleLabels[account.role] : 'غير نشط'}</Badge><Link href={`/employees/${account.id}`} className="button-link" aria-label={`إدارة حساب ${account.name}`}><ChevronLeft size={18} /></Link></div></div>)}</div>
+      <div className="stack">
+        <div className="notice"><ShieldCheck size={20}/><div><strong>مدير النظام — حساب معاينة مستقل</strong><p>خارج قائمة الموظفين والأقسام والحضور والرواتب. يُستبدل بتهيئة المصادقة الفعلية في المرحلة الثانية.</p></div></div>
+        {!adminAccounts.length && <EmptyState title="لم تُضف حسابات إدارة بعد" description="يمكنك تعيين دور إداري لحساب موظف تضيفه بنفسك."/>}
+        {adminAccounts.map(account => <div className={`list-row ${styles.accountRow}`} key={account.id}>
+          <div className={`inline ${styles.accountIdentity}`}><Avatar name={account.name} src={account.photo}/><div>
+            <Link href={`/employees/${account.id}`} className="button-link">{account.name}</Link>
+            <div className="muted" dir="ltr">{account.code} · {account.username}</div>
+          </div></div>
+          <div className={`inline ${styles.accountActions}`}><Badge tone={account.active ? 'brand' : 'neutral'}>{account.active ? roleLabels[account.role] : 'غير نشط'}</Badge><Link href={`/employees/${account.id}`} className="button-link" aria-label={`إدارة حساب ${account.name}`}><ChevronLeft size={18}/></Link></div>
+        </div>)}
+      </div>
     </Card>
     <Card title="إعادة ضبط المعاينة">
       <div className="list-row"><p className="muted">تُحذف كل الأقسام والموظفين وأيام الحضور والبيانات المالية والسجل. يبقى حساب مدير النظام المستقل متاحاً.</p><Button variant="danger" onClick={() => { setResetWord(''); setResetOpen(true); }}><RotateCcw size={17} />تصفير بيانات المعاينة</Button></div>

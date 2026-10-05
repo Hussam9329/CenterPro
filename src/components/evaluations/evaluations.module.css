@@ -1,5 +1,6 @@
 .heroGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
 .toolbarGrid { display:grid; grid-template-columns:minmax(220px,.9fr) minmax(260px,1.1fr); gap:14px; align-items:end; }
+.employeeEvaluationPage { min-width:0; }
 
 /* Anchored filters */
 .multiSelect { position:relative; }
@@ -65,20 +66,29 @@
 :global(html:not([data-theme='dark'])) .highlightRow,
 :global(html:not([data-theme='dark'])) .highlightCard { --muted:#616671; }
 
-/* Rank emblem — approved Hassan Falah rank artwork */
-.rankBadgeWrap { display:inline-flex; align-items:center; gap:10px; direction:ltr; min-width:0; }
-.rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; filter:drop-shadow(0 8px 14px #11131818); }
-.rankBadgeIcon img { display:block; width:100%; height:100%; object-fit:contain; user-select:none; }
-.rankBadgeSM .rankBadgeIcon { width:38px; height:42px; }
-.rankBadgeMD .rankBadgeIcon { width:62px; height:68px; }
-.rankBadgeLG .rankBadgeIcon { width:122px; height:132px; }
-.rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:12px; line-height:1.2; white-space:nowrap; }
-.rankBadgeMD .rankBadgeLabel { font-size:14px; }
-.rankBadgeLG .rankBadgeLabel { font-size:18px; }
-.rankShine { position:absolute; inset:0; pointer-events:none; opacity:0; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.9) 47%,rgba(255,255,255,.55) 52%,transparent 69%); background-size:230% 100%; background-position:165% 0; -webkit-mask-image:var(--rank-mask); mask-image:var(--rank-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
-.rankBadgeAnimated .rankShine { animation:rankLogoShine 4.8s ease-in-out infinite; }
-@keyframes rankLogoShine { 0%,68% { opacity:0; background-position:165% 0; } 72% { opacity:.82; } 84% { opacity:.72; background-position:-70% 0; } 88%,100% { opacity:0; background-position:-70% 0; } }
-@media (prefers-reduced-motion: reduce) { .rankBadgeAnimated .rankShine { animation:none; display:none; } }
+/* Rank emblem — native CenterPro SVG system built from the approved Hassan Falah mark. */
+.rankBadgeWrap { display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
+.rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; isolation:isolate; }
+.rankSvg { display:block; width:100%; height:100%; overflow:visible; filter:drop-shadow(0 10px 16px color-mix(in srgb,#111318 18%,transparent)); }
+.rankSvgArtwork { transform-origin:center; }
+.rankBadgeSM .rankBadgeIcon { width:42px; height:46px; }
+.rankBadgeMD .rankBadgeIcon { width:70px; height:76px; }
+.rankBadgeLG .rankBadgeIcon { width:138px; height:148px; }
+.rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:13px; line-height:1.2; white-space:nowrap; }
+.rankBadgeMD .rankBadgeLabel { font-size:15px; }
+.rankBadgeLG .rankBadgeLabel { font-size:20px; }
+.rankSvgShineLayer { pointer-events:none; }
+.rankSvgShine { opacity:0; transform-box:fill-box; transform-origin:center; }
+.rankBadgeAnimated .rankSvgShine { animation:rankVectorShine 4.8s cubic-bezier(.45,.02,.2,1) infinite; }
+@keyframes rankVectorShine {
+  0%,68% { opacity:0; transform:translateX(-90px) rotate(18deg); }
+  72% { opacity:.92; }
+  84% { opacity:.78; transform:translateX(1420px) rotate(18deg); }
+  88%,100% { opacity:0; transform:translateX(1420px) rotate(18deg); }
+}
+@media (prefers-reduced-motion: reduce) { .rankBadgeAnimated .rankSvgShine { animation:none; display:none; } }
+:global(html[data-theme='dark']) .rankSvg { filter:drop-shadow(0 12px 20px #00000070); }
+:global(html[data-theme='dark']) .rankBadgeLabel { color:#f2f4f6; }
 
 /* Season admin */
 .seasonAdminHero { display:grid; grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(130px,.45fr)); gap:14px; padding:21px 22px; border:1px solid #e8d5da; border-inline-start:4px solid #a51c30; border-radius:13px; background:color-mix(in srgb,var(--surface,#fff) 96%,#a51c30 4%); align-items:center; }
@@ -271,4 +281,86 @@
   .profileRankStats { grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; text-align:right; }
   .profileRankMain { width:100%; }
   .profileRankCard > :global(.button-link) { justify-self:center; }
+}
+
+/* CenterPro clarity pass — evaluation, audit and seasonal ranking */
+.multiButton { min-height:47px; border-radius:10px; font-size:13px; color:var(--text,#20242b); }
+.multiPanel { border-radius:12px; box-shadow:0 20px 54px #20151a24; }
+.multiOption { min-height:43px; font-size:13px; }
+.auditCard { padding:19px; border-radius:14px; }
+.employeeIdentity strong { font-size:14px; }
+.employeeIdentity small { font-size:12px; }
+.numericLabel { font-size:12px; }
+.stepper { min-height:47px; border-radius:10px; }
+.stepper input { font-size:14px; font-weight:650; }
+.scoreStrip strong { font-size:19px; }
+.saveState,.metaLine { font-size:12px; }
+.examCard { border-radius:13px; padding:18px; }
+.examCard h3 { font-size:15px; }
+.examCard p { font-size:12px; }
+.leaderboardTable th,.seasonTable th { font-size:12px; padding:13px 12px; font-weight:650; }
+.leaderboardTable td,.seasonTable td { font-size:13px; padding:15px 12px; }
+.rank { width:32px; height:32px; border-radius:9px; font-size:12px; }
+.score { font-size:13.5px; }
+.seasonAdminHero { padding:24px; border-radius:15px; }
+.seasonAdminHero h2 { font-size:22px; }
+.seasonHeroMetric span { font-size:11.5px; }
+.seasonHeroMetric strong { font-size:27px; }
+.employeeSeasonCard { padding:27px 29px; border-radius:17px; gap:28px; }
+.employeeSeasonMain h2 { font-size:24px; }
+.seasonPoints { font-size:31px; }
+.rankProgress { height:8px; }
+.employeeSeasonMain small { font-size:11.5px; }
+.employeeSeasonStats > div { padding:12px; border-radius:11px; }
+.employeeSeasonStats span { font-size:10.5px; }
+.employeeSeasonStats strong { font-size:13px; }
+.employeeSeasonPhrase { display:none !important; }
+.ownHero { padding:25px; border-radius:15px; }
+.employeeEvaluationName { font-size:22px; }
+.ownScore span { font-size:12px; }
+.ownScore small { font-size:11px; }
+.examBreakdownItem { border-radius:12px; padding:16px; }
+.examBreakdownItem h4 { font-size:13px; }
+.examBreakdownItem p { font-size:12px; }
+.archiveRow p { font-size:12px; }
+.adminHubCard { min-height:158px; padding:24px; border-radius:17px; }
+.adminHubBody h2 { font-size:19px; }
+.adminHubBody > strong { font-size:31px; }
+.adminHubStatus > div > span,.adminSectionBar > div > span { font-size:11px; }
+.adminHubStatus strong,.adminSectionBar strong { font-size:15px; }
+.profileRankName { font-size:24px; }
+.profileRankPoints { font-size:30px; }
+.profileRankMain small { font-size:11.5px; }
+.profileRankStats span { font-size:10.5px; }
+.profileRankStats strong { font-size:13px; }
+
+/* The emblem is a native element of the UI. It never receives a tile/background. */
+.rankBadgeIcon { background:transparent !important; border:0 !important; }
+.rankBadgeWrap { background:transparent; }
+
+:global(html[data-theme='dark']) .auditCard,
+:global(html[data-theme='dark']) .examCard,
+:global(html[data-theme='dark']) .employeeSeasonCard,
+:global(html[data-theme='dark']) .ownHero,
+:global(html[data-theme='dark']) .examBreakdownItem,
+:global(html[data-theme='dark']) .mobileLeaderCard { box-shadow:0 12px 28px #00000024; }
+:global(html[data-theme='dark']) .employeeSeasonStats > div,
+:global(html[data-theme='dark']) .profileRankStats > div { background:#21191e; border-color:#443039; }
+
+@media(max-width:767px) {
+  .leaderboardTable,.seasonTable { display:none; }
+  .mobileLeaderCard { border-radius:12px; padding:14px; }
+  .mobileLeaderCard p { font-size:11.5px; }
+  .employeeSeasonCard { padding:23px 17px 20px; }
+  .employeeSeasonStats > div { padding:10px 8px; }
+  .rankBadgeLG .rankBadgeIcon { width:104px; height:112px; }
+  .rankBadgeLG .rankBadgeLabel { font-size:18px; }
+}
+
+/* Long season/cycle selections get a full header row at tablet widths. */
+@media(max-width:1180px) {
+  .employeeEvaluationPage > :global(.page-header) { flex-wrap:wrap; align-items:flex-start; }
+  .employeeEvaluationPage > :global(.page-header) > :global(.page-actions) { width:100%; max-width:100%; min-width:0; }
+  .employeeEvaluationPage > :global(.page-header) > :global(.page-actions) > :global(.inline) { width:100%; min-width:0; flex-wrap:wrap; }
+  .employeeEvaluationPage > :global(.page-header) > :global(.page-actions) > :global(.inline) > :global(.select) { flex:1 1 220px; width:auto; min-width:0; max-width:100%; }
 }

@@ -1,0 +1,638 @@
+diff --git a/src/app/(admin)/employees/[id]/page.tsx b/src/app/(admin)/employees/[id]/page.tsx
+index fe2e1a6..ff31f7a 100644
+--- a/src/app/(admin)/employees/[id]/page.tsx
++++ b/src/app/(admin)/employees/[id]/page.tsx
+@@ -53,7 +53,7 @@ export default function EmployeeProfilePage() {
+     <PageHeader eyebrow="الموظفون / ملف الموظف" title="ملف الموظف" actions={<Link href="/employees" className="button-link"><ArrowRight size={16} />العودة للموظفين</Link>} />
+     <Card><div className={styles.profileHero}><div className={styles.person}><Avatar name={employee.name} src={employee.photo} size={76} /><div><h2 className={styles.profileName}>{employee.name}</h2><div className={styles.profileMeta}><span dir="ltr">{employee.code}</span><span>{department?.name}</span><Badge tone={employee.active ? 'success' : 'neutral'}>{employee.active ? 'نشط' : 'غير نشط'}</Badge></div></div></div><div className={styles.heroActions}><Button variant="secondary" onClick={() => setEditing(true)} disabled={!canModify}><Pencil size={16} />تعديل الملف</Button><Button variant="ghost" onClick={() => setConfirmToggle(true)} disabled={!canModify}>{employee.active ? <UserX size={16} /> : <UserCheck size={16} />}{employee.active ? 'إيقاف الموظف' : 'تفعيل الموظف'}</Button></div></div></Card>
+     {evaluationRow && evaluationSeason && rankProgress && <Card title="التقييم الموسمي"><div className={evalStyles.profileRankCard}>
+-      <RankBadge score={evaluationRow.score} size="lg" animated/>
++      <RankBadge score={evaluationRow.score} size="lg" animated showLabel={false}/>
+       <div className={evalStyles.profileRankMain}><div className="inline"><strong className={evalStyles.profileRankName} dir="ltr">{rankProgress.rank.name}</strong><Badge tone="brand">{evaluationSeason.name}</Badge></div><strong className={evalStyles.profileRankPoints} dir="ltr">{evaluationRow.score} pts</strong>{rankProgress.rank.next !== null && <><div className={evalStyles.rankProgress} role="progressbar" aria-label="التقدم إلى الرتبة التالية" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rankProgress.progress} aria-valuetext={`متبقي ${rankProgress.pointsToNext} نقطة`}><span style={{width:`${rankProgress.progress}%`}}/></div><small>متبقي <bdi dir="ltr">{rankProgress.pointsToNext}</bdi> نقطة للترقية</small></>}</div>
+       <div className={evalStyles.profileRankStats}><div><span>الترتيب</span><strong dir="ltr">#{evaluationPosition}</strong></div><div><span>الأوراق</span><strong dir="ltr">{evaluationRow.papers}</strong></div><div><span>الامتحانات</span><strong dir="ltr">{evaluationRow.examsEvaluated}</strong></div><div><span>الدورات</span><strong dir="ltr">{evaluationRow.cyclesEvaluated}</strong></div><div><span>أيام الحضور</span><strong dir="ltr">{evaluationRow.attendanceDays}</strong></div><div><span>متوسط اليوم</span><strong dir="ltr">{evaluationRow.averagePapersPerDay === null ? '—' : evaluationRow.averagePapersPerDay.toFixed(1)}</strong></div><div><span>أخطاء التصحيح</span><strong dir="ltr">{evaluationRow.correctionErrors}</strong></div><div><span>أخطاء السلوك</span><strong dir="ltr">{evaluationRow.behaviorErrors}</strong></div><div><span>معدل الدقة</span><strong dir="ltr">{evaluationRow.accuracy === null ? '—' : `${evaluationRow.accuracy.toFixed(2)} / 100`}</strong></div></div>
+       <Link className="button-link" href={evaluationSeason.state === 'ARCHIVED' ? `/evaluations/seasons?season=${encodeURIComponent(evaluationSeason.id)}#season-${encodeURIComponent(evaluationSeason.id)}` : '/evaluations/seasons'}>Leaderboard الموسم</Link>
+diff --git a/src/app/employee/evaluation/page.tsx b/src/app/employee/evaluation/page.tsx
+index b8b7e05..01ef4d3 100644
+--- a/src/app/employee/evaluation/page.tsx
++++ b/src/app/employee/evaluation/page.tsx
+@@ -62,7 +62,7 @@ export default function EmployeeEvaluationPage() {
+     <PageHeader eyebrow="أداؤك" title="التقييمات" actions={<div className="inline"><Select value={effectiveSeasonId} onChange={event => { setSeasonId(event.target.value); setCycleId(''); setExamId(''); }} aria-label="اختيار الموسم">{seasons.map(item => <option key={item.id} value={item.id}>{item.name}{item.state === 'ARCHIVED' ? ' — مؤرشف' : ' — الحالي'}</option>)}{hasLegacyCycles && <option value="__legacy__">دورات سابقة بلا موسم</option>}</Select>{cycle && <><Select value={cycle.id} onChange={event => { setCycleId(event.target.value); setExamId(''); }} aria-label="اختيار دورة التقييم">{cycles.map(item => <option key={item.id} value={item.id}>{item.name}{item.state === 'ARCHIVED' ? ' — مؤرشفة' : ' — الحالية'}</option>)}</Select><Badge tone={cycle.state === 'OPEN' ? 'success' : 'neutral'}>{cycle.state === 'OPEN' ? 'الحالية' : 'أرشيف'}</Badge></>}</div>}/>
+ 
+     {season && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
+-      <RankBadge score={ownSeason?.score ?? 0} size="lg" animated/>
++      <RankBadge score={ownSeason?.score ?? 0} size="lg" animated showLabel={false}/>
+       <div className={styles.employeeSeasonMain}>
+         <span className="eyebrow">{season.name}</span>
+         <h2 dir="ltr">{seasonRank.rank.name}</h2>
+@@ -77,7 +77,6 @@ export default function EmployeeEvaluationPage() {
+         <div><span>متوسط اليوم</span><strong dir="ltr">{formatAveragePapers(ownSeason?.averagePapersPerDay ?? null)}</strong></div>
+         <div><span>الدقة</span><strong dir="ltr">{formatAccuracy(ownSeason?.accuracy ?? null)}</strong></div>
+       </div>
+-      <div className={styles.employeeSeasonPhrase}>انت موظف مو عادي !</div>
+     </section>}
+ 
+     {season && <Card title="Leaderboard الموسم"><SeasonLeaderboard rows={seasonRows} highlightEmployeeId={employee.id}/></Card>}
+diff --git a/src/app/employee/page.tsx b/src/app/employee/page.tsx
+index cb402ee..096ebc0 100644
+--- a/src/app/employee/page.tsx
++++ b/src/app/employee/page.tsx
+@@ -37,10 +37,9 @@ export default function EmployeeHomePage() {
+   return <div className="page-stack">
+     <PageHeader title={`مرحباً بك، ${employee.name.split(' ')[0]}`} actions={<Badge tone="brand">{monthLabel(DEMO_MONTH)}</Badge>} />
+     {season && seasonRow && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
+-      <RankBadge score={seasonRow?.score ?? 0} size="lg" animated/>
++      <RankBadge score={seasonRow?.score ?? 0} size="lg" animated showLabel={false}/>
+       <div className={styles.employeeSeasonMain}><span className="eyebrow">{season.name}</span><h2 dir="ltr">{rankProgress.rank.name}</h2><strong className={styles.seasonPoints} dir="ltr">{seasonRow?.score ?? 0} pts</strong>{rankProgress.rank.next !== null ? <><div className={styles.rankProgress} role="progressbar" aria-label="التقدم إلى الرتبة التالية" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rankProgress.progress} aria-valuetext={`متبقي ${rankProgress.pointsToNext} نقطة`}><span style={{ width:`${rankProgress.progress}%` }}/></div><small>متبقي <bdi dir="ltr">{rankProgress.pointsToNext}</bdi> نقطة إلى {getRankProgress(rankProgress.rank.next).rank.name}</small></> : <small>أعلى رتبة موسمية</small>}</div>
+       <div className={styles.employeeSeasonStats}><div><span>الترتيب</span><strong dir="ltr">{seasonPosition ? `#${seasonPosition}` : '—'}</strong></div><div><span>الدورات</span><strong dir="ltr">{seasonRow?.cyclesEvaluated ?? 0}</strong></div><div><span>الامتحانات</span><strong dir="ltr">{seasonRow?.examsEvaluated ?? 0}</strong></div><div><span>أيام الحضور</span><strong dir="ltr">{seasonRow?.attendanceDays ?? 0}</strong></div><div><span>متوسط اليوم</span><strong dir="ltr">{formatAveragePapers(seasonRow?.averagePapersPerDay ?? null)}</strong></div><div><span>الدقة</span><strong dir="ltr">{formatAccuracy(seasonRow?.accuracy ?? null)}</strong></div></div>
+-      <div className={styles.employeeSeasonPhrase}>انت موظف مو عادي !</div>
+       <Link href="/employee/evaluation" className="button-link">عرض التقييمات <ArrowLeft size={16}/></Link>
+     </section>}
+     <section className="employee-hero" aria-label="ملخص راتبك وحضورك">
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 45d6f3d..8057391 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -860,3 +860,187 @@ html[data-theme='dark'] .brand .brand-logo-dark { display:block; }
+ }
+ 
+ .login-form-copyright { margin-top:22px; padding-top:16px; border-top:1px solid var(--border,#e8e8ec); color:var(--muted,#8a8e96); font:500 9px/1.6 'Inter Variable',sans-serif; text-align:center; direction:ltr; }
++
++/* --------------------------------------------------------------------------
++   CenterPro clarity system — shared visual language for every workspace.
++   Applied after legacy rules so the same density/readability works in light
++   and dark mode without changing any business logic.
++   -------------------------------------------------------------------------- */
++:root {
++  --text: #20242b;
++  --muted: #626975;
++  --border: #e2e4e9;
++  --canvas: #f6f7f9;
++  --background: #f6f7f9;
++  --surface: #ffffff;
++  --surface-soft: #f8f9fb;
++  --surface-tint: #fcf5f7;
++  --surface-hover: #fbf7f8;
++  --radius: 14px;
++  --shadow: 0 8px 26px #1d101407;
++}
++body { font-size: 14px; line-height: 1.72; }
++small { font-size: 12px; }
++
++/* Keep operational screens concise: descriptions belong in warnings/errors,
++   not underneath already self-explanatory page and card titles. */
++.page-header > div > p,
++.card-heading p { display: none; }
++.page-header { min-height: 54px; }
++.page-header h1 { font-size: clamp(28px,2vw,34px); font-weight: 740; letter-spacing: -.75px; }
++.eyebrow { font-size: 11px; color: var(--brand-text); font-weight: 650; }
++.page-stack { gap: 28px; }
++
++/* Application frame */
++.sidebar { width: 244px; padding: 29px 18px 22px; }
++.app-main { margin-right: 244px; }
++.nav-caption { font-size: 11px; color: #7e848d; margin-bottom: 11px; }
++.nav-link { min-height: 48px; padding: 11px 14px; border-radius: 10px; font-size: 13px; gap: 13px; }
++.nav-link svg { width: 20px; height: 20px; }
++.workspace-label { font-size: 12px; min-height: 46px; border-radius: 10px; }
++.workspace-version { font-size: 11px; }
++.sidebar-qr { font-size: 13px; }
++.sidebar-qr span, .sidebar-footer { font-size: 10px; }
++.topbar { height: 82px; }
++.breadcrumb { font-size: 12px; }
++.breadcrumb strong { font-size: 13px; }
++.topbar-date { font-size: 12px; }
++.user-menu strong { font-size: 12.5px; }
++.user-menu span:not(.avatar) { font-size: 10.5px; }
++.main-content { padding: 38px 36px; }
++.app-footer { font-size: 10px; }
++
++/* Cards and metrics */
++.card { padding: 26px; border-radius: 15px; box-shadow: var(--shadow); }
++.card-heading { margin-bottom: 22px; }
++.card-heading h2 { font-size: 17px; font-weight: 700; }
++.card-heading h2::before { height: 17px; width: 3px; vertical-align: -3px; }
++.stats-grid { gap: 16px; }
++.stat-card { padding: 22px; border-radius: 13px; box-shadow: 0 5px 18px #15101405; }
++.stat-top { font-size: 12px; color: var(--muted); min-height: 28px; font-weight: 550; }
++.stat-icon { width: 34px; height: 34px; color: var(--brand-text); background: color-mix(in srgb,var(--surface) 91%,var(--brand) 9%); border-radius: 10px; }
++.stat-value { font-size: clamp(25px,2.25vw,34px); font-weight: 720; margin-top: 12px; }
++.stat-hint { font-size: 11.5px; color: var(--muted); }
++.detail-item dt { font-size: 12px; color: var(--muted); }
++.detail-item dd { font-size: 14px; font-weight: 600; }
++.muted { font-size: 13px; color: var(--muted); }
++
++/* Controls */
++.btn, .button-link { min-height: 44px; border-radius: 9px; padding: 10px 17px; font-size: 13px; font-weight: 650; }
++.icon-button { width: 41px; height: 41px; border-radius: 10px; }
++.badge { min-height: 28px; padding: 5px 10px; border-radius: 7px; font-size: 11px; font-weight: 650; }
++.field { gap: 8px; }
++.field-label { font-size: 13px; color: var(--text); font-weight: 600; }
++.field-hint { font-size: 11.5px; color: var(--muted); }
++.field-error { font-size: 12px; }
++.input { min-height: 47px; padding: 11px 14px; border-radius: 9px; font-size: 13.5px; }
++.input[type="date"], .input[type="month"], .input[type="time"] { min-height: 47px; }
++.tabs button { min-height: 48px; padding: 13px 18px 14px; font-size: 13px; font-weight: 550; }
++.tabs button.active { font-weight: 700; }
++.search-input > svg { width: 18px; }
++.notice { font-size: 12.5px; border-radius: 10px; }
++.empty-state h3 { font-size: 16px; color: var(--text); }
++.empty-state p { font-size: 12px; color: var(--muted); }
++.dialog-header h2 { font-size: 20px; }
++.dialog-header p { font-size: 12px; }
++.toast { font-size: 13px; }
++
++/* Tables: larger type and stronger hierarchy without making rows bulky. */
++.data-table { font-size: 13px; }
++.data-table th { padding: 13px 15px; font-size: 11.5px; font-weight: 650; color: #737a85; }
++.data-table td { padding: 17px 15px; color: #4f5661; }
++.data-table td strong { font-size: 13.5px; }
++.data-table td .amount, .data-table td.amount { font-size: 12.5px; }
++.pagination { font-size: 11.5px; }
++
++/* Dashboard */
++.big-metric strong { font-size: 42px; }
++.legend-item { font-size: 11.5px; }
++.legend-item strong { font-size: 12px; }
++.quick-action { min-height: 72px; padding: 17px 15px; border-radius: 11px; font-size: 12.5px; }
++.quick-action strong { font-size: 13px; }
++.quick-action > span, .quick-action span { font-size: 11.5px; }
++.quick-note { display:none; }
++.department-bar-top { font-size: 12px; }
++.department-bar-top strong { font-size: 12.5px; }
++.activity-row strong { font-size: 12.5px; }
++.activity-row p { font-size: 11.5px; }
++.activity-row > time, .activity-row > span:last-child { font-size: 10.5px; }
++
++/* Employee workspace */
++.employee-hero-main .inline > div > strong { font-size: 15px; }
++.employee-hero-main p { font-size: 12px; }
++.employee-salary span { font-size: 12px; }
++.employee-salary span:last-child { font-size: 11px; }
++.employee-hero-scan h2 { font-size: 18px; }
++.employee-hero-scan p { font-size: 12px; }
++.employee-hero-scan .muted { font-size: 10.5px; }
++
++/* Login: only the approved identity line gets visual emphasis. */
++.login-story-title, .login-story h1 { font-size: clamp(32px,3vw,46px); }
++.login-heading h1, .login-heading h2 { font-size: 29px; }
++.login-role strong { font-size: 14px; }
++.login-role p, .login-role span:not(.login-role-icon) { font-size: 11px; }
++.remember-login { font-size: 12px; }
++.login-form-copyright { font-size: 10px; }
++
++/* Authored dark counterparts for the clarity system. */
++html[data-theme='dark'] {
++  --text:#e8eaf0;
++  --muted:#aeb4bf;
++  --border:#303640;
++  --canvas:#0f1115;
++  --background:#0f1115;
++  --surface:#181b20;
++  --surface-soft:#1d2127;
++  --surface-tint:#24191e;
++  --surface-hover:#20191d;
++  --shadow:0 10px 32px #00000035;
++}
++html[data-theme='dark'] .stat-icon { background:#291b21; color:#ef8da0; }
++html[data-theme='dark'] .card,
++html[data-theme='dark'] .stat-card { box-shadow:0 10px 28px #00000020; }
++html[data-theme='dark'] .data-table th { color:#b6bcc6; background:#1e2228; }
++html[data-theme='dark'] .data-table td { color:#d8dce3; }
++html[data-theme='dark'] .quick-action { background:#191c21; }
++html[data-theme='dark'] .field-label { color:#e7e9ed; }
++html[data-theme='dark'] .empty-state h3 { color:#e3e6eb; }
++
++@media (max-width: 1023px) {
++  .app-main { margin-right:0; }
++  .mobile-bottom-nav > a, .mobile-bottom-nav > button { font-size:10.5px; }
++  .main-content { padding:30px 25px; }
++}
++@media (max-width: 767px) {
++  body { font-size: 13.5px; }
++  .main-content { padding:25px 17px; }
++  .page-stack { gap:23px; }
++  .page-header h1 { font-size:27px; }
++  .page-header .eyebrow { font-size:10px; }
++  .page-actions .btn, .page-actions .button-link { min-height:42px; font-size:12.5px; }
++  .card { padding:20px 18px; border-radius:13px; }
++  .card-heading h2 { font-size:16px; }
++  .stat-card { padding:17px 16px; }
++  .stat-top { font-size:11.5px; }
++  .stat-value { font-size:25px; }
++  .stat-hint { font-size:10.5px; }
++  .field-label { font-size:12.5px; }
++  .input { min-height:47px; font-size:14px; }
++  .btn, .button-link { min-height:45px; font-size:13px; }
++  .badge { font-size:10.5px; }
++  .tabs button { font-size:12.5px; min-height:45px; }
++  .notice { font-size:11.5px; }
++  .detail-item dd { font-size:13px; }
++  .pagination { font-size:11px; }
++  .quick-action { font-size:12px; }
++  .employee-shell .grid-3 .stat-hint { font-size:10px; }
++  .mobile-bottom-nav > a, .mobile-bottom-nav > button { font-size:10px; }
++}
++@media (max-width: 390px) {
++  body { font-size:13px; }
++  .page-header h1 { font-size:25px; }
++  .stat-top { font-size:11px; }
++  .stat-hint { font-size:10px; }
++  .stat-value { font-size:23px; }
++  .card { padding:18px 15px; }
++}
+diff --git a/src/components/attendance/attendance.module.css b/src/components/attendance/attendance.module.css
+index 40c821b..c0e9676 100644
+--- a/src/components/attendance/attendance.module.css
++++ b/src/components/attendance/attendance.module.css
+@@ -44,3 +44,22 @@
+ :global(html[data-theme='dark']) .refreshIndicator b { color:var(--brand-text); }
+ :global(html[data-theme='dark']) .displayFooter { border-color:var(--border); }
+ .dayCard:focus-visible { outline-color:var(--focus); }
++
++/* CenterPro clarity pass — attendance */
++.workdayInfo h3 { font-size:16px; }
++.workdayInfo p,.workdayInfo span { font-size:12.5px; }
++.fieldset legend { font-size:14px; }
++.checkChoice { font-size:13.5px; min-height:44px; }
++.overrides summary,.filters summary,.demoControls summary { font-size:13.5px; }
++.calendarTile small { font-size:11.5px; }
++.rowActions { gap:8px; }
++.cardHeading small,.recordNote { font-size:12px; }
++.cardMetrics { font-size:12.5px; }
++.displayNote { font-size:11.5px; }
++.previewNotice { font-size:12px; }
++:global(html[data-theme='dark']) .calendarTile { background:#25191e; border-color:#4b2c35; }
++@media(max-width:767px) {
++  .workdayInfo h3 { font-size:16px; }
++  .workdayInfo p,.workdayInfo span { font-size:12px; }
++  .rowActions { gap:9px; }
++}
+diff --git a/src/components/evaluations/evaluations.module.css b/src/components/evaluations/evaluations.module.css
+index 7dd8ad8..92c03d9 100644
+--- a/src/components/evaluations/evaluations.module.css
++++ b/src/components/evaluations/evaluations.module.css
+@@ -65,20 +65,29 @@
+ :global(html:not([data-theme='dark'])) .highlightRow,
+ :global(html:not([data-theme='dark'])) .highlightCard { --muted:#616671; }
+ 
+-/* Rank emblem — approved Hassan Falah rank artwork */
+-.rankBadgeWrap { display:inline-flex; align-items:center; gap:10px; direction:ltr; min-width:0; }
+-.rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; filter:drop-shadow(0 8px 14px #11131818); }
+-.rankBadgeIcon img { display:block; width:100%; height:100%; object-fit:contain; user-select:none; }
+-.rankBadgeSM .rankBadgeIcon { width:38px; height:42px; }
+-.rankBadgeMD .rankBadgeIcon { width:62px; height:68px; }
+-.rankBadgeLG .rankBadgeIcon { width:122px; height:132px; }
+-.rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:12px; line-height:1.2; white-space:nowrap; }
+-.rankBadgeMD .rankBadgeLabel { font-size:14px; }
+-.rankBadgeLG .rankBadgeLabel { font-size:18px; }
+-.rankShine { position:absolute; inset:0; pointer-events:none; opacity:0; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.9) 47%,rgba(255,255,255,.55) 52%,transparent 69%); background-size:230% 100%; background-position:165% 0; -webkit-mask-image:var(--rank-mask); mask-image:var(--rank-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+-.rankBadgeAnimated .rankShine { animation:rankLogoShine 4.8s ease-in-out infinite; }
+-@keyframes rankLogoShine { 0%,68% { opacity:0; background-position:165% 0; } 72% { opacity:.82; } 84% { opacity:.72; background-position:-70% 0; } 88%,100% { opacity:0; background-position:-70% 0; } }
+-@media (prefers-reduced-motion: reduce) { .rankBadgeAnimated .rankShine { animation:none; display:none; } }
++/* Rank emblem — native CenterPro SVG system built from the approved Hassan Falah mark. */
++.rankBadgeWrap { display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
++.rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; isolation:isolate; }
++.rankSvg { display:block; width:100%; height:100%; overflow:visible; filter:drop-shadow(0 10px 16px color-mix(in srgb,#111318 18%,transparent)); }
++.rankSvgArtwork { transform-origin:center; }
++.rankBadgeSM .rankBadgeIcon { width:42px; height:46px; }
++.rankBadgeMD .rankBadgeIcon { width:70px; height:76px; }
++.rankBadgeLG .rankBadgeIcon { width:138px; height:148px; }
++.rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:13px; line-height:1.2; white-space:nowrap; }
++.rankBadgeMD .rankBadgeLabel { font-size:15px; }
++.rankBadgeLG .rankBadgeLabel { font-size:20px; }
++.rankSvgShineLayer { pointer-events:none; }
++.rankSvgShine { opacity:0; transform-box:fill-box; transform-origin:center; }
++.rankBadgeAnimated .rankSvgShine { animation:rankVectorShine 4.8s cubic-bezier(.45,.02,.2,1) infinite; }
++@keyframes rankVectorShine {
++  0%,68% { opacity:0; transform:translateX(-90px) rotate(18deg); }
++  72% { opacity:.92; }
++  84% { opacity:.78; transform:translateX(1420px) rotate(18deg); }
++  88%,100% { opacity:0; transform:translateX(1420px) rotate(18deg); }
++}
++@media (prefers-reduced-motion: reduce) { .rankBadgeAnimated .rankSvgShine { animation:none; display:none; } }
++:global(html[data-theme='dark']) .rankSvg { filter:drop-shadow(0 12px 20px #00000070); }
++:global(html[data-theme='dark']) .rankBadgeLabel { color:#f2f4f6; }
+ 
+ /* Season admin */
+ .seasonAdminHero { display:grid; grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(130px,.45fr)); gap:14px; padding:21px 22px; border:1px solid #e8d5da; border-inline-start:4px solid #a51c30; border-radius:13px; background:color-mix(in srgb,var(--surface,#fff) 96%,#a51c30 4%); align-items:center; }
+@@ -272,3 +281,77 @@
+   .profileRankMain { width:100%; }
+   .profileRankCard > :global(.button-link) { justify-self:center; }
+ }
++
++/* CenterPro clarity pass — evaluation, audit and seasonal ranking */
++.multiButton { min-height:47px; border-radius:10px; font-size:13px; color:var(--text,#20242b); }
++.multiPanel { border-radius:12px; box-shadow:0 20px 54px #20151a24; }
++.multiOption { min-height:43px; font-size:13px; }
++.auditCard { padding:19px; border-radius:14px; }
++.employeeIdentity strong { font-size:14px; }
++.employeeIdentity small { font-size:12px; }
++.numericLabel { font-size:12px; }
++.stepper { min-height:47px; border-radius:10px; }
++.stepper input { font-size:14px; font-weight:650; }
++.scoreStrip strong { font-size:19px; }
++.saveState,.metaLine { font-size:12px; }
++.examCard { border-radius:13px; padding:18px; }
++.examCard h3 { font-size:15px; }
++.examCard p { font-size:12px; }
++.leaderboardTable th,.seasonTable th { font-size:12px; padding:13px 12px; font-weight:650; }
++.leaderboardTable td,.seasonTable td { font-size:13px; padding:15px 12px; }
++.rank { width:32px; height:32px; border-radius:9px; font-size:12px; }
++.score { font-size:13.5px; }
++.seasonAdminHero { padding:24px; border-radius:15px; }
++.seasonAdminHero h2 { font-size:22px; }
++.seasonHeroMetric span { font-size:11.5px; }
++.seasonHeroMetric strong { font-size:27px; }
++.employeeSeasonCard { padding:27px 29px; border-radius:17px; gap:28px; }
++.employeeSeasonMain h2 { font-size:24px; }
++.seasonPoints { font-size:31px; }
++.rankProgress { height:8px; }
++.employeeSeasonMain small { font-size:11.5px; }
++.employeeSeasonStats > div { padding:12px; border-radius:11px; }
++.employeeSeasonStats span { font-size:10.5px; }
++.employeeSeasonStats strong { font-size:13px; }
++.employeeSeasonPhrase { display:none !important; }
++.ownHero { padding:25px; border-radius:15px; }
++.employeeEvaluationName { font-size:22px; }
++.ownScore span { font-size:12px; }
++.ownScore small { font-size:11px; }
++.examBreakdownItem { border-radius:12px; padding:16px; }
++.examBreakdownItem h4 { font-size:13px; }
++.examBreakdownItem p { font-size:12px; }
++.archiveRow p { font-size:12px; }
++.adminHubCard { min-height:158px; padding:24px; border-radius:17px; }
++.adminHubBody h2 { font-size:19px; }
++.adminHubBody > strong { font-size:31px; }
++.adminHubStatus > div > span,.adminSectionBar > div > span { font-size:11px; }
++.adminHubStatus strong,.adminSectionBar strong { font-size:15px; }
++.profileRankName { font-size:24px; }
++.profileRankPoints { font-size:30px; }
++.profileRankMain small { font-size:11.5px; }
++.profileRankStats span { font-size:10.5px; }
++.profileRankStats strong { font-size:13px; }
++
++/* The emblem is a native element of the UI. It never receives a tile/background. */
++.rankBadgeIcon { background:transparent !important; border:0 !important; }
++.rankBadgeWrap { background:transparent; }
++
++:global(html[data-theme='dark']) .auditCard,
++:global(html[data-theme='dark']) .examCard,
++:global(html[data-theme='dark']) .employeeSeasonCard,
++:global(html[data-theme='dark']) .ownHero,
++:global(html[data-theme='dark']) .examBreakdownItem,
++:global(html[data-theme='dark']) .mobileLeaderCard { box-shadow:0 12px 28px #00000024; }
++:global(html[data-theme='dark']) .employeeSeasonStats > div,
++:global(html[data-theme='dark']) .profileRankStats > div { background:#21191e; border-color:#443039; }
++
++@media(max-width:767px) {
++  .leaderboardTable,.seasonTable { display:none; }
++  .mobileLeaderCard { border-radius:12px; padding:14px; }
++  .mobileLeaderCard p { font-size:11.5px; }
++  .employeeSeasonCard { padding:23px 17px 20px; }
++  .employeeSeasonStats > div { padding:10px 8px; }
++  .rankBadgeLG .rankBadgeIcon { width:104px; height:112px; }
++  .rankBadgeLG .rankBadgeLabel { font-size:18px; }
++}
+diff --git a/src/components/evaluations/rank-badge.tsx b/src/components/evaluations/rank-badge.tsx
+index 455f9d1..57ebbaf 100644
+--- a/src/components/evaluations/rank-badge.tsx
++++ b/src/components/evaluations/rank-badge.tsx
+@@ -1,22 +1,138 @@
+ 'use client';
+ 
+-import type { CSSProperties } from 'react';
+-import Image from 'next/image';
++import { useId } from 'react';
+ import { getSeasonRank } from '@/lib/evaluations';
+ import styles from './evaluations.module.css';
+ 
+-function rankAsset(name: string): string {
+-  return `/ranks/${name.toLowerCase().replace(/\s+/g, '-')}.png`;
++type RankTier = ReturnType<typeof getSeasonRank>['tier'];
++
++type Palette = {
++  dark: string;
++  mid: string;
++  light: string;
++  highlight: string;
++  edge: string;
++  accent: string;
++};
++
++const PALETTES: Record<RankTier, Palette> = {
++  bronze: { dark:'#54270f', mid:'#a95120', light:'#e59a55', highlight:'#ffd09b', edge:'#351608', accent:'#8b3d17' },
++  silver: { dark:'#4f5964', mid:'#9da9b6', light:'#d9e0e7', highlight:'#ffffff', edge:'#303943', accent:'#b9c3ce' },
++  gold: { dark:'#784804', mid:'#c8830c', light:'#f3bd3d', highlight:'#fff0a5', edge:'#4d2b00', accent:'#d99b18' },
++  platinum: { dark:'#466b89', mid:'#8fb4d0', light:'#d8e8f3', highlight:'#ffffff', edge:'#304e67', accent:'#8bc3e8' },
++  diamond: { dark:'#2367aa', mid:'#63b3f7', light:'#bfe8ff', highlight:'#ffffff', edge:'#164678', accent:'#6ad1ff' },
++  emerald: { dark:'#004d31', mid:'#078d59', light:'#35c482', highlight:'#9dffd0', edge:'#003722', accent:'#0db66f' },
++  master: { dark:'#590710', mid:'#a90f20', light:'#e33243', highlight:'#ff9ca7', edge:'#330208', accent:'#c3912f' },
++  grandmaster: { dark:'#5b0710', mid:'#b21427', light:'#ed3447', highlight:'#ffc0c8', edge:'#320208', accent:'#d4a33c' },
++};
++
++function starPoints(cx: number, cy: number, outer: number, inner: number, points = 5): string {
++  const values: string[] = [];
++  for (let i = 0; i < points * 2; i += 1) {
++    const radius = i % 2 === 0 ? outer : inner;
++    const angle = (-Math.PI / 2) + (i * Math.PI / points);
++    values.push(`${cx + Math.cos(angle) * radius},${cy + Math.sin(angle) * radius}`);
++  }
++  return values.join(' ');
++}
++
++function CoreGeometry({ primary, secondary, edge, highlight }: { primary:string; secondary:string; edge:string; highlight:string }) {
++  return <>
++    <polygon points="762.98 198.82 298.45 282.88 179.4 770.28 0 770.44 188.35 .28 367.6 0 311.84 227.03 775.34 142.85 762.98 198.82" fill={primary} stroke={edge} strokeWidth="13" strokeLinejoin="round"/>
++    <path d="M742.18,304.5l-421.86,77.75c5.52-21.23,11.04-42.47,16.57-63.7l420.06-76.52-14.77,62.47Z" fill={primary} stroke={edge} strokeWidth="11" strokeLinejoin="round"/>
++    <path d="M431.96,535.15c-49.91,9.43-99.82,18.87-149.73,28.3,12.7-47.58,25.39-95.17,38.09-142.75,106.39-20.46,212.78-40.91,319.16-61.37-34.51,137.03-69.01,274.07-103.52,411.1h-160.65c18.88-78.43,37.77-156.86,56.65-235.29Z" fill={secondary} stroke={edge} strokeWidth="13" strokeLinejoin="round"/>
++    <path d="M699.86,118.94l-170.82,31.07c13.06-50,26.12-100.01,39.19-150.01h156.32c-8.23,39.65-16.46,79.3-24.68,118.94Z" fill={secondary} stroke={edge} strokeWidth="12" strokeLinejoin="round"/>
++    <path d="M190 28L336 26 319 96 173 120Z" fill={highlight} opacity=".28"/>
++    <path d="M339 333L718 264 711 291 332 359Z" fill={highlight} opacity=".24"/>
++    <path d="M339 438L610 385 595 445 326 496Z" fill={highlight} opacity=".18"/>
++  </>;
++}
++
++function LevelDecorations({ level, accent, edge, highlight }: { level:number|null; accent:string; edge:string; highlight:string }) {
++  if (!level || level === 1) return null;
++  const left = '145,420 92,455 66,565 133,520';
++  const right = '690,384 760,405 811,505 735,478';
++  const leftInner = '135,520 82,559 67,626 124,592';
++  const rightInner = '735,478 794,513 826,580 758,548';
++  return <>
++    <polygon points={left} fill={accent} stroke={edge} strokeWidth="10" strokeLinejoin="round"/>
++    <polygon points={right} fill={accent} stroke={edge} strokeWidth="10" strokeLinejoin="round"/>
++    <path d="M113 466L139 450 127 495 101 511Z" fill={highlight} opacity=".45"/>
++    <path d="M752 420L775 433 791 465 764 449Z" fill={highlight} opacity=".38"/>
++    {level >= 3 && <>
++      <polygon points={leftInner} fill={accent} stroke={edge} strokeWidth="9" strokeLinejoin="round"/>
++      <polygon points={rightInner} fill={accent} stroke={edge} strokeWidth="9" strokeLinejoin="round"/>
++      <polygon points={starPoints(655,640,66,29)} fill={highlight} stroke={edge} strokeWidth="10" strokeLinejoin="round"/>
++    </>}
++  </>;
++}
++
++function GrandmasterDecorations({ accent, edge, highlight }: { accent:string; edge:string; highlight:string }) {
++  return <>
++    <polygon points="146,350 64,392 18,527 128,470" fill={accent} stroke={edge} strokeWidth="11" strokeLinejoin="round"/>
++    <polygon points="126,470 38,531 31,641 142,574" fill={accent} stroke={edge} strokeWidth="11" strokeLinejoin="round"/>
++    <polygon points="750,338 842,373 930,494 794,452" fill={accent} stroke={edge} strokeWidth="11" strokeLinejoin="round"/>
++    <polygon points="794,452 901,503 930,614 805,554" fill={accent} stroke={edge} strokeWidth="11" strokeLinejoin="round"/>
++    <polygon points="400,89 450,11 486,74 532,7 567,79 632,28 620,124 411,163" fill={highlight} stroke={edge} strokeWidth="12" strokeLinejoin="round"/>
++    <polygon points={starPoints(560,655,76,31)} fill={highlight} stroke={edge} strokeWidth="11" strokeLinejoin="round"/>
++  </>;
++}
++
++function RankEmblem({ tier, level, animated }: { tier:RankTier; level:number|null; animated:boolean }) {
++  const rawId = useId().replace(/:/g, '');
++  const palette = PALETTES[tier];
++  const metal = `${rawId}-metal`;
++  const secondary = `${rawId}-secondary`;
++  const accent = `${rawId}-accent`;
++  const clip = `${rawId}-clip`;
++  const shine = `${rawId}-shine`;
++  const isGrandmaster = tier === 'grandmaster';
++
++  const geometry = <>
++    <CoreGeometry primary={`url(#${metal})`} secondary={`url(#${secondary})`} edge={palette.edge} highlight={palette.highlight}/>
++    {isGrandmaster
++      ? <GrandmasterDecorations accent={`url(#${accent})`} edge={palette.edge} highlight={palette.highlight}/>
++      : <LevelDecorations level={level} accent={`url(#${accent})`} edge={palette.edge} highlight={palette.highlight}/>
++    }
++  </>;
++
++  return <svg className={styles.rankSvg} viewBox="-40 -55 1035 900" role="presentation" focusable="false" aria-hidden="true">
++    <defs>
++      <linearGradient id={metal} x1="0" y1="0" x2="1" y2="1">
++        <stop offset="0" stopColor={palette.dark}/><stop offset=".28" stopColor={palette.light}/><stop offset=".5" stopColor={palette.highlight}/><stop offset=".7" stopColor={palette.mid}/><stop offset="1" stopColor={palette.dark}/>
++      </linearGradient>
++      <linearGradient id={secondary} x1=".15" y1="0" x2=".9" y2="1">
++        <stop offset="0" stopColor={palette.highlight}/><stop offset=".34" stopColor={palette.light}/><stop offset=".7" stopColor={palette.mid}/><stop offset="1" stopColor={palette.dark}/>
++      </linearGradient>
++      <linearGradient id={accent} x1="0" y1="0" x2="1" y2="1">
++        <stop offset="0" stopColor={palette.dark}/><stop offset=".45" stopColor={palette.accent}/><stop offset=".7" stopColor={palette.highlight}/><stop offset="1" stopColor={palette.dark}/>
++      </linearGradient>
++      <linearGradient id={shine} x1="0" y1="0" x2="1" y2="0">
++        <stop offset="0" stopColor="#fff" stopOpacity="0"/>
++        <stop offset=".46" stopColor="#fff" stopOpacity="0"/>
++        <stop offset=".5" stopColor="#fff" stopOpacity=".9"/>
++        <stop offset=".56" stopColor="#fff" stopOpacity=".2"/>
++        <stop offset="1" stopColor="#fff" stopOpacity="0"/>
++      </linearGradient>
++      <clipPath id={clip}>
++        <CoreGeometry primary="#000" secondary="#000" edge="#000" highlight="#000"/>
++        {isGrandmaster
++          ? <GrandmasterDecorations accent="#000" edge="#000" highlight="#000"/>
++          : <LevelDecorations level={level} accent="#000" edge="#000" highlight="#000"/>
++        }
++      </clipPath>
++    </defs>
++    <g className={styles.rankSvgArtwork}>{geometry}</g>
++    {animated && <g clipPath={`url(#${clip})`} className={styles.rankSvgShineLayer}>
++      <rect className={styles.rankSvgShine} x="-520" y="-140" width="270" height="1120" rx="80" fill={`url(#${shine})`} transform="rotate(18 0 0)"/>
++    </g>}
++  </svg>;
+ }
+ 
+ export function RankBadge({ score, size = 'md', animated = false, showLabel = true }: { score: number; size?: 'sm' | 'md' | 'lg'; animated?: boolean; showLabel?: boolean }) {
+   const rank = getSeasonRank(score);
+-  const asset = rankAsset(rank.name);
+-  return <div className={`${styles.rankBadgeWrap} ${styles[`rankBadge${size.toUpperCase()}`]} ${animated ? styles.rankBadgeAnimated : ''}`} data-rank-tier={rank.tier} aria-label={showLabel ? undefined : rank.name} role={showLabel ? undefined : 'img'}>
+-    <div className={styles.rankBadgeIcon} aria-hidden="true" style={{ '--rank-mask': `url("${asset}")` } as CSSProperties}>
+-      <Image src={asset} alt="" fill unoptimized draggable={false}/>
+-      {animated && <span className={styles.rankShine}/>}
+-    </div>
++  return <div className={`${styles.rankBadgeWrap} ${styles[`rankBadge${size.toUpperCase()}`]} ${animated ? styles.rankBadgeAnimated : ''}`} data-rank-tier={rank.tier} data-rank-level={rank.level ?? 'grandmaster'} aria-label={showLabel ? undefined : rank.name} role={showLabel ? undefined : 'img'}>
++    <div className={styles.rankBadgeIcon}><RankEmblem tier={rank.tier} level={rank.level} animated={animated}/></div>
+     {showLabel && <div className={styles.rankBadgeLabel}><strong dir="ltr">{rank.name}</strong></div>}
+   </div>;
+ }
+diff --git a/src/components/finance/finance.module.css b/src/components/finance/finance.module.css
+index b6af462..c121e58 100644
+--- a/src/components/finance/finance.module.css
++++ b/src/components/finance/finance.module.css
+@@ -113,3 +113,25 @@
+   :global(html[data-theme='dark']) .report h3 { color:#111318; }
+   :global(html[data-theme='dark']) .report :global(.muted) { color:#6b707b; }
+ }
++
++/* CenterPro clarity pass — finance */
++.record p { font-size:13px; line-height:1.8; }
++.record small,.rowName small,.small { font-size:12px; color:var(--muted,#626975); }
++.compactMetrics span { font-size:12px; color:var(--muted,#626975); }
++.compactMetrics strong { font-size:18px; }
++.reportType { font-size:13.5px; min-height:58px; }
++.reportTable { font-size:13px; }
++.reportTable th { font-size:12px; }
++.reportFooter { font-size:11.5px; color:var(--muted,#626975); }
++.financialNotice { font-size:12.5px; }
++.review h3 { font-size:15px; }
++.reportsPreviewOnly { font-size:11.5px; }
++.salaryRules { font-size:12.5px; }
++@media screen {
++  :global(html[data-theme='dark']) .compactMetrics > div,
++  :global(html[data-theme='dark']) .confirmDetails { background:var(--surface-soft); border:1px solid var(--border); }
++}
++@media(max-width:700px) {
++  .reportType { font-size:13px; }
++  .compactMetrics span { font-size:11.5px; }
++}
+diff --git a/src/components/people/people.module.css b/src/components/people/people.module.css
+index 6cb3dfa..eaabe85 100644
+--- a/src/components/people/people.module.css
++++ b/src/components/people/people.module.css
+@@ -90,3 +90,33 @@
+ :global(html[data-theme='dark']) .sectionRule,
+ :global(html[data-theme='dark']) .historyCard,
+ :global(html[data-theme='dark']) .salaryType { border-color:var(--border); }
++
++/* CenterPro clarity pass — people, departments and profiles */
++.code { font-size:12.5px; color:var(--muted,#626975); }
++.mobileMeta { font-size:13px; color:var(--muted,#626975); }
++.formIntro h3 { font-size:18px; }
++.formIntro p,
++.departmentDescription { display:none; }
++.photoUpload input { font-size:13px; }
++.checkLabel { font-size:14px; }
++.profileName { font-size:26px; }
++.profileMeta { font-size:13.5px; color:var(--muted,#626975); }
++.detail dt { font-size:12.5px; color:var(--muted,#626975); }
++.detail dd { font-size:14.5px; }
++.balance { font-size:14px; }
++.departmentTitle { font-size:20px; }
++.departmentFacts span { font-size:12px; color:var(--muted,#626975); }
++.departmentFacts strong { font-size:14px; }
++.sectionTitle h3 { font-size:17px; }
++.tierTitle { font-size:14px; }
++.error { font-size:13px; }
++.sortLine { font-size:12.5px; color:var(--muted,#626975); }
++.salaryType { font-size:13.5px; color:var(--muted,#626975); }
++.departmentCard,.tier,.photoUpload { border-color:var(--border,#e2e4e9); }
++.departmentIcon { background:color-mix(in srgb,var(--surface,#fff) 90%,#a51c30 10%); }
++:global(html[data-theme='dark']) .departmentIcon { background:#291b21; }
++@media (max-width:700px) {
++  .profileName { font-size:23px; }
++  .step { font-size:12px; min-height:44px; }
++  .mobileMeta { font-size:12.5px; }
++}
+diff --git a/tests/e2e/rank-profile.spec.ts b/tests/e2e/rank-profile.spec.ts
+index 647510c..3937a53 100644
+--- a/tests/e2e/rank-profile.spec.ts
++++ b/tests/e2e/rank-profile.spec.ts
+@@ -63,7 +63,7 @@ test('admin profile rank includes live scores while the corrector rank and place
+   const profile = profileRank(page);
+   await expect(profile).toBeVisible();
+   await expect(profile.getByText('850 pts', { exact: true })).toBeVisible();
+-  await expect(profile.locator('[data-rank-tier] img')).toHaveAttribute('src', '/ranks/bronze-2.png');
++  await expect(profile.locator('[data-rank-tier="bronze"][data-rank-level="2"] svg')).toBeVisible();
+   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '70');
+   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuetext', 'متبقي 150 نقطة');
+   for (const [label, value] of [['الترتيب', '#1'], ['الأوراق', '876'], ['الامتحانات', '2'], ['الدورات', '1'], ['أيام الحضور', '16'], ['متوسط اليوم', '54.8'], ['أخطاء التصحيح', '4'], ['أخطاء السلوك', '2'], ['معدل الدقة', '99.32 / 100']]) {
+@@ -74,7 +74,7 @@ test('admin profile rank includes live scores while the corrector rank and place
+   await enterAccount(page, correctorId);
+   const home = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
+   await expect(home.getByText('250 pts', { exact: true })).toBeVisible();
+-  await expect(home.locator('[data-rank-tier] img')).toHaveAttribute('src', '/ranks/bronze-1.png');
++  await expect(home.locator('[data-rank-tier="bronze"][data-rank-level="1"] svg')).toBeVisible();
+   await expect(home.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+   await expect(metric(home, 'الترتيب')).toHaveText('#2');
+   await expect(metric(home, 'الامتحانات')).toHaveText('1');

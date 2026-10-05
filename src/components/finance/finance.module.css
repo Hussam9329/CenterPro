@@ -113,3 +113,25 @@
   :global(html[data-theme='dark']) .report h3 { color:#111318; }
   :global(html[data-theme='dark']) .report :global(.muted) { color:#6b707b; }
 }
+
+/* CenterPro clarity pass — finance */
+@media screen {
+  .record p { font-size:13px; line-height:1.8; }
+  .record small,.rowName small,.small { font-size:12px; color:var(--muted,#626975); }
+  .compactMetrics span { font-size:12px; color:var(--muted,#626975); }
+  .compactMetrics strong { font-size:18px; }
+  .reportType { font-size:13.5px; min-height:58px; }
+  .reportTable { font-size:13px; }
+  .reportTable th { font-size:12px; }
+  .reportFooter { font-size:11.5px; color:var(--muted,#626975); }
+  .financialNotice { font-size:12.5px; }
+  .review h3 { font-size:15px; }
+  .reportsPreviewOnly { font-size:11.5px; }
+  .salaryRules { font-size:12.5px; }
+  :global(html[data-theme='dark']) .compactMetrics > div,
+  :global(html[data-theme='dark']) .confirmDetails { background:var(--surface-soft); border:1px solid var(--border); }
+  @media(max-width:700px) {
+    .reportType { font-size:13px; }
+    .compactMetrics span { font-size:11.5px; }
+  }
+}

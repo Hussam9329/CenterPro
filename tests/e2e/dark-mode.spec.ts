@@ -20,6 +20,24 @@ async function darkAndFits(page: Page, width: number) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
 }
 
+async function expectSeasonRankLayout(page: Page, width: number, description: string) {
+  const badges = page.locator('main [data-rank-tier]:visible');
+  await expect(badges.first()).toBeVisible();
+  for (const badge of await badges.all()) {
+    await expect(badge.locator('svg')).toBeVisible();
+    await expect(badge.locator('img, image')).toHaveCount(0);
+  }
+  await page.evaluate(() => document.fonts.ready);
+  const cards = page.locator('main section:has([data-rank-tier]):visible, main article:has([data-rank-tier]):visible');
+  await expect(cards.first()).toBeVisible();
+  const overflow = await cards.evaluateAll(elements => elements.flatMap(element => {
+    const bounds = element.getBoundingClientRect();
+    if (bounds.left >= -1 && bounds.right <= window.innerWidth + 1 && element.scrollWidth <= element.clientWidth + 1) return [];
+    return [{ label: element.getAttribute('aria-label') || element.textContent?.trim().slice(0, 100), left: bounds.left, right: bounds.right, width: element.clientWidth, contentWidth: element.scrollWidth }];
+  }));
+  expect(overflow, `${description}: seasonal cards and their contents fit at ${width}px`).toEqual([]);
+}
+
 for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
   test(`dark theme preserves readable admin forms, audit controls and seasonal ranks at ${width}px`, async ({ page }, testInfo) => {
     test.setTimeout(180_000);
@@ -60,6 +78,7 @@ for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
       await expect(page.getByRole('button', { name: section.control, exact: true })).toBeVisible();
       await scan(section.path);
       if (section.path === '/evaluations/seasons') {
+        await expectSeasonRankLayout(page, width, 'الترتيب الموسمي للإدارة');
         await page.screenshot({ path: testInfo.outputPath('dark-admin-season.png'), fullPage: true });
       }
       if (section.path !== '/evaluations/exams') {
@@ -94,9 +113,11 @@ for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
     await page.screenshot({ path: testInfo.outputPath('dark-auditor.png'), fullPage: true });
 
     await loginPreview(page, 'موظف');
+    await expectSeasonRankLayout(page, width, 'ملخص الموسم في رئيسية المصحح');
     await scan('رئيسية المصحح والرتبة');
     await gotoPreview(page, '/employee/evaluation');
     await page.getByLabel('اختيار امتحان التقييم', { exact: true }).selectOption('dark-closed-exam');
+    await expectSeasonRankLayout(page, width, 'التقييم الموسمي للمصحح');
     await scan('التقييم المنشور والرتبة');
     await page.screenshot({ path: testInfo.outputPath('dark-corrector-season.png'), fullPage: true });
     expect(violations).toEqual([]);

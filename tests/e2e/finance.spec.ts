@@ -233,6 +233,19 @@ test.describe('Finance preview workflows', () => {
     await expect(report).toBeVisible();
     await expect(report.getByRole('columnheader')).toHaveCount(14);
     await expect(report.getByRole('columnheader', { name: 'الأيام المطلوبة', exact: true })).toBeVisible();
+    // Screen typography must not override the compact, white A4 report in either theme.
+    for (const theme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ media: 'screen' });
+      if (theme === 'dark') await page.getByRole('button', { name: 'تفعيل الوضع الداكن', exact: true }).click();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+      await page.emulateMedia({ media: 'print' });
+      await expect(report.getByRole('table')).toHaveCSS('font-size', '10px');
+      await expect(report.getByRole('columnheader').first()).toHaveCSS('font-size', '10px');
+      await expect(report.locator('footer')).toHaveCSS('font-size', '9px');
+      await expect(report.getByText('بيانات تجريبية للمعاينة — غير معتمدة مالياً', { exact: true })).toHaveCSS('font-size', '9px');
+      await expect(report).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      await expect(report).toHaveCSS('color', 'rgb(17, 19, 24)');
+    }
     const geometry = await report.evaluate(element => ({ width: element.getBoundingClientRect().width, viewport: document.documentElement.clientWidth, tables: [...element.querySelectorAll('table')].map(table => ({ width: table.getBoundingClientRect().width, parent: table.parentElement!.getBoundingClientRect().width })) }));
     expect(geometry.width).toBeLessThanOrEqual(geometry.viewport + 1);
     for (const table of geometry.tables) expect(table.width).toBeLessThanOrEqual(table.parent + 1);

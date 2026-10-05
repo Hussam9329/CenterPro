@@ -58,11 +58,11 @@ export default function EmployeeEvaluationPage() {
   const rank = currentRows.findIndex(row => row.employeeId === employee.id) + 1;
   const seasonPosition = seasonRows.findIndex(row => row.employeeId === employee.id) + 1;
 
-  return <div className="page-stack">
+  return <div className={`page-stack ${styles.employeeEvaluationPage}`}>
     <PageHeader eyebrow="أداؤك" title="التقييمات" actions={<div className="inline"><Select value={effectiveSeasonId} onChange={event => { setSeasonId(event.target.value); setCycleId(''); setExamId(''); }} aria-label="اختيار الموسم">{seasons.map(item => <option key={item.id} value={item.id}>{item.name}{item.state === 'ARCHIVED' ? ' — مؤرشف' : ' — الحالي'}</option>)}{hasLegacyCycles && <option value="__legacy__">دورات سابقة بلا موسم</option>}</Select>{cycle && <><Select value={cycle.id} onChange={event => { setCycleId(event.target.value); setExamId(''); }} aria-label="اختيار دورة التقييم">{cycles.map(item => <option key={item.id} value={item.id}>{item.name}{item.state === 'ARCHIVED' ? ' — مؤرشفة' : ' — الحالية'}</option>)}</Select><Badge tone={cycle.state === 'OPEN' ? 'success' : 'neutral'}>{cycle.state === 'OPEN' ? 'الحالية' : 'أرشيف'}</Badge></>}</div>}/>
 
     {season && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
-      <RankBadge score={ownSeason?.score ?? 0} size="lg" animated/>
+      <RankBadge score={ownSeason?.score ?? 0} size="lg" animated showLabel={false}/>
       <div className={styles.employeeSeasonMain}>
         <span className="eyebrow">{season.name}</span>
         <h2 dir="ltr">{seasonRank.rank.name}</h2>
@@ -77,7 +77,6 @@ export default function EmployeeEvaluationPage() {
         <div><span>متوسط اليوم</span><strong dir="ltr">{formatAveragePapers(ownSeason?.averagePapersPerDay ?? null)}</strong></div>
         <div><span>الدقة</span><strong dir="ltr">{formatAccuracy(ownSeason?.accuracy ?? null)}</strong></div>
       </div>
-      <div className={styles.employeeSeasonPhrase}>انت موظف مو عادي !</div>
     </section>}
 
     {season && <Card title="Leaderboard الموسم"><SeasonLeaderboard rows={seasonRows} highlightEmployeeId={employee.id}/></Card>}

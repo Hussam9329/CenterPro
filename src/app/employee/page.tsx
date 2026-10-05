@@ -37,10 +37,9 @@ export default function EmployeeHomePage() {
   return <div className="page-stack">
     <PageHeader title={`مرحباً بك، ${employee.name.split(' ')[0]}`} actions={<Badge tone="brand">{monthLabel(DEMO_MONTH)}</Badge>} />
     {season && seasonRow && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
-      <RankBadge score={seasonRow?.score ?? 0} size="lg" animated/>
+      <RankBadge score={seasonRow?.score ?? 0} size="lg" animated showLabel={false}/>
       <div className={styles.employeeSeasonMain}><span className="eyebrow">{season.name}</span><h2 dir="ltr">{rankProgress.rank.name}</h2><strong className={styles.seasonPoints} dir="ltr">{seasonRow?.score ?? 0} pts</strong>{rankProgress.rank.next !== null ? <><div className={styles.rankProgress} role="progressbar" aria-label="التقدم إلى الرتبة التالية" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rankProgress.progress} aria-valuetext={`متبقي ${rankProgress.pointsToNext} نقطة`}><span style={{ width:`${rankProgress.progress}%` }}/></div><small>متبقي <bdi dir="ltr">{rankProgress.pointsToNext}</bdi> نقطة إلى {getRankProgress(rankProgress.rank.next).rank.name}</small></> : <small>أعلى رتبة موسمية</small>}</div>
       <div className={styles.employeeSeasonStats}><div><span>الترتيب</span><strong dir="ltr">{seasonPosition ? `#${seasonPosition}` : '—'}</strong></div><div><span>الدورات</span><strong dir="ltr">{seasonRow?.cyclesEvaluated ?? 0}</strong></div><div><span>الامتحانات</span><strong dir="ltr">{seasonRow?.examsEvaluated ?? 0}</strong></div><div><span>أيام الحضور</span><strong dir="ltr">{seasonRow?.attendanceDays ?? 0}</strong></div><div><span>متوسط اليوم</span><strong dir="ltr">{formatAveragePapers(seasonRow?.averagePapersPerDay ?? null)}</strong></div><div><span>الدقة</span><strong dir="ltr">{formatAccuracy(seasonRow?.accuracy ?? null)}</strong></div></div>
-      <div className={styles.employeeSeasonPhrase}>انت موظف مو عادي !</div>
       <Link href="/employee/evaluation" className="button-link">عرض التقييمات <ArrowLeft size={16}/></Link>
     </section>}
     <section className="employee-hero" aria-label="ملخص راتبك وحضورك">

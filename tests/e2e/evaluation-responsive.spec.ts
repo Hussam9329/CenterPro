@@ -74,6 +74,15 @@ async function expectSurfaceFits(surface: Locator, width: number, description: s
   expect(await surface.evaluate(element => element.scrollWidth <= element.clientWidth + 1), `${description}: content fits without clipping`).toBeTruthy();
 }
 
+async function expectNativeRankBadges(surface: Locator) {
+  const badges = surface.locator('[data-rank-tier]:visible');
+  await expect(badges.first()).toBeVisible();
+  for (const badge of await badges.all()) {
+    await expect(badge.locator('svg')).toBeVisible();
+    await expect(badge.locator('img, image')).toHaveCount(0);
+  }
+}
+
 async function expectEvaluationLayout(page: Page, width: number, description: string) {
   await expect(page.locator('main h1')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -154,6 +163,7 @@ for (const [width, height] of sizes) {
     for (const section of managementSections) {
       await openManagementSection(page, section);
       await expectEvaluationLayout(page, width, section.title);
+      if (section.path === '/evaluations/seasons') await expectNativeRankBadges(page.locator('main'));
       await screenshot(page, testInfo, `${width}-${section.screenshot}`);
       if (section.path !== '/evaluations/exams') await returnToEvaluationHub(page);
     }
@@ -224,6 +234,7 @@ for (const [width, height] of sizes) {
     await gotoPreview(page, '/employee/evaluation');
     await expect(page.getByRole('heading', { name: 'التقييمات', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'ابرار حقي', exact: true })).toBeVisible();
+    await expectNativeRankBadges(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true }));
     await expectEvaluationLayout(page, width, 'تقييم المصحح');
     await expect(page.getByLabel('اختيار دورة التقييم', { exact: true })).toBeVisible();
     await expect(page.getByLabel('اختيار امتحان التقييم', { exact: true })).toBeVisible();

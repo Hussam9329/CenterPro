@@ -860,3 +860,190 @@ html[data-theme='dark'] .brand .brand-logo-dark { display:block; }
 }
 
 .login-form-copyright { margin-top:22px; padding-top:16px; border-top:1px solid var(--border,#e8e8ec); color:var(--muted,#8a8e96); font:500 9px/1.6 'Inter Variable',sans-serif; text-align:center; direction:ltr; }
+
+/* --------------------------------------------------------------------------
+   CenterPro clarity system — shared visual language for every workspace.
+   Applied after legacy rules so the same density/readability works in light
+   and dark mode without changing any business logic.
+   -------------------------------------------------------------------------- */
+@media screen {
+:root {
+  --text: #20242b;
+  --muted: #626975;
+  --border: #e2e4e9;
+  --canvas: #f6f7f9;
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-soft: #f8f9fb;
+  --surface-tint: #fcf5f7;
+  --surface-hover: #fbf7f8;
+  --radius: 14px;
+  --shadow: 0 8px 26px #1d101407;
+}
+body { font-size: 14px; line-height: 1.72; }
+small { font-size: 12px; }
+
+/* Keep operational screens concise: descriptions belong in warnings/errors,
+   not underneath already self-explanatory page and card titles. */
+.page-header > div > p,
+.card-heading p { display: none; }
+.page-header { min-height: 54px; }
+.page-header h1 { font-size: clamp(28px,2vw,34px); font-weight: 740; letter-spacing: -.75px; }
+.eyebrow { font-size: 11px; color: var(--brand-text); font-weight: 650; }
+.page-stack { gap: 28px; }
+
+/* Application frame */
+.sidebar { width: 244px; padding: 29px 18px 22px; }
+.app-main { margin-right: 244px; }
+.nav-caption { font-size: 11px; color: var(--muted); margin-bottom: 11px; }
+.nav-link { min-height: 48px; padding: 11px 14px; border-radius: 10px; font-size: 13px; gap: 13px; }
+.nav-link svg { width: 20px; height: 20px; }
+.workspace-label { font-size: 12px; min-height: 46px; border-radius: 10px; }
+.workspace-version { font-size: 11px; }
+.sidebar-qr { font-size: 13px; }
+.sidebar-qr span, .sidebar-footer { font-size: 10px; }
+.topbar { height: 82px; }
+.breadcrumb { font-size: 12px; }
+.breadcrumb strong { font-size: 13px; }
+.topbar-date { font-size: 12px; }
+.user-menu strong { font-size: 12.5px; }
+.user-menu span:not(.avatar) { font-size: 10.5px; }
+.main-content { padding: 38px 36px; }
+.app-footer { font-size: 10px; }
+
+/* Cards and metrics */
+.card { padding: 26px; border-radius: 15px; box-shadow: var(--shadow); }
+.card-heading { margin-bottom: 22px; }
+.card-heading h2 { font-size: 17px; font-weight: 700; }
+.card-heading h2::before { height: 17px; width: 3px; vertical-align: -3px; }
+.stats-grid { gap: 16px; }
+.stat-card { padding: 22px; border-radius: 13px; box-shadow: 0 5px 18px #15101405; }
+.stat-top { font-size: 12px; color: var(--muted); min-height: 28px; font-weight: 550; }
+.stat-icon { width: 34px; height: 34px; color: var(--brand-text); background: color-mix(in srgb,var(--surface) 91%,var(--brand) 9%); border-radius: 10px; }
+.stat-value { font-size: clamp(25px,2.25vw,34px); font-weight: 720; margin-top: 12px; }
+.stat-hint { font-size: 11.5px; color: var(--muted); }
+.detail-item dt { font-size: 12px; color: var(--muted); }
+.detail-item dd { font-size: 14px; font-weight: 600; }
+.muted { font-size: 13px; color: var(--muted); }
+
+/* Controls */
+.btn, .button-link { min-height: 44px; border-radius: 9px; padding: 10px 17px; font-size: 13px; font-weight: 650; }
+.icon-button { width: 41px; height: 41px; border-radius: 10px; }
+.badge { min-height: 28px; padding: 5px 10px; border-radius: 7px; font-size: 11px; font-weight: 650; }
+.field { gap: 8px; }
+.field-label { font-size: 13px; color: var(--text); font-weight: 600; }
+.field-hint { font-size: 11.5px; color: var(--muted); }
+.field-error { font-size: 12px; }
+.input { min-height: 47px; padding: 11px 14px; border-radius: 9px; font-size: 13.5px; }
+.input[type="date"], .input[type="month"], .input[type="time"] { min-height: 47px; }
+.tabs button { min-height: 48px; padding: 13px 18px 14px; font-size: 13px; font-weight: 550; }
+.tabs button.active { font-weight: 700; }
+.search-input > svg { width: 18px; }
+.notice { font-size: 12.5px; border-radius: 10px; }
+.empty-state h3 { font-size: 16px; color: var(--text); }
+.empty-state p { font-size: 12px; color: var(--muted); }
+.dialog-header h2 { font-size: 20px; }
+.dialog-header p { font-size: 12px; }
+.toast { font-size: 13px; }
+
+/* Tables: larger type and stronger hierarchy without making rows bulky. */
+.data-table { font-size: 13px; }
+.data-table th { padding: 13px 15px; font-size: 11.5px; font-weight: 650; color: var(--muted); }
+.data-table td { padding: 17px 15px; color: #4f5661; }
+.data-table td strong { font-size: 13.5px; }
+.data-table td .amount, .data-table td.amount { font-size: 12.5px; }
+.pagination { font-size: 11.5px; }
+
+/* Dashboard */
+.big-metric strong { font-size: 42px; }
+.legend-item { font-size: 11.5px; }
+.legend-item strong { font-size: 12px; }
+.quick-action { min-height: 72px; padding: 17px 15px; border-radius: 11px; font-size: 12.5px; }
+.quick-action strong { font-size: 13px; }
+.quick-action > span, .quick-action span { font-size: 11.5px; }
+.quick-note { display:none; }
+.department-bar-top { font-size: 12px; }
+.department-bar-top strong { font-size: 12.5px; }
+.activity-row strong { font-size: 12.5px; }
+.activity-row p { font-size: 11.5px; }
+.activity-row > time, .activity-row > span:last-child { font-size: 10.5px; }
+
+/* Employee workspace */
+.employee-hero-main .inline > div > strong { font-size: 15px; }
+.employee-hero-main p { font-size: 12px; }
+.employee-salary span { font-size: 12px; }
+.employee-salary span:last-child { font-size: 11px; }
+.employee-hero-scan h2 { font-size: 18px; }
+.employee-hero-scan p { font-size: 12px; }
+.employee-hero-scan .muted { font-size: 10.5px; }
+
+/* Login: only the approved identity line gets visual emphasis. */
+.login-story-title, .login-story h1 { font-size: clamp(32px,3vw,46px); }
+.login-heading h1, .login-heading h2 { font-size: 29px; }
+.login-role strong { font-size: 14px; }
+.login-role p, .login-role span:not(.login-role-icon) { font-size: 11px; }
+.remember-login { font-size: 12px; }
+.login-form-copyright { font-size: 10px; }
+
+/* Authored dark counterparts for the clarity system. */
+html[data-theme='dark'] {
+  --text:#e8eaf0;
+  --muted:#aeb4bf;
+  --border:#303640;
+  --canvas:#0f1115;
+  --background:#0f1115;
+  --surface:#181b20;
+  --surface-soft:#1d2127;
+  --surface-tint:#24191e;
+  --surface-hover:#20191d;
+  --shadow:0 10px 32px #00000035;
+}
+html[data-theme='dark'] .stat-icon { background:#291b21; color:#ef8da0; }
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .stat-card { box-shadow:0 10px 28px #00000020; }
+html[data-theme='dark'] .data-table th { color:#b6bcc6; background:#1e2228; }
+html[data-theme='dark'] .data-table td { color:#d8dce3; }
+html[data-theme='dark'] .quick-action { background:#191c21; }
+html[data-theme='dark'] .field-label { color:#e7e9ed; }
+html[data-theme='dark'] .empty-state h3 { color:#e3e6eb; }
+
+@media (max-width: 1023px) {
+  .app-main { margin-right:0; }
+  .mobile-bottom-nav > a, .mobile-bottom-nav > button { font-size:10.5px; }
+  .main-content { padding:30px 25px; }
+}
+@media (max-width: 767px) {
+  body { font-size: 13.5px; }
+  .main-content { padding:25px 17px; }
+  .page-stack { gap:23px; }
+  .page-header h1 { font-size:27px; }
+  .page-header .eyebrow { font-size:10px; }
+  .page-actions .btn, .page-actions .button-link { min-height:42px; font-size:12.5px; }
+  .card { padding:20px 18px; border-radius:13px; }
+  .card-heading h2 { font-size:16px; }
+  .stat-card { padding:17px 16px; }
+  .stat-top { font-size:11.5px; }
+  .stat-value { font-size:25px; }
+  .stat-hint { font-size:10.5px; }
+  .field-label { font-size:12.5px; }
+  .input { min-height:47px; font-size:14px; }
+  .btn, .button-link { min-height:45px; font-size:13px; }
+  .badge { font-size:10.5px; }
+  .tabs button { font-size:12.5px; min-height:45px; }
+  .notice { font-size:11.5px; }
+  .detail-item dd { font-size:13px; }
+  .pagination { font-size:11px; }
+  .quick-action { font-size:12px; }
+  .employee-shell .grid-3 .stat-hint { font-size:10px; }
+  .mobile-bottom-nav > a, .mobile-bottom-nav > button { font-size:10px; }
+}
+@media (max-width: 390px) {
+  body { font-size:13px; }
+  .page-header h1 { font-size:25px; }
+  .stat-top { font-size:11px; }
+  .stat-hint { font-size:10px; }
+  .stat-value { font-size:23px; }
+  .card { padding:18px 15px; }
+}
+
+}

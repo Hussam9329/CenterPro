@@ -44,3 +44,22 @@
 :global(html[data-theme='dark']) .refreshIndicator b { color:var(--brand-text); }
 :global(html[data-theme='dark']) .displayFooter { border-color:var(--border); }
 .dayCard:focus-visible { outline-color:var(--focus); }
+
+/* CenterPro clarity pass — attendance */
+.workdayInfo h3 { font-size:16px; }
+.workdayInfo p,.workdayInfo span { font-size:12.5px; }
+.fieldset legend { font-size:14px; }
+.checkChoice { font-size:13.5px; min-height:44px; }
+.overrides summary,.filters summary,.demoControls summary { font-size:13.5px; }
+.calendarTile small { font-size:11.5px; }
+.rowActions { gap:8px; }
+.cardHeading small,.recordNote { font-size:12px; }
+.cardMetrics { font-size:12.5px; }
+.displayNote { font-size:11.5px; }
+.previewNotice { font-size:12px; }
+:global(html[data-theme='dark']) .calendarTile { background:#25191e; border-color:#4b2c35; }
+@media(max-width:767px) {
+  .workdayInfo h3 { font-size:16px; }
+  .workdayInfo p,.workdayInfo span { font-size:12px; }
+  .rowActions { gap:9px; }
+}
