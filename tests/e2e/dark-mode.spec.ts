@@ -20,12 +20,26 @@ async function darkAndFits(page: Page, width: number) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
 }
 
-async function expectSeasonRankLayout(page: Page, width: number, description: string) {
+async function expectSeasonRankLayout(page: Page, width: number, description: string, animated = false) {
   const badges = page.locator('main [data-rank-tier]:visible');
   await expect(badges.first()).toBeVisible();
+  if (animated) await expect(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true }).locator('[data-rank-shine]')).toHaveCount(1);
   for (const badge of await badges.all()) {
-    await expect(badge.locator('svg')).toBeVisible();
-    await expect(badge.locator('img, image')).toHaveCount(0);
+    const tier = await badge.getAttribute('data-rank-tier');
+    const level = await badge.getAttribute('data-rank-level');
+    const asset = tier === 'grandmaster' ? '/ranks/grandmaster.png' : `/ranks/${tier}-${level}.png`;
+    const image = badge.locator('img');
+    await expect(image).toHaveAttribute('src', asset);
+    await image.scrollIntoViewIfNeeded();
+    await expect(image).toBeVisible();
+    await expect.poll(() => image.evaluate(element => element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0 && element.naturalHeight > 0), { message: `${asset}: dark rank image loads successfully` }).toBe(true);
+    await expect(badge.locator('svg, canvas')).toHaveCount(0);
+    const shine = badge.locator('[data-rank-shine]');
+    if (await shine.count()) {
+      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);
+      await expect(shine).toHaveCSS('mask-size', 'contain');
+      await expect(shine).toHaveCSS('mask-repeat', 'no-repeat');
+    }
   }
   await page.evaluate(() => document.fonts.ready);
   const cards = page.locator('main section:has([data-rank-tier]):visible, main article:has([data-rank-tier]):visible');
@@ -113,11 +127,11 @@ for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
     await page.screenshot({ path: testInfo.outputPath('dark-auditor.png'), fullPage: true });
 
     await loginPreview(page, 'موظف');
-    await expectSeasonRankLayout(page, width, 'ملخص الموسم في رئيسية المصحح');
+    await expectSeasonRankLayout(page, width, 'ملخص الموسم في رئيسية المصحح', true);
     await scan('رئيسية المصحح والرتبة');
     await gotoPreview(page, '/employee/evaluation');
     await page.getByLabel('اختيار امتحان التقييم', { exact: true }).selectOption('dark-closed-exam');
-    await expectSeasonRankLayout(page, width, 'التقييم الموسمي للمصحح');
+    await expectSeasonRankLayout(page, width, 'التقييم الموسمي للمصحح', true);
     await scan('التقييم المنشور والرتبة');
     await page.screenshot({ path: testInfo.outputPath('dark-corrector-season.png'), fullPage: true });
     expect(violations).toEqual([]);

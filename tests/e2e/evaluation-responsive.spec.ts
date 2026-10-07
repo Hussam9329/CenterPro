@@ -74,12 +74,26 @@ async function expectSurfaceFits(surface: Locator, width: number, description: s
   expect(await surface.evaluate(element => element.scrollWidth <= element.clientWidth + 1), `${description}: content fits without clipping`).toBeTruthy();
 }
 
-async function expectNativeRankBadges(surface: Locator) {
+async function expectRankAssets(surface: Locator, animated = false) {
   const badges = surface.locator('[data-rank-tier]:visible');
   await expect(badges.first()).toBeVisible();
   for (const badge of await badges.all()) {
-    await expect(badge.locator('svg')).toBeVisible();
-    await expect(badge.locator('img, image')).toHaveCount(0);
+    const tier = await badge.getAttribute('data-rank-tier');
+    const level = await badge.getAttribute('data-rank-level');
+    const asset = tier === 'grandmaster' ? '/ranks/grandmaster.png' : `/ranks/${tier}-${level}.png`;
+    const image = badge.locator('img');
+    await expect(image).toHaveAttribute('src', asset);
+    await image.scrollIntoViewIfNeeded();
+    await expect(image).toBeVisible();
+    await expect.poll(() => image.evaluate(element => element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0 && element.naturalHeight > 0), { message: `${asset}: rank image loads successfully` }).toBe(true);
+    await expect(badge.locator('svg, canvas')).toHaveCount(0);
+    if (animated) {
+      const shine = badge.locator('[data-rank-shine]');
+      await expect(shine).toHaveCount(1);
+      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);
+      await expect(shine).toHaveCSS('mask-size', 'contain');
+      await expect(shine).toHaveCSS('mask-repeat', 'no-repeat');
+    }
   }
 }
 
@@ -163,7 +177,7 @@ for (const [width, height] of sizes) {
     for (const section of managementSections) {
       await openManagementSection(page, section);
       await expectEvaluationLayout(page, width, section.title);
-      if (section.path === '/evaluations/seasons') await expectNativeRankBadges(page.locator('main'));
+      if (section.path === '/evaluations/seasons') await expectRankAssets(page.locator('main'));
       await screenshot(page, testInfo, `${width}-${section.screenshot}`);
       if (section.path !== '/evaluations/exams') await returnToEvaluationHub(page);
     }
@@ -234,7 +248,7 @@ for (const [width, height] of sizes) {
     await gotoPreview(page, '/employee/evaluation');
     await expect(page.getByRole('heading', { name: 'التقييمات', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'ابرار حقي', exact: true })).toBeVisible();
-    await expectNativeRankBadges(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true }));
+    await expectRankAssets(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true }), true);
     await expectEvaluationLayout(page, width, 'تقييم المصحح');
     await expect(page.getByLabel('اختيار دورة التقييم', { exact: true })).toBeVisible();
     await expect(page.getByLabel('اختيار امتحان التقييم', { exact: true })).toBeVisible();

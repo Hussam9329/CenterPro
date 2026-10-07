@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useSyncExternalStore, type ReactNode } from 'react';
-import { Check, X } from 'lucide-react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { Check } from 'lucide-react';
 import { createInitialData, createTestData } from '@/lib/mock-data';
 import { assertSingleOpenWorkday } from '@/lib/attendance';
 import { assertEvaluationMutation, assertEvaluationState } from '@/lib/evaluations';
@@ -117,8 +117,14 @@ const DemoContext = createContext<DemoContextValue | null>(null);
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const [toast, setToast] = useState('');
-  const notify = useCallback((message: string) => { setToast(message); }, []);
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
+  const toastSequence = useRef(0);
+  const notify = useCallback((message: string) => { setToast({ id: ++toastSequence.current, message }); }, []);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(current => current?.id === toast.id ? null : current), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
   function login(role: Role, employeeId?: string, remember = false) {
     if (role === 'SUPER_ADMIN' && !employeeId) {
       emit({ ...snapshot, session: { ...PREVIEW_SYSTEM_ADMIN }, remembered: remember }, true);
@@ -149,7 +155,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     }
     emit({ ...snapshot, data: draft });
   }
-  return <DemoContext.Provider value={{ ...state, login, logout, resetDemo, loadTestData, updateData, notify }}>{children}{toast && <div className="toast" role="status"><Check size={20}/><span>{toast}</span><button onClick={() => setToast('')} aria-label="إغلاق الإشعار"><X size={17}/></button></div>}</DemoContext.Provider>;
+  return <DemoContext.Provider value={{ ...state, login, logout, resetDemo, loadTestData, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
 }
 export function useDemo() { const context = useContext(DemoContext); if (!context) throw new Error('DemoProvider is required'); return context; }
 export function useToast() { return useDemo().notify; }

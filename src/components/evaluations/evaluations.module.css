@@ -66,28 +66,26 @@
 :global(html:not([data-theme='dark'])) .highlightRow,
 :global(html:not([data-theme='dark'])) .highlightCard { --muted:#616671; }
 
-/* Rank emblem — native CenterPro SVG system built from the approved Hassan Falah mark. */
+/* Rank emblem — approved faceted assets, transparent and shadow-free. */
 .rankBadgeWrap { display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
-.rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; isolation:isolate; }
-.rankSvg { display:block; width:100%; height:100%; overflow:visible; filter:drop-shadow(0 10px 16px color-mix(in srgb,#111318 18%,transparent)); }
-.rankSvgArtwork { transform-origin:center; }
-.rankBadgeSM .rankBadgeIcon { width:42px; height:46px; }
-.rankBadgeMD .rankBadgeIcon { width:70px; height:76px; }
-.rankBadgeLG .rankBadgeIcon { width:138px; height:148px; }
+.rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; isolation:isolate; background:transparent !important; border:0 !important; }
+.rankAssetImage { display:block; width:100%; height:100%; object-fit:contain; object-position:center; filter:none !important; }
+.rankBadgeSM .rankBadgeIcon { width:42px; height:42px; }
+.rankBadgeMD .rankBadgeIcon { width:72px; height:72px; }
+.rankBadgeLG .rankBadgeIcon { width:142px; height:142px; }
 .rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:13px; line-height:1.2; white-space:nowrap; }
 .rankBadgeMD .rankBadgeLabel { font-size:15px; }
 .rankBadgeLG .rankBadgeLabel { font-size:20px; }
-.rankSvgShineLayer { pointer-events:none; }
-.rankSvgShine { opacity:0; transform-box:fill-box; transform-origin:center; }
-.rankBadgeAnimated .rankSvgShine { animation:rankVectorShine 4.8s cubic-bezier(.45,.02,.2,1) infinite; }
-@keyframes rankVectorShine {
-  0%,68% { opacity:0; transform:translateX(-90px) rotate(18deg); }
+.rankAssetShine { position:absolute; inset:0; pointer-events:none; opacity:0; background:linear-gradient(108deg,transparent 34%,rgba(255,255,255,.12) 43%,rgba(255,255,255,.92) 50%,rgba(255,255,255,.18) 57%,transparent 66%); background-size:240% 100%; background-position:155% 0; -webkit-mask-image:var(--rank-mask); mask-image:var(--rank-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+.rankBadgeAnimated .rankAssetShine { animation:rankAssetShine 4.8s cubic-bezier(.45,.02,.2,1) infinite; }
+@keyframes rankAssetShine {
+  0%,68% { opacity:0; background-position:155% 0; }
   72% { opacity:.92; }
-  84% { opacity:.78; transform:translateX(1420px) rotate(18deg); }
-  88%,100% { opacity:0; transform:translateX(1420px) rotate(18deg); }
+  84% { opacity:.78; background-position:-55% 0; }
+  88%,100% { opacity:0; background-position:-55% 0; }
 }
-@media (prefers-reduced-motion: reduce) { .rankBadgeAnimated .rankSvgShine { animation:none; display:none; } }
-:global(html[data-theme='dark']) .rankSvg { filter:drop-shadow(0 12px 20px #00000070); }
+@media (prefers-reduced-motion: reduce) { .rankBadgeAnimated .rankAssetShine { animation:none; display:none; } }
+:global(html[data-theme='dark']) .rankAssetImage { filter:none !important; }
 :global(html[data-theme='dark']) .rankBadgeLabel { color:#f2f4f6; }
 
 /* Season admin */
@@ -184,7 +182,6 @@
   .employeeSeasonStats > div { padding:9px 6px; }
   .employeeSeasonCard > :global(.button-link) { grid-column:1; justify-self:center; }
   .employeeSeasonPhrase { grid-column:1; }
-  .rankBadgeLG .rankBadgeIcon { width:94px; height:102px; }
   .multiPanel { /* position/side is calculated from trigger in JS */ }
 }
 @media (max-width:430px) {
@@ -334,8 +331,7 @@
 .profileRankStats span { font-size:10.5px; }
 .profileRankStats strong { font-size:13px; }
 
-/* The emblem is a native element of the UI. It never receives a tile/background. */
-.rankBadgeIcon { background:transparent !important; border:0 !important; }
+/* The rank emblem stays visually integrated with the UI, never placed on a separate tile. */
 .rankBadgeWrap { background:transparent; }
 
 :global(html[data-theme='dark']) .auditCard,
@@ -353,7 +349,7 @@
   .mobileLeaderCard p { font-size:11.5px; }
   .employeeSeasonCard { padding:23px 17px 20px; }
   .employeeSeasonStats > div { padding:10px 8px; }
-  .rankBadgeLG .rankBadgeIcon { width:104px; height:112px; }
+  .rankBadgeLG .rankBadgeIcon { width:104px; height:104px; }
   .rankBadgeLG .rankBadgeLabel { font-size:18px; }
 }
 

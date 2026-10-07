@@ -54,6 +54,19 @@ function metric(container: Locator, label: string) {
   return container.getByText(label, { exact: true }).locator('..').locator('strong');
 }
 
+async function expectLoadedRank(container: Locator, level: 1 | 2) {
+  const badge = container.getByRole('img', { name: `Bronze ${level}`, exact: true });
+  await expect(badge).toBeVisible();
+  const image = badge.locator('img');
+  await expect(image).toHaveAttribute('src', `/ranks/bronze-${level}.png`);
+  await image.scrollIntoViewIfNeeded();
+  await image.evaluate(element => (element as HTMLImageElement).decode());
+  expect(await image.evaluate(element => {
+    const image = element as HTMLImageElement;
+    return image.complete && image.naturalWidth > 0 && getComputedStyle(image).objectFit === 'contain';
+  }), 'The profile rank artwork is loaded and keeps its aspect ratio').toBeTruthy();
+}
+
 test.use({ viewport: { width: 1366, height: 900 } });
 
 test('admin profile rank includes live scores while the corrector rank and place use published exams only', async ({ page }) => {
@@ -63,7 +76,7 @@ test('admin profile rank includes live scores while the corrector rank and place
   const profile = profileRank(page);
   await expect(profile).toBeVisible();
   await expect(profile.getByText('850 pts', { exact: true })).toBeVisible();
-  await expect(profile.locator('[data-rank-tier="bronze"][data-rank-level="2"] svg')).toBeVisible();
+  await expectLoadedRank(profile, 2);
   await expect(profile.getByText('Bronze 2', { exact: true })).toHaveCount(1);
   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '70');
   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuetext', 'متبقي 150 نقطة');
@@ -75,7 +88,7 @@ test('admin profile rank includes live scores while the corrector rank and place
   await enterAccount(page, correctorId);
   const home = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
   await expect(home.getByText('250 pts', { exact: true })).toBeVisible();
-  await expect(home.locator('[data-rank-tier="bronze"][data-rank-level="1"] svg')).toBeVisible();
+  await expectLoadedRank(home, 1);
   await expect(home.getByText('Bronze 1', { exact: true })).toHaveCount(1);
   await expect(home.getByText('انت موظف مو عادي !', { exact: true })).toHaveCount(0);
   await expect(home.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
@@ -108,6 +121,7 @@ test('latest archived rank uses its frozen row and links to that specific season
   await expect(profile).toContainText('موسم ملف الموظف');
   await expect(profile).not.toContainText('موسم أقدم');
   await expect(profile.getByText('850 pts', { exact: true })).toBeVisible();
+  await expectLoadedRank(profile, 2);
   const leaderboardLink = profile.getByRole('link', { name: 'Leaderboard الموسم', exact: true });
   await expect(leaderboardLink).toHaveAttribute('href', '/evaluations/seasons?season=rank-season#season-rank-season');
   await leaderboardLink.click();
@@ -116,6 +130,7 @@ test('latest archived rank uses its frozen row and links to that specific season
   const home = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
   await expect(home).toContainText('موسم ملف الموظف');
   await expect(home.getByText('850 pts', { exact: true })).toBeVisible();
+  await expectLoadedRank(home, 2);
 });
 
 test('correctors absent from an archived snapshot do not receive an invented zero-point rank', async ({ page }) => {
@@ -174,6 +189,7 @@ for (const [width, height, theme] of [[360, 800, 'light'], [768, 1024, 'dark']] 
     await expect(page.getByRole('heading', { name: data.employees[0].name, exact: true })).toBeVisible();
     const profile = profileRank(page);
     await fits(profile);
+    await expectLoadedRank(profile, 2);
     await expect(profile.getByText('Bronze 2', { exact: true })).toHaveCount(1);
     await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '70');
     await page.getByRole('button', { name: 'تعديل الملف', exact: true }).click();
@@ -192,6 +208,7 @@ for (const [width, height, theme] of [[360, 800, 'light'], [768, 1024, 'dark']] 
     await enterAccount(page, correctorId);
     const home = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
     await fits(home);
+    await expectLoadedRank(home, 1);
     await expect(home.getByText('Bronze 1', { exact: true })).toHaveCount(1);
     await expect(home.getByText('انت موظف مو عادي !', { exact: true })).toHaveCount(0);
   });
