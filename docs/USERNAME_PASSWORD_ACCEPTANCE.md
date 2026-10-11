@@ -23,4 +23,16 @@ The approved layout, logo, themes, rank artwork and business formulas are preser
 
 ## Verification and release
 
-`npm run check` passes: lint, strict typecheck, all **214 unit/domain tests** and the optimized Next.js production build. Browser validation includes 146 scenarios; the final browser results and Production deployment evidence will be recorded here after they complete. No new Vercel environment variables are required for this browser-local patch.
+`npm run check` passes: lint, strict typecheck, all **214 unit/domain tests** and the optimized Next.js production build. All **146 browser scenarios** pass. The local full run passed 138 initially; seven login-error assertions needed to exclude Next.js's separate route announcer, and one legacy-state test needed to await initialization. All eight corrected cases passed on a targeted rerun. The final exact-commit GitHub workflow independently passed the complete suite in one run.
+
+- Application commit: `9357f288eda9b1bdc641b6fd9919ed2ceb218913`.
+- Tested and deployed `main` commit, including final test corrections: `7debb3399121404c5c42b1c28ab6bf9482697ea0`.
+- [GitHub Actions run 38155924585](https://github.com/Hussam9329/CenterPro/actions/runs/38155924585): **success**; lint, typecheck, unit tests, production build and browser tests all passed.
+- Vercel deployment: `dpl_F9LQcj7PFKZTToUXHmjBmaJXN5zX`, target **production**, state **READY**. The project identifies this deployment as its current Production release; aliases are assigned with no alias error.
+- Primary URL: [https://centerpro-sigma.vercel.app/login](https://centerpro-sigma.vercel.app/login).
+- Artifact URL: `https://centerpro-8u3v298mb-hussam9329s-projects.vercel.app`.
+- Deployment input: 122 committed application/build files, 11,471,664 bytes; manifest SHA-256 `86bf69659ff6cd4db8a75792599559b790a3fdc8db7ce34a5958c9f676268525`. Test fixtures, docs, environment files and repository credentials are excluded.
+
+Live browser verification on the primary Production URL confirmed the initial administrator setup heading, username/password/confirmation fields, enabled setup action and no account selector. No owner credential was created during this deployment check. The owner chooses their own username and password on first visit. The approved branding and RTL layout are visible in the [Production screenshot](username-password-production.jpg).
+
+No new Vercel environment variables are required. This release was uploaded directly from the immutable `main` commit to the existing Vercel project; it does not establish automatic GitHub-to-Vercel deployment integration.
