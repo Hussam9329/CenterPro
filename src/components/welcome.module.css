@@ -24,3 +24,8 @@
 :global(html[data-theme='dark']) .message strong { color:#f7f4f5; }
 :global(html[data-theme='dark']) .message span { color:#b6bbc4; }
 @media(prefers-reduced-motion:reduce) { .letterC,.letterP { stroke-dashoffset:0; animation:none; } .wordmark,.message,.composition { animation:none; opacity:1; transform:none; } }
+
+/* Exact brand asset: avoid clipping/reconstructing the inner P during the welcome motion. */
+.logo { object-fit:contain; object-position:center; animation:welcomeLogo var(--welcome-duration) cubic-bezier(.24,.75,.2,1) both; }
+@keyframes welcomeLogo { 0% { opacity:0; transform:translateY(6px) scale(.985); } 22%,88% { opacity:1; transform:none; } 100% { opacity:0; transform:translateY(-2px) scale(.995); } }
+@media(prefers-reduced-motion:reduce) { .logo { animation:none; opacity:1; transform:none; } }

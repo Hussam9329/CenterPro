@@ -64,7 +64,7 @@ async function expectRankAssets(scope: Locator) {
     const css = getComputedStyle(img);
     const layers = [badge, img.parentElement!, img].map(element => getComputedStyle(element));
     return {
-      name: badge.textContent?.trim(), source, pixelHash, painted, touchesEdge,
+      name: badge.textContent?.trim(), source, pixelHash, painted, touchesEdge, resolution: [img.naturalWidth, img.naturalHeight],
       fitsImage: css.objectFit === 'contain' && css.objectPosition === '50% 50%',
       noShadow: layers.every(layer => layer.filter === 'none' && layer.boxShadow === 'none'),
       integrated: layers.every(layer => (layer.backgroundColor === 'rgba(0, 0, 0, 0)' || layer.backgroundColor === 'transparent')
@@ -76,6 +76,7 @@ async function expectRankAssets(scope: Locator) {
   expect(new Set(results.map(item => item.source)).size).toBe(22);
   expect(new Set(results.map(item => item.pixelHash)).size, 'All 22 loaded emblems have distinct browser-painted pixels, not only different URLs').toBe(22);
   for (const rank of results) {
+    expect(rank.resolution, `${rank.name}: the full-resolution asset is loaded`).toEqual([1024, 1024]);
     expect(rank.source).toMatch(/\/ranks\/(?:bronze|silver|gold|platinum|diamond|emerald|master)-[123]\.png|\/ranks\/grandmaster\.png/);
     expect(rank.painted, `${rank.name}: nonempty transparent artwork`).toBeGreaterThan(1000);
     expect(rank.painted, `${rank.name}: transparent breathing room`).toBeLessThan(60_000);

@@ -1212,3 +1212,113 @@ html[data-theme='dark'] .stat-card.stat-accent { background:var(--brand); border
   .stat-card { padding:15px; }
 }
 }
+
+@media screen {
+/* Final brand polish: stronger CenterPro crimson, clearer borders, stable Light/Dark rendering. */
+:root {
+  --brand-border: color-mix(in srgb,var(--border) 72%,var(--brand) 28%);
+  --brand-border-strong: color-mix(in srgb,var(--border) 55%,var(--brand) 45%);
+  --brand-soft-surface: color-mix(in srgb,var(--surface) 94%,var(--brand) 6%);
+}
+html[data-theme='dark'] {
+  --brand-border: color-mix(in srgb,var(--border) 70%,#d9566e 30%);
+  --brand-border-strong: color-mix(in srgb,var(--border) 48%,#d9566e 52%);
+  --brand-soft-surface: color-mix(in srgb,var(--surface) 91%,#a51c30 9%);
+}
+
+/* Vercel preview feedback controls are platform chrome, not part of CenterPro. */
+vercel-live-feedback,
+vercel-toolbar,
+#vercel-toolbar,
+.vercel-toolbar,
+[data-vercel-toolbar],
+[data-vercel-feedback],
+[data-vercel-feedback-button] { display:none !important; visibility:hidden !important; pointer-events:none !important; }
+
+.card {
+  border-color:var(--brand-border);
+}
+.card-heading {
+  padding-inline-start:11px;
+  border-inline-start:3px solid var(--brand);
+}
+.card-heading h2::before { display:none; }
+.stat-card {
+  position:relative;
+  border-color:var(--brand-border);
+  border-top:2px solid color-mix(in srgb,var(--brand) 46%,var(--border) 54%);
+}
+.stat-card:not(.stat-accent) .stat-icon {
+  color:var(--brand);
+  background:var(--brand-soft-surface);
+  border:1px solid var(--brand-border);
+}
+.stat-card:not(.stat-accent) .stat-icon svg { color:var(--brand); }
+html[data-theme='dark'] .stat-card:not(.stat-accent) .stat-icon,
+html[data-theme='dark'] .stat-card:not(.stat-accent) .stat-icon svg { color:#ef8da0; }
+/* Keep the icon legible on the crimson KPI card in both themes. */
+.stat-accent .stat-icon,
+html[data-theme='dark'] .stat-accent .stat-icon {
+  color:#a51c30 !important;
+  background:#fff !important;
+  border:1px solid #f4dbe0 !important;
+}
+.stat-accent .stat-icon svg,
+html[data-theme='dark'] .stat-accent .stat-icon svg { color:#a51c30 !important; stroke:#a51c30 !important; }
+.stat-accent .stat-top > span:not(.stat-icon) { color:#f7e3e7; }
+
+.quick-action,
+.setup-step,
+.list-row,
+.pagination,
+.empty-state,
+.input,
+.select,
+.textarea {
+  border-color:var(--brand-border);
+}
+.quick-action:hover,
+.setup-step:hover { border-color:var(--brand-border-strong); }
+.quick-action > svg { color:var(--brand); stroke-width:1.8; }
+
+.data-table th {
+  background:var(--brand-soft-surface);
+  color:color-mix(in srgb,var(--text) 72%,var(--brand) 28%);
+  border-bottom-color:var(--brand-border-strong);
+}
+.data-table td { border-bottom-color:var(--brand-border); }
+.data-table tbody tr:hover td { background:var(--brand-soft-surface); }
+
+.btn-secondary,.button-link { border-color:var(--brand-border); }
+.btn-secondary:hover,.button-link:hover { border-color:var(--brand-border-strong); }
+.tabs { border-bottom-color:var(--brand-border); }
+.tabs button.active { background:var(--brand-soft-surface); border-radius:9px 9px 0 0; }
+.input:hover:not(:disabled) { border-color:var(--brand-border-strong); }
+.search-input > svg { color:color-mix(in srgb,var(--muted) 66%,var(--brand) 34%); }
+
+.department-bar-track { background:var(--brand-soft-surface); }
+.department-bar-track > span,.department-bar-track > div { background:var(--brand); }
+.activity-dot { color:var(--brand); background:var(--brand-soft-surface); border-color:var(--brand-border); }
+.progress-track { background:var(--brand-soft-surface); }
+.card-bottom { border-top-color:var(--brand-border); }
+
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .stat-card,
+html[data-theme='dark'] .quick-action,
+html[data-theme='dark'] .setup-step,
+html[data-theme='dark'] .list-row,
+html[data-theme='dark'] .input,
+html[data-theme='dark'] .select,
+html[data-theme='dark'] .textarea { border-color:var(--brand-border); }
+html[data-theme='dark'] .data-table th { background:#271b20; color:#f0b4c0; border-bottom-color:var(--brand-border-strong); }
+html[data-theme='dark'] .data-table td { border-bottom-color:#3c2930; }
+html[data-theme='dark'] .data-table tbody tr:hover td { background:#24191e; }
+html[data-theme='dark'] .tabs button.active { background:#291a20; }
+html[data-theme='dark'] .quick-action > svg { color:#ef879a; }
+
+@media(max-width:767px) {
+  .card-heading { padding-inline-start:9px; border-inline-start-width:3px; }
+  .stat-card { border-top-width:2px; }
+}
+
+}

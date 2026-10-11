@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import Image from 'next/image';
 import { useTheme } from './theme-provider';
 import styles from './welcome.module.css';
 
@@ -14,23 +15,10 @@ interface WelcomeContextValue {
 
 const WelcomeContext = createContext<WelcomeContextValue | null>(null);
 
-/** The source paths and wordmark retain the geometry of public/brand/logo.svg. */
+/** Use the approved brand artwork directly so the CP symbol is never clipped or reconstructed differently. */
 function WelcomeLogo() {
   const { theme } = useTheme();
-  const id = useId();
-  const titleId = `${id}-title`;
-  const wordmarkId = `${id}-wordmark`;
-
-  return <svg className={styles.logo} viewBox="180 205 175 51" width="175" height="51" role="img" aria-labelledby={titleId}>
-    <title id={titleId}>CenterPro</title>
-    <defs><clipPath id={wordmarkId}><rect x="230" y="205" width="125" height="51" /></clipPath></defs>
-    <g transform="matrix(.29062499,0,0,.29062499,179.45066,207.32953)" fill="none" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4">
-      <path className={styles.letterC} pathLength="1" stroke="#A51C30" strokeWidth="22" d="M111 29C86.59874 15.78387 56.25467 21.703885 38.6106 43.122903 20.966528 64.541919 20.966528 95.458087 38.6106 116.8771 56.25467 138.29611 86.59874 144.21613 111 131" />
-      <path className={styles.letterP} pathLength="1" stroke="currentColor" strokeWidth="18" d="M79 45V119" />
-      <path className={styles.letterP} pathLength="1" stroke="currentColor" strokeWidth="18" d="M79 52H108C126 52 136 62 136 78 136 95 125 105 107 105H79" />
-    </g>
-    <image className={styles.wordmark} clipPath={`url(#${wordmarkId})`} href={theme === 'dark' ? '/brand/logo-white.svg' : '/brand/logo.svg'} x="180" y="205" width="175" height="51" />
-  </svg>;
+  return <Image className={styles.logo} src={theme === 'dark' ? '/brand/logo-white.svg' : '/brand/logo.svg'} width={175} height={51} alt="CenterPro" priority draggable={false} />;
 }
 
 export function WelcomeProvider({ children }: { children: ReactNode }) {

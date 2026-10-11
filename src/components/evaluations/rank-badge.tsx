@@ -17,7 +17,7 @@ export function RankBadge({ score, size = 'md', animated = false, showLabel = tr
   const maskStyle = { '--rank-mask': `url("${src}")` } as CSSProperties;
   return <div className={`${styles.rankBadgeWrap} ${styles[`rankBadge${size.toUpperCase()}`]} ${animated ? styles.rankBadgeAnimated : ''}`} data-rank-tier={rank.tier} data-rank-level={rank.level ?? 'grandmaster'} aria-label={showLabel ? undefined : rank.name} role={showLabel ? undefined : 'img'}>
     <div className={styles.rankBadgeIcon}>
-      <Image className={styles.rankAssetImage} src={src} width={512} height={512} alt="" aria-hidden="true" unoptimized priority={size === 'lg'} />
+      <Image className={styles.rankAssetImage} src={src} width={1024} height={1024} alt="" aria-hidden="true" unoptimized priority={size === 'lg'} />
       {animated && <span className={styles.rankAssetShine} style={maskStyle} data-rank-shine aria-hidden="true" />}
     </div>
     {showLabel && <div className={styles.rankBadgeLabel}><strong dir="ltr">{rank.name}</strong></div>}

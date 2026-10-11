@@ -63,8 +63,14 @@ async function expectLoadedRank(container: Locator, level: 1 | 2) {
   await image.evaluate(element => (element as HTMLImageElement).decode());
   expect(await image.evaluate(element => {
     const image = element as HTMLImageElement;
-    return image.complete && image.naturalWidth > 0 && getComputedStyle(image).objectFit === 'contain';
+    return image.complete && image.naturalWidth === 1024 && image.naturalHeight === 1024 && getComputedStyle(image).objectFit === 'contain';
   }), 'The profile rank artwork is loaded and keeps its aspect ratio').toBeTruthy();
+  expect(await container.evaluate(element => {
+    const container = element.getBoundingClientRect();
+    const artwork = element.querySelector('[data-rank-tier] img')!.getBoundingClientRect();
+    return artwork.left >= container.left - 1 && artwork.right <= container.right + 1
+      && artwork.top >= container.top - 1 && artwork.bottom <= container.bottom + 1;
+  }), 'The enlarged emblem remains fully inside the profile or season card').toBeTruthy();
 }
 
 test.use({ viewport: { width: 1366, height: 900 } });

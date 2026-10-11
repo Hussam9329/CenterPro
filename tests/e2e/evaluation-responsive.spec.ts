@@ -85,9 +85,18 @@ async function expectRankAssets(surface: Locator, animated = false) {
     await expect(image).toHaveAttribute('src', asset);
     await image.scrollIntoViewIfNeeded();
     await expect(image).toBeVisible();
+    await expect(image).toHaveCSS('object-fit', 'contain');
     await expect.poll(() => image.evaluate(element => element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0 && element.naturalHeight > 0), { message: `${asset}: rank image loads successfully` }).toBe(true);
     await expect(badge.locator('svg, canvas')).toHaveCount(0);
     if (animated) {
+      const imageFitsCard = await image.evaluate(element => {
+        const card = element.closest('section');
+        if (!card) return false;
+        const imageBounds = element.getBoundingClientRect();
+        const cardBounds = card.getBoundingClientRect();
+        return imageBounds.left >= cardBounds.left - 1 && imageBounds.right <= cardBounds.right + 1 && imageBounds.top >= cardBounds.top - 1 && imageBounds.bottom <= cardBounds.bottom + 1;
+      });
+      expect(imageFitsCard, `${asset}: enlarged rank image fits inside its season card without clipping`).toBe(true);
       const shine = badge.locator('[data-rank-shine]');
       await expect(shine).toHaveCount(1);
       expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);

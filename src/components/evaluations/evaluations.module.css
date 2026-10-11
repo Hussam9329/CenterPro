@@ -69,10 +69,10 @@
 /* Rank emblem — approved faceted assets, transparent and shadow-free. */
 .rankBadgeWrap { display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
 .rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; isolation:isolate; background:transparent !important; border:0 !important; }
-.rankAssetImage { display:block; width:100%; height:100%; object-fit:contain; object-position:center; filter:none !important; }
+.rankAssetImage { display:block; width:100%; height:100%; object-fit:contain; object-position:center; filter:none !important; image-rendering:auto; }
 .rankBadgeSM .rankBadgeIcon { width:42px; height:42px; }
 .rankBadgeMD .rankBadgeIcon { width:72px; height:72px; }
-.rankBadgeLG .rankBadgeIcon { width:142px; height:142px; }
+.rankBadgeLG .rankBadgeIcon { width:176px; height:176px; }
 .rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:13px; line-height:1.2; white-space:nowrap; }
 .rankBadgeMD .rankBadgeLabel { font-size:15px; }
 .rankBadgeLG .rankBadgeLabel { font-size:20px; }
@@ -349,7 +349,7 @@
   .mobileLeaderCard p { font-size:11.5px; }
   .employeeSeasonCard { padding:23px 17px 20px; }
   .employeeSeasonStats > div { padding:10px 8px; }
-  .rankBadgeLG .rankBadgeIcon { width:104px; height:104px; }
+  .rankBadgeLG .rankBadgeIcon { width:min(58vw,220px); height:min(58vw,220px); }
   .rankBadgeLG .rankBadgeLabel { font-size:18px; }
 }
 

@@ -32,10 +32,19 @@ async function expectSeasonRankLayout(page: Page, width: number, description: st
     await expect(image).toHaveAttribute('src', asset);
     await image.scrollIntoViewIfNeeded();
     await expect(image).toBeVisible();
+    await expect(image).toHaveCSS('object-fit', 'contain');
     await expect.poll(() => image.evaluate(element => element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0 && element.naturalHeight > 0), { message: `${asset}: dark rank image loads successfully` }).toBe(true);
     await expect(badge.locator('svg, canvas')).toHaveCount(0);
     const shine = badge.locator('[data-rank-shine]');
     if (await shine.count()) {
+      const imageFitsCard = await image.evaluate(element => {
+        const card = element.closest('section');
+        if (!card) return false;
+        const imageBounds = element.getBoundingClientRect();
+        const cardBounds = card.getBoundingClientRect();
+        return imageBounds.left >= cardBounds.left - 1 && imageBounds.right <= cardBounds.right + 1 && imageBounds.top >= cardBounds.top - 1 && imageBounds.bottom <= cardBounds.bottom + 1;
+      });
+      expect(imageFitsCard, `${asset}: enlarged dark rank image fits inside its season card without clipping`).toBe(true);
       expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);
       await expect(shine).toHaveCSS('mask-size', 'contain');
       await expect(shine).toHaveCSS('mask-repeat', 'no-repeat');
@@ -71,6 +80,16 @@ for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
     for (const path of routes) {
       await gotoPreview(page, path);
       await expect(page.locator('main h1')).toBeVisible();
+      if (path === '/dashboard') {
+        const payrollIcon = page.locator('main .stat-accent').filter({ hasText: 'صافي رواتب الشهر' }).locator('.stat-icon');
+        for (const theme of ['dark', 'light'] as const) {
+          await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+          await expect(page.locator('main h1')).toHaveText(/^مرحباً/);
+          await expect(payrollIcon).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+          await expect(payrollIcon.locator('svg')).toHaveCSS('stroke', 'rgb(165, 28, 48)');
+          await page.getByRole('button', { name: theme === 'dark' ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن', exact: true }).click();
+        }
+      }
       await scan(path);
       if (path === '/attendance') {
         await page.getByRole('link', { name: /^تفاصيل حضور / }).first().click();
