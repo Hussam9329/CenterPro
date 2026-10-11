@@ -58,7 +58,7 @@ export default function SettingsPage() {
     updateData(draft => { draft.settings = next; }, { action: 'تعديل إعدادات النظام', entity: 'settings', entityId: 'center-settings', oldValues: { ...data.settings }, newValues: next });
     setCenterName(next.centerName);
     setQrInterval(String(next.qrInterval));
-    toast('تم حفظ الإعدادات التجريبية وتسجيل التغيير في سجل العمليات.');
+    toast('تم حفظ الإعدادات وتسجيل التغيير في سجل العمليات.');
   }
 
   function reset() {
@@ -75,13 +75,12 @@ export default function SettingsPage() {
 
   return <div className="page-stack">
     <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
-    <div className="notice"><ShieldCheck size={18} /><span>معاينة الواجهات: التغييرات تخص هذه الجلسة في المتصفح، ولا تغيّر إعدادات نظام فعلي.</span></div>
     <div className="grid-2">
       <Card title="إعدادات المركز">
         <form onSubmit={save} className="stack">
           <Field label="اسم المركز" required error={errors.name}><Input value={centerName} onChange={event => setCenterName(event.target.value)} autoComplete="organization" aria-invalid={Boolean(errors.name)} /></Field>
           <Field label="تجديد رمز الحضور" required hint="من 30 إلى 60 ثانية. القيمة الافتراضية 45 ثانية." error={errors.interval}><div className="inline"><Input type="number" min={30} max={60} step={1} value={qrInterval} onChange={event => setQrInterval(event.target.value)} dir="ltr" aria-invalid={Boolean(errors.interval)} /><span className="muted">ثانية</span></div></Field>
-          <div className="notice"><Clock3 size={18} /><span>ينعكس الفاصل الزمني على شاشة QR التجريبية. التحقق الفعلي من الرمز يُفعّل بعد اعتماد الواجهات.</span></div>
+          <div className="notice"><Clock3 size={18} /><span>يُستخدم هذا الفاصل الزمني لتجديد رمز الحضور.</span></div>
           <div className="form-actions"><Button type="submit" disabled={!dirty}><Save size={17} />حفظ الإعدادات</Button>{dirty && <Button variant="secondary" onClick={() => { setCenterName(data.settings.centerName); setQrInterval(String(data.settings.qrInterval)); setErrors({}); }}>إلغاء التغييرات</Button>}</div>
         </form>
       </Card>
@@ -100,7 +99,7 @@ export default function SettingsPage() {
     </Card>
     <Card title="حسابات الإدارة" action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>
       <div className="stack">
-        <div className="notice"><ShieldCheck size={20}/><div><strong>مدير النظام — حساب معاينة مستقل</strong><p>خارج قائمة الموظفين والأقسام والحضور والرواتب. يُستبدل بتهيئة المصادقة الفعلية في المرحلة الثانية.</p></div></div>
+        <div className="notice"><ShieldCheck size={20}/><div><strong>مدير النظام</strong><p>حساب الإدارة الرئيسي خارج قائمة الموظفين والحضور والرواتب.</p></div></div>
         {!adminAccounts.length && <EmptyState title="لم تُضف حسابات إدارة بعد" description="يمكنك تعيين دور إداري لحساب موظف تضيفه بنفسك."/>}
         {adminAccounts.map(account => <div className={`list-row ${styles.accountRow}`} key={account.id}>
           <div className={`inline ${styles.accountIdentity}`}><Avatar name={account.name} src={account.photo}/><div>
@@ -111,11 +110,11 @@ export default function SettingsPage() {
         </div>)}
       </div>
     </Card>
-    <Card title="إعادة ضبط المعاينة">
-      <div className="list-row"><p className="muted">تُحذف كل الأقسام والموظفين وأيام الحضور والبيانات المالية والسجل. يبقى حساب مدير النظام المستقل متاحاً.</p><Button variant="danger" onClick={() => { setResetWord(''); setResetOpen(true); }}><RotateCcw size={17} />تصفير بيانات المعاينة</Button></div>
+    <Card title="إعادة ضبط النظام">
+      <div className="list-row"><p className="muted">تُحذف كل الأقسام والموظفين وأيام الحضور والبيانات المالية والسجل. يبقى حساب مدير النظام متاحاً.</p><Button variant="danger" onClick={() => { setResetWord(''); setResetOpen(true); }}><RotateCcw size={17} />تصفير بيانات النظام</Button></div>
     </Card>
-    <Dialog open={resetOpen} onClose={() => setResetOpen(false)} title="إعادة ضبط جميع بيانات المعاينة؟" description="ستُحذف إضافاتك وتعديلاتك على الموظفين والحضور والرواتب والإعدادات وسجل العمليات في هذه الجلسة. ستعود إلى حالة فارغة تماماً، ولن تُضاف أي سجلات تجريبية. لا يمكن التراجع عن هذا الإجراء.">
-      <div className="stack"><Field label="اكتب «إعادة ضبط» للتأكيد"><Input value={resetWord} onChange={event => setResetWord(event.target.value)} autoComplete="off" placeholder="إعادة ضبط" /></Field><div className="form-actions"><Button variant="danger" disabled={resetWord.trim() !== 'إعادة ضبط'} onClick={reset}>تأكيد إعادة ضبط المعاينة</Button><Button variant="secondary" onClick={() => setResetOpen(false)}>إلغاء</Button></div></div>
+    <Dialog open={resetOpen} onClose={() => setResetOpen(false)} title="إعادة ضبط جميع بيانات النظام؟" description="ستُحذف الموظفون والأقسام والحضور والرواتب والتقييمات وسجل العمليات وتعود المنظومة إلى حالة فارغة. لا يمكن التراجع عن هذا الإجراء.">
+      <div className="stack"><Field label="اكتب «إعادة ضبط» للتأكيد"><Input value={resetWord} onChange={event => setResetWord(event.target.value)} autoComplete="off" placeholder="إعادة ضبط" /></Field><div className="form-actions"><Button variant="danger" disabled={resetWord.trim() !== 'إعادة ضبط'} onClick={reset}>تأكيد إعادة ضبط النظام</Button><Button variant="secondary" onClick={() => setResetOpen(false)}>إلغاء</Button></div></div>
     </Dialog>
   </div>;
 }

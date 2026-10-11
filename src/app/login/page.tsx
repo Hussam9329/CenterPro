@@ -2,15 +2,15 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Database, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import { Button, Field, Select } from '@/components/ui';
-import { canLoadTestData, useDemo } from '@/components/demo-provider';
+import { useDemo } from '@/components/demo-provider';
 import { useWelcome } from '@/components/welcome-provider';
 import { useTheme } from '@/components/theme-provider';
 
 export default function LoginPage() {
-  const { login, data, ready, loadTestData, session, remembered } = useDemo();
+  const { login, data, ready, session, remembered } = useDemo();
   const router = useRouter();
   const { showWelcome } = useWelcome();
   const { theme, toggleTheme } = useTheme();
@@ -33,10 +33,6 @@ export default function LoginPage() {
     if (!ok) { setLoading(false); return; }
     await showWelcome();
     router.push(selected?.role === 'EMPLOYEE' ? '/employee' : '/dashboard');
-  }
-
-  function loadFixture() {
-    if (loadTestData()) setAccountId('SYSTEM');
   }
 
   return <main className="login-page" id="main-content">
@@ -67,7 +63,6 @@ export default function LoginPage() {
           <Button type="submit" loading={loading} disabled={!ready}>تسجيل الدخول<ArrowLeft size={17}/></Button>
         </form>
 
-        {canLoadTestData(data) && <div className="login-test-data"><Database size={20}/><div><strong>بيانات الاختبار</strong><p>4 مصححين و3 مدققين مع سجلات الحضور.</p></div><Button type="button" variant="secondary" disabled={!ready || loading} onClick={loadFixture}><Database size={16}/>تحميل بيانات الاختبار</Button></div>}
         <div className="login-form-copyright">Kal-EL VISIONS © 2026</div>
       </div>
     </section>

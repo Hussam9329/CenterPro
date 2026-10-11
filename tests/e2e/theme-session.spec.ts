@@ -82,14 +82,16 @@ test('a session without remember remains in its tab and does not sign in a new t
   await expect(page).toHaveURL(/\/dashboard$/);
 });
 
-test('remembered account switching still requires explicit login and unchecking remember clears the saved sign-in', async ({ page }) => {
+test('switching accounts after remembered logout requires explicit login and keeps remember disabled', async ({ page }) => {
   await seedPopulatedPreview(page);
   await gotoPreview(page, '/login');
   await page.getByLabel('ابقني مسجلاً', { exact: true }).check();
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await finishWelcome(page);
-  await page.getByRole('link', { name: 'تبديل الدور', exact: true }).click();
+  await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
   await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  expect(await readPreviewSession(page)).toBeNull();
+  expect(await page.evaluate(key => localStorage.getItem(key), PREVIEW_PERSISTENT_STORAGE_KEY)).toBeNull();
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await expect(page.getByLabel('ابقني مسجلاً', { exact: true })).not.toBeChecked();
   await page.getByLabel('الحساب', { exact: true }).selectOption('CP-0001');

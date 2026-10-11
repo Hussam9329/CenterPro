@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
-import { createInitialData, createTestData } from '@/lib/mock-data';
+import { createInitialData } from '@/lib/mock-data';
 import { assertSingleOpenWorkday } from '@/lib/attendance';
 import { assertEvaluationMutation, assertEvaluationState } from '@/lib/evaluations';
 import { PREVIEW_DATA_STORAGE_KEY, PREVIEW_PERSISTENT_STORAGE_KEY, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION, PREVIEW_SYSTEM_ADMIN } from '@/lib/preview-config';
@@ -10,7 +10,6 @@ import type { DemoData, DemoSession, Role, AuditInput } from '@/lib/types';
 
 interface Snapshot { data: DemoData; session: DemoSession | null; ready: boolean; remembered: boolean; revision?: number }
 const collections: Array<keyof DemoData> = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit', 'evaluationSeasons', 'evaluationCycles', 'evaluationExams', 'examEvaluations'];
-export function canLoadTestData(data: DemoData): boolean { return collections.every(key => Array.isArray(data[key]) && data[key].length === 0); }
 type DataUpdater = (draft: DemoData, currentSession: DemoSession | null) => void;
 type AuditSource = AuditInput | ((before: DemoData, after: DemoData) => AuditInput | undefined);
 const serverSnapshot: Snapshot = { data: createInitialData(), session: null, ready: false, remembered: false };
@@ -50,8 +49,7 @@ function hydrateStored(raw: string | null, remembered = false): Snapshot | null 
   if (!raw) return null;
   try {
     const stored = JSON.parse(raw);
-    if (![2, PREVIEW_STORAGE_VERSION].includes(stored.version) || !stored.data) return null;
-    // Extend old schemas without discarding owner records or inventing seasons.
+    if (stored.version !== PREVIEW_STORAGE_VERSION || !stored.data) return null;
     stored.data.evaluationSeasons ??= [];
     stored.data.evaluationCycles ??= [];
     stored.data.evaluationExams ??= [];
@@ -83,17 +81,20 @@ function receiveStorage(event: StorageEvent) {
 function initialize() {
   if (initialized) return;
   initialized = true;
-  writeStorage('sessionStorage', 'centerpro-ui-preview-v1', null);
+  // Never restore the historical fixture-backed preview stores.  Keeping this
+  // cleanup explicit ensures a deployed clean build really opens with zero
+  // employees/departments even on a device that used older CenterPro previews.
+  for (const key of ['centerpro-ui-preview-v1', 'centerpro-ui-preview-v2', 'centerpro-ui-preview-v3']) writeStorage('sessionStorage', key, null);
+  for (const key of ['centerpro-ui-preview-remembered-v1', 'centerpro-ui-preview-data-v1']) writeStorage('localStorage', key, null);
   const rawCurrent = readStorage('sessionStorage', PREVIEW_STORAGE_KEY);
   const current = hydrateStored(rawCurrent);
-  const legacy = hydrateStored(readStorage('sessionStorage', 'centerpro-ui-preview-v2'));
   const remembered = hydrateStored(readStorage('localStorage', PREVIEW_PERSISTENT_STORAGE_KEY), true);
   const savedData = hydrateStored(readStorage('localStorage', PREVIEW_DATA_STORAGE_KEY));
   durableData = Boolean(savedData || remembered);
-  let next: Snapshot = current ?? legacy ?? savedData ?? remembered ?? { ...serverSnapshot, data: createInitialData(), ready: true };
+  let next: Snapshot = current ?? savedData ?? remembered ?? { ...serverSnapshot, data: createInitialData(), ready: true };
   if (savedData && (savedData.revision ?? 0) > (next.revision ?? 0)) next = { ...next, data: savedData.data, revision: savedData.revision };
   const rememberedSession = validSession(next.data, remembered?.session);
-  const session = current || legacy
+  const session = current
     ? next.remembered && !sameAccount(next.session, rememberedSession) ? null : validSession(next.data, next.session)
     : rememberedSession;
   next = { ...next, session, remembered: sameAccount(session, rememberedSession) };
@@ -109,7 +110,6 @@ interface DemoContextValue extends Snapshot {
   login: (role: Role, employeeId?: string, remember?: boolean) => boolean;
   logout: () => void;
   resetDemo: () => void;
-  loadTestData: () => boolean;
   updateData: (updater: DataUpdater, audit?: AuditSource) => void;
   notify: (message: string) => void;
 }
@@ -136,13 +136,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     return true;
   }
   function logout() { emit({ ...snapshot, session: null, remembered: false }, true); }
-  function resetDemo() { emit({ data: createInitialData(), session: { ...PREVIEW_SYSTEM_ADMIN }, ready: true, remembered: false }, true); notify('تم تصفير المعاينة. يمكنك إنشاء الأقسام والموظفين من البداية.'); }
-  function loadTestData() {
-    if (!canLoadTestData(snapshot.data)) { notify('توجد بيانات في المعاينة. يمكنك تصفيرها من الإعدادات قبل تحميل بيانات الاختبار.'); return false; }
-    emit({ ...snapshot, data: { ...createTestData(), settings: structuredClone(snapshot.data.settings) } });
-    notify('تم تحميل 4 مصححين و3 مدققين مع بيانات الحضور الاختبارية. لم تتم إضافة امتحانات أو تقييمات.');
-    return true;
-  }
+  function resetDemo() { emit({ data: createInitialData(), session: { ...PREVIEW_SYSTEM_ADMIN }, ready: true, remembered: false }, true); notify('تم تصفير النظام. يمكنك إنشاء الأقسام والموظفين من البداية.'); }
   function updateData(updater: DataUpdater, auditSource?: AuditSource) {
     const before = snapshot.data;
     const draft = structuredClone(before);
@@ -155,7 +149,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     }
     emit({ ...snapshot, data: draft });
   }
-  return <DemoContext.Provider value={{ ...state, login, logout, resetDemo, loadTestData, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
+  return <DemoContext.Provider value={{ ...state, login, logout, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
 }
 export function useDemo() { const context = useContext(DemoContext); if (!context) throw new Error('DemoProvider is required'); return context; }
 export function useToast() { return useDemo().notify; }

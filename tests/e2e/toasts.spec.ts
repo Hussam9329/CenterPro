@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 import { test, expect, gotoPreview, loginPreview } from './helpers/preview';
 
-const savedMessage = 'تم حفظ الإعدادات التجريبية وتسجيل التغيير في سجل العمليات.';
-const resetMessage = 'تم تصفير المعاينة. يمكنك إنشاء الأقسام والموظفين من البداية.';
+const savedMessage = 'تم حفظ الإعدادات وتسجيل التغيير في سجل العمليات.';
+const resetMessage = 'تم تصفير النظام. يمكنك إنشاء الأقسام والموظفين من البداية.';
 
 async function openSettings(page: Page) {
   await loginPreview(page);
@@ -35,11 +35,11 @@ test('a replacement notification receives its own complete dismissal interval', 
   await saveName(page, 'مركز قبل إعادة الضبط');
   const original = await page.locator('.toast').elementHandle();
   await page.clock.fastForward(2800);
-  await page.getByRole('button', { name: 'تصفير بيانات المعاينة', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'إعادة ضبط جميع بيانات المعاينة؟' });
+  await page.getByRole('button', { name: 'تصفير بيانات النظام', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'إعادة ضبط جميع بيانات النظام؟' });
   await expect(dialog.getByText(/لا يمكن التراجع عن هذا الإجراء/)).toBeVisible();
   await dialog.getByLabel('اكتب «إعادة ضبط» للتأكيد').fill('إعادة ضبط');
-  await dialog.getByRole('button', { name: 'تأكيد إعادة ضبط المعاينة', exact: true }).click();
+  await dialog.getByRole('button', { name: 'تأكيد إعادة ضبط النظام', exact: true }).click();
   const toast = page.locator('.toast');
   await expect(toast).toHaveText(resetMessage);
   expect(await original!.evaluate(element => element.isConnected)).toBe(false);

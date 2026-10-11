@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import Image from 'next/image';
-import { useTheme } from './theme-provider';
 import styles from './welcome.module.css';
 
 export const WELCOME_DURATION_MS = 3000;
@@ -17,8 +16,10 @@ const WelcomeContext = createContext<WelcomeContextValue | null>(null);
 
 /** Use the approved brand artwork directly so the CP symbol is never clipped or reconstructed differently. */
 function WelcomeLogo() {
-  const { theme } = useTheme();
-  return <Image className={styles.logo} src={theme === 'dark' ? '/brand/logo-white.svg' : '/brand/logo.svg'} width={175} height={51} alt="CenterPro" priority draggable={false} />;
+  // The login-success welcome is brand artwork, not application chrome.  It is
+  // intentionally theme-independent so Dark Mode never turns the logo white or
+  // places it on a black screen.
+  return <Image className={styles.logo} src="/brand/logo.svg" width={175} height={51} alt="CenterPro" priority draggable={false} />;
 }
 
 export function WelcomeProvider({ children }: { children: ReactNode }) {

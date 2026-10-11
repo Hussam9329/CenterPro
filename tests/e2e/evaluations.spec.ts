@@ -14,9 +14,8 @@ async function enterAccount(page: Page, id = 'SYSTEM') {
 }
 
 async function loadExplicitTestData(page: Page) {
+  await seedPopulatedPreview(page, createTestData());
   await gotoPreview(page, '/login');
-  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
-  await page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true }).click();
   await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(8);
   const state = await readPreviewData(page);
   expect(state.employees.map(employee => employee.name)).toEqual(['ابرار حقي', 'هبة محمد', 'فاطمة فراس', 'مريم عصام', 'جعفر علي', 'مريم فهد', 'دانيا اياد']);

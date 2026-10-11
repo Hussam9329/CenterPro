@@ -4,10 +4,10 @@ import { test, expect, gotoPreview, waitForWelcome, finishWelcome, readPreviewSe
 
 const sizes = [[360, 800], [390, 844], [430, 932], [768, 1024], [1024, 1366], [1366, 768], [1440, 900], [1920, 1080]];
 
-async function expectApprovedWelcomeLogo(welcome: Locator, theme: 'light' | 'dark' = 'light') {
+async function expectApprovedWelcomeLogo(welcome: Locator) {
   const logo = welcome.getByRole('img', { name: 'CenterPro', exact: true });
   await expect(logo).toBeVisible();
-  await expect(logo).toHaveAttribute('src', theme === 'dark' ? '/brand/logo-white.svg' : '/brand/logo.svg');
+  await expect(logo).toHaveAttribute('src', '/brand/logo.svg');
   await expect(welcome.locator('svg')).toHaveCount(0);
   const dimensions = await logo.evaluate(async element => {
     if (!(element instanceof HTMLImageElement)) throw new Error('Welcome must use the approved image asset.');
@@ -37,16 +37,19 @@ test('fresh login page opens directly without a welcome splash', async ({ page }
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
 });
 
-test('loading test data does not sign in or show a welcome until the user submits login', async ({ page }) => {
+test('clean login has no fixture loader or fictional employee accounts', async ({ page }) => {
   await gotoPreview(page, '/login');
-  await page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true }).click();
-  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(8);
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
   expect(await readPreviewSession(page)).toBeNull();
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.locator('.preview-strip')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'تبديل الدور', exact: true })).toHaveCount(0);
+  const topbar = await page.locator('.topbar').boundingBox();
+  expect(topbar?.y, 'Removing the preview strip leaves the header at the top of the viewport').toBe(0);
   await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
@@ -90,7 +93,7 @@ test('reduced motion keeps the three-second post-login welcome without complex a
   await expect(page).toHaveURL(/\/dashboard$/);
 });
 
-test('dark welcome uses the approved white logo with normal motion and the same exact three-second duration', async ({ page }) => {
+test('dark application theme does not recolor the branded welcome and persists after it ends', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 1_000));
   await gotoPreview(page, '/login');
@@ -98,13 +101,25 @@ test('dark welcome uses the approved white logo with normal motion and the same 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   const welcome = await waitForWelcome(page);
-  const logo = await expectApprovedWelcomeLogo(welcome, 'dark');
+  const logo = await expectApprovedWelcomeLogo(welcome);
+  expect(await welcome.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(255, 255, 255)');
+  await expect(welcome.getByText('اهلاً بيك', { exact: true })).toHaveCSS('color', 'rgb(107, 112, 123)');
+  await expect(welcome.getByText('موظفنا الـ مو عادي', { exact: true })).toHaveCSS('color', 'rgb(17, 19, 24)');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await logo.evaluate(element => element.getAnimations().some(animation => animation.effect?.getTiming().duration === 3000)), 'Normal motion animates the complete approved image').toBeTruthy();
   await page.clock.fastForward(WELCOME_PERIOD_MS - 1);
   await expect(welcome).toBeVisible();
   await page.clock.fastForward(1);
   await expect(welcome).toBeHidden();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 18, 22)');
+  await expect(page.getByRole('button', { name: 'تفعيل الوضع الفاتح', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('centerpro-theme'))).toBe('dark');
+  await page.reload();
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 18, 22)');
 });
 
 for (const [width, height] of sizes) {

@@ -29,7 +29,7 @@ async function addAccount(page: Page, name: string, username: string, role: 'EMP
   await expect(dialog).toBeHidden();
 }
 
-test('legacy v1 fictional records and session are discarded in favor of an empty v3 installation', async ({ page }) => {
+test('legacy v1 fictional records and session are discarded in favor of a clean installation', async ({ page }) => {
   await page.addInitScript(({ key, fixture }) => {
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem('centerpro-ui-preview-v1', JSON.stringify({
@@ -102,7 +102,13 @@ test('role choices become available only after the owner manually creates the co
   await expect(page).toHaveURL(/\/dashboard$/);
   const state = await readPreviewData(page);
   expect(state.employees).toHaveLength(2);
-  expect(await readPreviewSession(page)).toMatchObject({ kind: 'EMPLOYEE', role: 'ADMIN', employeeId: state.employees.find(employee => employee.username === 'MANUAL-ADMIN')!.id });
+  const session = await readPreviewSession(page);
+  expect(session).toMatchObject({ kind: 'EMPLOYEE', role: 'ADMIN', employeeId: state.employees.find(employee => employee.username === 'MANUAL-ADMIN')!.id });
+  // Reinitialization must retain real v4 records created through the forms.
+  await page.reload();
+  await expect(page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true })).toBeVisible();
+  expect(await readPreviewData(page)).toEqual(state);
+  expect(await readPreviewSession(page)).toEqual(session);
 });
 
 test('reset clears every operational collection and remembered copy without restoring old data in a new tab', async ({ page, context }) => {
@@ -119,11 +125,11 @@ test('reset clears every operational collection and remembered copy without rest
   for (const collection of populatedFixtureCollections) expect((await readPreviewData(page))[collection].length).toBeGreaterThan(0);
 
   await gotoPreview(page, '/settings');
-  await page.getByRole('button', { name: 'تصفير بيانات المعاينة', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'إعادة ضبط جميع بيانات المعاينة؟', exact: true });
-  await expect(dialog.getByRole('button', { name: 'تأكيد إعادة ضبط المعاينة', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'تصفير بيانات النظام', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'إعادة ضبط جميع بيانات النظام؟', exact: true });
+  await expect(dialog.getByRole('button', { name: 'تأكيد إعادة ضبط النظام', exact: true })).toBeDisabled();
   await dialog.getByLabel('اكتب «إعادة ضبط» للتأكيد', { exact: true }).fill('إعادة ضبط');
-  await dialog.getByRole('button', { name: 'تأكيد إعادة ضبط المعاينة', exact: true }).click();
+  await dialog.getByRole('button', { name: 'تأكيد إعادة ضبط النظام', exact: true }).click();
   await expect(dialog).toBeHidden();
   expectEmpty(await readPreviewData(page));
   expect((await readPreviewData(page)).settings).toEqual({ centerName: 'CenterPro', qrInterval: 45 });
@@ -145,56 +151,24 @@ test('reset clears every operational collection and remembered copy without rest
 });
 
 
-test('v2 owner data and archived payroll migrate intact to v3 with empty evaluation collections', async ({ page }) => {
+test('legacy v2/v3 operational stores are purged instead of restoring old test data', async ({ page }) => {
   const fixture = createPopulatedTestData();
-  await page.addInitScript(({ key, fixture }) => {
-    if (sessionStorage.getItem(key)) return;
-    const legacy: Partial<typeof fixture> = { ...fixture };
-    delete legacy.evaluationCycles;
-    delete legacy.evaluationExams;
-    delete legacy.examEvaluations;
-    sessionStorage.setItem('centerpro-ui-preview-v2', JSON.stringify({ version: 2, data: legacy, session: { kind: 'SYSTEM', role: 'SUPER_ADMIN', name: 'مدير النظام' } }));
-  }, { key: PREVIEW_STORAGE_KEY, fixture });
-  await gotoPreview(page, '/payroll');
-  await expect(page.getByRole('heading', { name: 'الرواتب', exact: true })).toBeVisible();
-  expect(await readPreviewData(page)).toEqual(fixture);
-  expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
-  expect(await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)!).version, PREVIEW_STORAGE_KEY)).toBe(3);
-  expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v2'))).not.toBeNull();
+  await page.addInitScript(({ fixture }) => {
+    sessionStorage.setItem('centerpro-ui-preview-v2', JSON.stringify({ version: 2, data: fixture, session: { kind: 'SYSTEM', role: 'SUPER_ADMIN', name: 'مدير النظام' } }));
+    sessionStorage.setItem('centerpro-ui-preview-v3', JSON.stringify({ version: 3, data: fixture, session: { kind: 'SYSTEM', role: 'SUPER_ADMIN', name: 'مدير النظام' } }));
+    localStorage.setItem('centerpro-ui-preview-data-v1', JSON.stringify({ version: 3, data: fixture }));
+    localStorage.setItem('centerpro-ui-preview-remembered-v1', JSON.stringify({ version: 3, data: fixture, session: { kind: 'SYSTEM', role: 'SUPER_ADMIN', name: 'مدير النظام' } }));
+  }, { fixture });
   await gotoPreview(page, '/login');
-  await expect(page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true })).toHaveCount(0);
-  expect(await readPreviewData(page)).toEqual(fixture);
+  expectEmpty(await readPreviewData(page));
+  expect(await readPreviewSession(page)).toBeNull();
+  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
+  expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v2'))).toBeNull();
+  expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v3'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('centerpro-ui-preview-data-v1'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('centerpro-ui-preview-remembered-v1'))).toBeNull();
+  expect(await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)!).version, PREVIEW_STORAGE_KEY)).toBe(PREVIEW_STORAGE_VERSION);
 });
-
-for (const version of [2, 3]) {
-  test(`v${version} legacy evaluation cycles and frozen snapshots survive season schema migration`, async ({ page }) => {
-    const fixture = createPopulatedTestData();
-    const historicalRow = { employeeId: 'CP-0001', employeeName: 'اسم تاريخي محفوظ', employeeCode: 'CP-0001', papers: 37, correctionErrors: 2, behaviorErrors: 1, examsEvaluated: 1, score: 24, accuracy: 91.89 };
-    fixture.evaluationCycles = [
-      { id: 'legacy-closed', name: 'دورة قديمة مؤرشفة', state: 'ARCHIVED', openedAt: '2026-08-01T08:00:00.000Z', openedBy: 'مدير النظام', closedAt: '2026-08-31T16:00:00.000Z', closedBy: 'مدير النظام', snapshot: { rows: [historicalRow], exams: [{ id: 'legacy-exam-closed', name: 'امتحان تاريخي', date: '2026-08-15', rows: [historicalRow] }] } },
-      { id: 'legacy-open', name: 'دورة قديمة مفتوحة', state: 'OPEN', openedAt: '2026-09-01T08:00:00.000Z', openedBy: 'مدير النظام' },
-    ];
-    fixture.evaluationExams = [
-      { id: 'legacy-exam-closed', cycleId: 'legacy-closed', name: 'امتحان تاريخي', date: '2026-08-15', state: 'CLOSED', note: 'تبقى الملاحظات الأصلية', createdBy: 'مدير النظام', createdAt: '2026-08-15T08:00:00.000Z', closedAt: '2026-08-15T16:00:00.000Z', closedBy: 'مدير النظام' },
-      { id: 'legacy-exam-open', cycleId: 'legacy-open', name: 'امتحان قائم', date: '2026-09-28', state: 'OPEN', note: '', createdBy: 'مدير النظام', createdAt: '2026-09-28T08:00:00.000Z' },
-    ];
-    fixture.examEvaluations = [{ id: 'legacy-evaluation', examId: 'legacy-exam-closed', employeeId: 'CP-0001', papers: 37, correctionErrors: 2, behaviorErrors: 1, note: 'تقييم محفوظ', createdBy: 'CP-0004', createdAt: '2026-08-15T09:00:00.000Z', updatedBy: 'CP-0004', updatedAt: '2026-08-15T09:00:00.000Z' }];
-    await page.addInitScript(({ currentKey, version, fixture, session }) => {
-      if (sessionStorage.getItem(currentKey)) return;
-      const legacy: Partial<typeof fixture> = { ...fixture };
-      delete legacy.evaluationSeasons;
-      const key = version === 2 ? 'centerpro-ui-preview-v2' : currentKey;
-      sessionStorage.setItem(key, JSON.stringify({ version, data: legacy, session }));
-    }, { currentKey: PREVIEW_STORAGE_KEY, version, fixture, session: PREVIEW_SYSTEM_ADMIN });
-    await gotoPreview(page, '/dashboard');
-    await expect(page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true })).toBeVisible();
-    expect(await readPreviewData(page)).toEqual(fixture);
-    await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
-    await page.reload();
-    expect(await readPreviewData(page)).toEqual(fixture);
-    expect((await readPreviewData(page)).evaluationCycles.every(cycle => cycle.seasonId === undefined)).toBe(true);
-  });
-}
 
 test('a corrupt current payload does not erase a valid remembered owner dataset', async ({ page }) => {
   const fixture = createPopulatedTestData();
