@@ -1,0 +1,137 @@
+diff --git a/src/components/evaluations/evaluations.module.css b/src/components/evaluations/evaluations.module.css
+index d48624b..4505260 100644
+--- a/src/components/evaluations/evaluations.module.css
++++ b/src/components/evaluations/evaluations.module.css
+@@ -67,16 +67,25 @@
+ :global(html:not([data-theme='dark'])) .highlightCard { --muted:#616671; }
+ 
+ /* Rank emblem — approved faceted assets, transparent and shadow-free. */
+-.rankBadgeWrap { display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
++.rankBadgeWrap { --rank-shape-mask:url('/ranks/rank-shape-mask.svg'); --rank-outline-mask:url('/ranks/rank-outline-mask.svg'); display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
+ .rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; isolation:isolate; background:transparent !important; border:0 !important; }
+-.rankAssetImage { display:block; width:100%; height:100%; object-fit:contain; object-position:center; filter:none !important; image-rendering:auto; }
++.rankAssetImage { display:block; width:100%; height:100%; object-fit:contain; object-position:center; filter:none !important; image-rendering:auto; -webkit-mask-image:var(--rank-shape-mask); mask-image:var(--rank-shape-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
++.rankVectorOutline { position:absolute; inset:0; z-index:2; pointer-events:none; background:var(--rank-edge,#f4a05d); -webkit-mask-image:var(--rank-outline-mask); mask-image:var(--rank-outline-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
++.rankBadgeWrap[data-rank-tier='bronze'] { --rank-edge:#f2a064; }
++.rankBadgeWrap[data-rank-tier='silver'] { --rank-edge:#e4e9ef; }
++.rankBadgeWrap[data-rank-tier='gold'] { --rank-edge:#f7c442; }
++.rankBadgeWrap[data-rank-tier='platinum'] { --rank-edge:#b8d9ee; }
++.rankBadgeWrap[data-rank-tier='diamond'] { --rank-edge:#62c6ff; }
++.rankBadgeWrap[data-rank-tier='emerald'] { --rank-edge:#4de3a0; }
++.rankBadgeWrap[data-rank-tier='master'] { --rank-edge:#ff6079; }
++.rankBadgeWrap[data-rank-tier='grandmaster'] { --rank-edge:#f5c24a; --rank-shape-mask:url('/ranks/grandmaster-shape-mask.svg'); --rank-outline-mask:url('/ranks/grandmaster-outline-mask.svg'); }
+ .rankBadgeSM .rankBadgeIcon { width:42px; height:42px; }
+ .rankBadgeMD .rankBadgeIcon { width:72px; height:72px; }
+ .rankBadgeLG .rankBadgeIcon { width:176px; height:176px; }
+ .rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:13px; line-height:1.2; white-space:nowrap; }
+ .rankBadgeMD .rankBadgeLabel { font-size:15px; }
+ .rankBadgeLG .rankBadgeLabel { font-size:20px; }
+-.rankAssetShine { position:absolute; inset:0; pointer-events:none; opacity:0; background:linear-gradient(108deg,transparent 34%,rgba(255,255,255,.12) 43%,rgba(255,255,255,.92) 50%,rgba(255,255,255,.18) 57%,transparent 66%); background-size:240% 100%; background-position:155% 0; -webkit-mask-image:var(--rank-mask); mask-image:var(--rank-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
++.rankAssetShine { position:absolute; inset:0; z-index:3; pointer-events:none; opacity:0; background:linear-gradient(108deg,transparent 34%,rgba(255,255,255,.12) 43%,rgba(255,255,255,.92) 50%,rgba(255,255,255,.18) 57%,transparent 66%); background-size:240% 100%; background-position:155% 0; -webkit-mask-image:var(--rank-shape-mask); mask-image:var(--rank-shape-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+ .rankBadgeAnimated .rankAssetShine { animation:rankAssetShine 4.8s cubic-bezier(.45,.02,.2,1) infinite; }
+ @keyframes rankAssetShine {
+   0%,68% { opacity:0; background-position:155% 0; }
+diff --git a/src/components/evaluations/rank-badge.tsx b/src/components/evaluations/rank-badge.tsx
+index 2b39061..5864bd0 100644
+--- a/src/components/evaluations/rank-badge.tsx
++++ b/src/components/evaluations/rank-badge.tsx
+@@ -1,7 +1,6 @@
+ 'use client';
+ 
+ import Image from 'next/image';
+-import type { CSSProperties } from 'react';
+ import { getSeasonRank } from '@/lib/evaluations';
+ import styles from './evaluations.module.css';
+ 
+@@ -14,11 +13,11 @@ function assetFor(tier: RankTier, level: number | null) {
+ export function RankBadge({ score, size = 'md', animated = false, showLabel = true }: { score: number; size?: 'sm' | 'md' | 'lg'; animated?: boolean; showLabel?: boolean }) {
+   const rank = getSeasonRank(score);
+   const src = assetFor(rank.tier, rank.level);
+-  const maskStyle = { '--rank-mask': `url("${src}")` } as CSSProperties;
+   return <div className={`${styles.rankBadgeWrap} ${styles[`rankBadge${size.toUpperCase()}`]} ${animated ? styles.rankBadgeAnimated : ''}`} data-rank-tier={rank.tier} data-rank-level={rank.level ?? 'grandmaster'} aria-label={showLabel ? undefined : rank.name} role={showLabel ? undefined : 'img'}>
+     <div className={styles.rankBadgeIcon}>
+       <Image className={styles.rankAssetImage} src={src} width={1024} height={1024} alt="" aria-hidden="true" unoptimized priority={size === 'lg'} />
+-      {animated && <span className={styles.rankAssetShine} style={maskStyle} data-rank-shine aria-hidden="true" />}
++      <span className={styles.rankVectorOutline} data-rank-outline aria-hidden="true" />
++      {animated && <span className={styles.rankAssetShine} data-rank-shine aria-hidden="true" />}
+     </div>
+     {showLabel && <div className={styles.rankBadgeLabel}><strong dir="ltr">{rank.name}</strong></div>}
+   </div>;
+diff --git a/tests/e2e/dark-mode.spec.ts b/tests/e2e/dark-mode.spec.ts
+index bff3233..07c8bc1 100644
+--- a/tests/e2e/dark-mode.spec.ts
++++ b/tests/e2e/dark-mode.spec.ts
+@@ -45,7 +45,7 @@ async function expectSeasonRankLayout(page: Page, width: number, description: st
+         return imageBounds.left >= cardBounds.left - 1 && imageBounds.right <= cardBounds.right + 1 && imageBounds.top >= cardBounds.top - 1 && imageBounds.bottom <= cardBounds.bottom + 1;
+       });
+       expect(imageFitsCard, `${asset}: enlarged dark rank image fits inside its season card without clipping`).toBe(true);
+-      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);
++      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toMatch(/\/ranks\/(?:rank|grandmaster)-shape-mask\.svg/);
+       await expect(shine).toHaveCSS('mask-size', 'contain');
+       await expect(shine).toHaveCSS('mask-repeat', 'no-repeat');
+     }
+diff --git a/tests/e2e/evaluation-responsive.spec.ts b/tests/e2e/evaluation-responsive.spec.ts
+index d1de009..f8620fc 100644
+--- a/tests/e2e/evaluation-responsive.spec.ts
++++ b/tests/e2e/evaluation-responsive.spec.ts
+@@ -99,7 +99,7 @@ async function expectRankAssets(surface: Locator, animated = false) {
+       expect(imageFitsCard, `${asset}: enlarged rank image fits inside its season card without clipping`).toBe(true);
+       const shine = badge.locator('[data-rank-shine]');
+       await expect(shine).toHaveCount(1);
+-      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);
++      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toMatch(/\/ranks\/(?:rank|grandmaster)-shape-mask\.svg/);
+       await expect(shine).toHaveCSS('mask-size', 'contain');
+       await expect(shine).toHaveCSS('mask-repeat', 'no-repeat');
+     }
+diff --git a/tests/e2e/native-ranks.spec.ts b/tests/e2e/native-ranks.spec.ts
+index 121cbac..aa61922 100644
+--- a/tests/e2e/native-ranks.spec.ts
++++ b/tests/e2e/native-ranks.spec.ts
+@@ -37,6 +37,7 @@ async function expectRankAssets(scope: Locator) {
+   // visible. Inspect every image in that layout without assuming hidden markup.
+   await expect(visible.locator('img')).toHaveCount(22);
+   await expect(scope.locator('[data-rank-tier] svg, [data-rank-tier] canvas')).toHaveCount(0);
++  await expect(visible.locator('[data-rank-outline]')).toHaveCount(22);
+   for (const image of await visible.locator('img').all()) {
+     // Next/Image lazily loads leaderboard rows outside the viewport. Reveal
+     // each real row before decoding instead of bypassing its loading behavior.
+@@ -62,10 +63,14 @@ async function expectRankAssets(scope: Locator) {
+       }
+     }
+     const css = getComputedStyle(img);
++    const outline = badge.querySelector('[data-rank-outline]') as HTMLElement;
++    const outlineCss = getComputedStyle(outline);
+     const layers = [badge, img.parentElement!, img].map(element => getComputedStyle(element));
+     return {
+       name: badge.textContent?.trim(), source, pixelHash, painted, touchesEdge, resolution: [img.naturalWidth, img.naturalHeight],
+       fitsImage: css.objectFit === 'contain' && css.objectPosition === '50% 50%',
++      smoothMask: /\/ranks\/(?:rank|grandmaster)-shape-mask\.svg/.test(css.maskImage || css.getPropertyValue('-webkit-mask-image')),
++      smoothOutline: /\/ranks\/(?:rank|grandmaster)-outline-mask\.svg/.test(outlineCss.maskImage || outlineCss.getPropertyValue('-webkit-mask-image')),
+       noShadow: layers.every(layer => layer.filter === 'none' && layer.boxShadow === 'none'),
+       integrated: layers.every(layer => (layer.backgroundColor === 'rgba(0, 0, 0, 0)' || layer.backgroundColor === 'transparent')
+         && layer.backgroundImage === 'none'
+@@ -82,6 +87,8 @@ async function expectRankAssets(scope: Locator) {
+     expect(rank.painted, `${rank.name}: transparent breathing room`).toBeLessThan(60_000);
+     expect(rank.touchesEdge, `${rank.name}: artwork must not be clipped`).toBeFalsy();
+     expect(rank.fitsImage, `${rank.name}: intrinsic artwork keeps its aspect ratio and is centered`).toBeTruthy();
++    expect(rank.smoothMask, `${rank.name}: the raster artwork is clipped by the clean vector silhouette`).toBeTruthy();
++    expect(rank.smoothOutline, `${rank.name}: the anti-aliased vector edge overlay is active`).toBeTruthy();
+     expect(rank.noShadow, `${rank.name}: no drop shadow or image shadow`).toBeTruthy();
+     expect(rank.integrated, `${rank.name}: no separate tile behind the emblem`).toBeTruthy();
+   }
+@@ -146,9 +153,12 @@ test('shine is clipped to the rank asset and disabled by reduced motion without
+   expect(await shine.evaluate(element => {
+     const css = getComputedStyle(element);
+     const image = element.parentElement!.querySelector('img')!;
+-    return (css.maskImage || css.getPropertyValue('-webkit-mask-image')).includes(image.currentSrc)
+-      && css.maskSize === getComputedStyle(image).objectFit && css.maskRepeat === 'no-repeat'
+-      && css.maskPosition === getComputedStyle(image).objectPosition && css.pointerEvents === 'none';
++    const mask = css.maskImage || css.getPropertyValue('-webkit-mask-image');
++    const imageCss = getComputedStyle(image);
++    return /\/ranks\/(?:rank|grandmaster)-shape-mask\.svg/.test(mask)
++      && /\/ranks\/(?:rank|grandmaster)-shape-mask\.svg/.test(imageCss.maskImage)
++      && css.maskSize === 'contain' && css.maskRepeat === 'no-repeat'
++      && css.maskPosition === '50% 50%' && css.pointerEvents === 'none';
+   }), 'Shine uses the exact loaded asset alpha mask, size and alignment').toBeTruthy();
+   await expect.poll(() => shine.evaluate(element => element.getAnimations().filter(animation => animation.playState === 'running').length)).toBeGreaterThan(0);
+   await page.evaluate(() => document.fonts.ready);

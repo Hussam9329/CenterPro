@@ -37,13 +37,52 @@ async function expectRankAssets(scope: Locator) {
   // visible. Inspect every image in that layout without assuming hidden markup.
   await expect(visible.locator('img')).toHaveCount(22);
   await expect(scope.locator('[data-rank-tier] svg, [data-rank-tier] canvas')).toHaveCount(0);
+  await expect(visible.locator('[data-rank-outline]')).toHaveCount(22);
   for (const image of await visible.locator('img').all()) {
     // Next/Image lazily loads leaderboard rows outside the viewport. Reveal
     // each real row before decoding instead of bypassing its loading behavior.
     await image.scrollIntoViewIfNeeded();
     await image.evaluate(element => (element as HTMLImageElement).decode());
   }
-  const results = await visible.evaluateAll(async badges => Promise.all(badges.map(async badge => {
+  const results = await visible.evaluateAll(async badges => {
+    async function loadMask(mask: string) {
+      const source = /^url\(["']?(.*?)["']?\)$/.exec(mask)?.[1];
+      if (!source) throw new Error(`Expected a single vector mask URL, received ${mask}`);
+      const response = await fetch(source);
+      if (!response.ok || !response.headers.get('content-type')?.includes('image/svg+xml')) {
+        throw new Error(`Vector mask failed to load: ${source} (${response.status})`);
+      }
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(await response.blob());
+      try {
+        image.src = objectUrl;
+        await image.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = 256; canvas.height = 256;
+        const context = canvas.getContext('2d')!;
+        context.drawImage(image, 0, 0, 256, 256);
+        const pixels = context.getImageData(0, 0, 256, 256).data;
+        let painted = 0; let touchesEdge = false;
+        for (let offset = 0; offset < pixels.length; offset += 4) {
+          if (pixels[offset + 3] <= 16) continue;
+          painted += 1;
+          const x = (offset / 4) % 256; const y = Math.floor(offset / 4 / 256);
+          if (x === 0 || y === 0 || x === 255 || y === 255) touchesEdge = true;
+        }
+        return { path: new URL(source, location.href).pathname, pixels, painted, touchesEdge, square: image.naturalWidth === image.naturalHeight };
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+    }
+    // CSS can report a correct-looking mask URL even when the file is missing,
+    // which makes the emblem disappear. Decode all four real served resources.
+    const masks = new Map<string, ReturnType<typeof loadMask>>();
+    function getMask(css: CSSStyleDeclaration) {
+      const source = css.maskImage || css.getPropertyValue('-webkit-mask-image');
+      if (!masks.has(source)) masks.set(source, loadMask(source));
+      return masks.get(source)!;
+    }
+    return Promise.all(badges.map(async badge => {
     const img = badge.querySelector('img') as HTMLImageElement;
     await img.decode();
     const source = img.currentSrc || img.src;
@@ -62,16 +101,46 @@ async function expectRankAssets(scope: Locator) {
       }
     }
     const css = getComputedStyle(img);
+    const outline = badge.querySelector('[data-rank-outline]') as HTMLElement;
+    const outlineCss = getComputedStyle(outline);
+    const [shapeMask, outlineMask] = await Promise.all([getMask(css), getMask(outlineCss)]);
+    const prefix = badge.getAttribute('data-rank-tier') === 'grandmaster' ? 'grandmaster' : 'rank';
+    let originalAlpha = 0; let retainedAlpha = 0; let detachedOutline = 0;
+    for (let offset = 0; offset < pixels.length; offset += 4) {
+      originalAlpha += pixels[offset + 3];
+      retainedAlpha += pixels[offset + 3] * shapeMask.pixels[offset + 3] / 255;
+      if (outlineMask.pixels[offset + 3] <= 16) continue;
+      const x = (offset / 4) % 256; const y = Math.floor(offset / 4 / 256);
+      let touchesShape = false;
+      // Allow two raster pixels for the centered vector stroke and antialiasing;
+      // a disconnected outline or the wrong silhouette still fails this check.
+      for (let dy = -2; dy <= 2; dy += 1) for (let dx = -2; dx <= 2; dx += 1) {
+        if (x + dx < 0 || x + dx > 255 || y + dy < 0 || y + dy > 255) continue;
+        if (shapeMask.pixels[((y + dy) * 256 + x + dx) * 4 + 3] > 16) touchesShape = true;
+      }
+      if (!touchesShape) detachedOutline += 1;
+    }
+    const imageBounds = img.getBoundingClientRect();
+    const outlineBounds = outline.getBoundingClientRect();
     const layers = [badge, img.parentElement!, img].map(element => getComputedStyle(element));
     return {
       name: badge.textContent?.trim(), source, pixelHash, painted, touchesEdge, resolution: [img.naturalWidth, img.naturalHeight],
       fitsImage: css.objectFit === 'contain' && css.objectPosition === '50% 50%',
+      correctMasks: shapeMask.path === `/ranks/${prefix}-shape-mask.svg` && outlineMask.path === `/ranks/${prefix}-outline-mask.svg`,
+      masksContainArtwork: shapeMask.square && outlineMask.square && !shapeMask.touchesEdge && !outlineMask.touchesEdge
+        && shapeMask.painted > 1000 && shapeMask.painted < 60_000 && outlineMask.painted > 0 && outlineMask.painted < shapeMask.painted * .2,
+      retainedArtwork: retainedAlpha / originalAlpha, detachedOutline,
+      alignedMasks: [css, outlineCss].every(layer => layer.maskSize === 'contain' && layer.maskRepeat === 'no-repeat' && layer.maskPosition === '50% 50%')
+        && ['x', 'y', 'width', 'height'].every(key => imageBounds[key as keyof DOMRect] === outlineBounds[key as keyof DOMRect]),
+      visibleOutline: outlineCss.pointerEvents === 'none' && outlineCss.opacity === '1' && outlineCss.display !== 'none'
+        && outlineCss.backgroundColor !== 'rgba(0, 0, 0, 0)' && outlineCss.filter === 'none' && outlineCss.boxShadow === 'none',
       noShadow: layers.every(layer => layer.filter === 'none' && layer.boxShadow === 'none'),
       integrated: layers.every(layer => (layer.backgroundColor === 'rgba(0, 0, 0, 0)' || layer.backgroundColor === 'transparent')
         && layer.backgroundImage === 'none'
         && [layer.borderTopWidth, layer.borderRightWidth, layer.borderBottomWidth, layer.borderLeftWidth].every(width => width === '0px')),
     };
-  })));
+    }));
+  });
   expect(results.map(item => item.name).sort()).toEqual(ranks.map(([name]) => name).sort());
   expect(new Set(results.map(item => item.source)).size).toBe(22);
   expect(new Set(results.map(item => item.pixelHash)).size, 'All 22 loaded emblems have distinct browser-painted pixels, not only different URLs').toBe(22);
@@ -82,6 +151,15 @@ async function expectRankAssets(scope: Locator) {
     expect(rank.painted, `${rank.name}: transparent breathing room`).toBeLessThan(60_000);
     expect(rank.touchesEdge, `${rank.name}: artwork must not be clipped`).toBeFalsy();
     expect(rank.fitsImage, `${rank.name}: intrinsic artwork keeps its aspect ratio and is centered`).toBeTruthy();
+    expect(rank.correctMasks, `${rank.name}: normal and Grandmaster silhouettes are assigned correctly`).toBeTruthy();
+    expect(rank.masksContainArtwork, `${rank.name}: both decoded vector masks have unclipped, nonempty artwork`).toBeTruthy();
+    // Approved PNG contours vary; the shared clean silhouette trims their rough
+    // perimeter (about 13% at most). Catch substantial clipping or disappearance
+    // without requiring the mask to retain the very edges this patch removes.
+    expect(rank.retainedArtwork, `${rank.name}: the silhouette preserves the approved raster artwork`).toBeGreaterThan(.85);
+    expect(rank.detachedOutline, `${rank.name}: the outline remains connected to the silhouette, without a detached halo`).toBe(0);
+    expect(rank.alignedMasks, `${rank.name}: image and vector outline have identical bounds and mask alignment`).toBeTruthy();
+    expect(rank.visibleOutline, `${rank.name}: the colored edge is visible and shadow-free`).toBeTruthy();
     expect(rank.noShadow, `${rank.name}: no drop shadow or image shadow`).toBeTruthy();
     expect(rank.integrated, `${rank.name}: no separate tile behind the emblem`).toBeTruthy();
   }
@@ -126,7 +204,7 @@ for (const scenario of [
   });
 }
 
-test('shine is clipped to the rank asset and disabled by reduced motion without hiding the emblem', async ({ page }) => {
+test('shine is clipped to the rank asset and disabled by reduced motion without hiding the emblem', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await seedPopulatedPreview(page, rankScenario());
@@ -137,6 +215,7 @@ test('shine is clipped to the rank asset and disabled by reduced motion without 
   const season = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
   const badge = season.locator('[data-rank-tier="grandmaster"]');
   const image = badge.locator('img');
+  const outline = badge.locator('[data-rank-outline]');
   const shine = badge.locator('[data-rank-shine]');
   await expect(season.getByRole('img', { name: 'Grandmaster', exact: true })).toBeVisible();
   await expect(season.getByRole('heading', { name: 'Grandmaster', exact: true })).toHaveCount(1);
@@ -146,18 +225,24 @@ test('shine is clipped to the rank asset and disabled by reduced motion without 
   expect(await shine.evaluate(element => {
     const css = getComputedStyle(element);
     const image = element.parentElement!.querySelector('img')!;
-    return (css.maskImage || css.getPropertyValue('-webkit-mask-image')).includes(image.currentSrc)
-      && css.maskSize === getComputedStyle(image).objectFit && css.maskRepeat === 'no-repeat'
-      && css.maskPosition === getComputedStyle(image).objectPosition && css.pointerEvents === 'none';
-  }), 'Shine uses the exact loaded asset alpha mask, size and alignment').toBeTruthy();
+    const mask = css.maskImage || css.getPropertyValue('-webkit-mask-image');
+    const imageCss = getComputedStyle(image);
+    return /\/ranks\/grandmaster-shape-mask\.svg/.test(mask)
+      && mask === (imageCss.maskImage || imageCss.getPropertyValue('-webkit-mask-image'))
+      && css.maskSize === 'contain' && css.maskRepeat === 'no-repeat'
+      && css.maskPosition === '50% 50%' && css.pointerEvents === 'none';
+  }), 'Shine uses the same Grandmaster vector silhouette, size and alignment as the image').toBeTruthy();
   await expect.poll(() => shine.evaluate(element => element.getAnimations().filter(animation => animation.playState === 'running').length)).toBeGreaterThan(0);
   await page.evaluate(() => document.fonts.ready);
   const bounds = await image.boundingBox();
   expect(await shine.boundingBox(), 'The masked shine aligns with the image, including its transparent padding').toEqual(bounds);
+  expect(await outline.boundingBox(), 'The vector outline aligns with the image').toEqual(bounds);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(() => shine.evaluate(element => element.getAnimations().filter(animation => animation.playState === 'running').length)).toBe(0);
   await expect(shine).toBeHidden();
   await expect(image).toBeVisible();
+  await expect(outline).toBeVisible();
   expect(await image.boundingBox()).toEqual(bounds);
   await expectSeasonFits(page, season);
+  await season.screenshot({ path: testInfo.outputPath('grandmaster-vector-edge-390.png') });
 });

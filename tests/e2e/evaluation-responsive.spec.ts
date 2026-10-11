@@ -99,7 +99,7 @@ async function expectRankAssets(surface: Locator, animated = false) {
       expect(imageFitsCard, `${asset}: enlarged rank image fits inside its season card without clipping`).toBe(true);
       const shine = badge.locator('[data-rank-shine]');
       await expect(shine).toHaveCount(1);
-      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);
+      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toMatch(/\/ranks\/(?:rank|grandmaster)-shape-mask\.svg/);
       await expect(shine).toHaveCSS('mask-size', 'contain');
       await expect(shine).toHaveCSS('mask-repeat', 'no-repeat');
     }

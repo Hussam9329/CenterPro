@@ -45,7 +45,7 @@ async function expectSeasonRankLayout(page: Page, width: number, description: st
         return imageBounds.left >= cardBounds.left - 1 && imageBounds.right <= cardBounds.right + 1 && imageBounds.top >= cardBounds.top - 1 && imageBounds.bottom <= cardBounds.bottom + 1;
       });
       expect(imageFitsCard, `${asset}: enlarged dark rank image fits inside its season card without clipping`).toBe(true);
-      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toContain(asset);
+      expect(await shine.evaluate(element => getComputedStyle(element).maskImage)).toMatch(/\/ranks\/(?:rank|grandmaster)-shape-mask\.svg/);
       await expect(shine).toHaveCSS('mask-size', 'contain');
       await expect(shine).toHaveCSS('mask-repeat', 'no-repeat');
     }

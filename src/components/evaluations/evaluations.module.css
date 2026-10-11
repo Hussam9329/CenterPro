@@ -67,16 +67,25 @@
 :global(html:not([data-theme='dark'])) .highlightCard { --muted:#616671; }
 
 /* Rank emblem — approved faceted assets, transparent and shadow-free. */
-.rankBadgeWrap { display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
+.rankBadgeWrap { --rank-shape-mask:url('/ranks/rank-shape-mask.svg'); --rank-outline-mask:url('/ranks/rank-outline-mask.svg'); display:inline-flex; align-items:center; gap:12px; direction:ltr; min-width:0; }
 .rankBadgeIcon { position:relative; display:grid; place-items:center; flex:none; overflow:visible; isolation:isolate; background:transparent !important; border:0 !important; }
-.rankAssetImage { display:block; width:100%; height:100%; object-fit:contain; object-position:center; filter:none !important; image-rendering:auto; }
+.rankAssetImage { display:block; width:100%; height:100%; object-fit:contain; object-position:center; filter:none !important; image-rendering:auto; -webkit-mask-image:var(--rank-shape-mask); mask-image:var(--rank-shape-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+.rankVectorOutline { position:absolute; inset:0; z-index:2; pointer-events:none; background:var(--rank-edge,#f4a05d); -webkit-mask-image:var(--rank-outline-mask); mask-image:var(--rank-outline-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+.rankBadgeWrap[data-rank-tier='bronze'] { --rank-edge:#f2a064; }
+.rankBadgeWrap[data-rank-tier='silver'] { --rank-edge:#e4e9ef; }
+.rankBadgeWrap[data-rank-tier='gold'] { --rank-edge:#f7c442; }
+.rankBadgeWrap[data-rank-tier='platinum'] { --rank-edge:#b8d9ee; }
+.rankBadgeWrap[data-rank-tier='diamond'] { --rank-edge:#62c6ff; }
+.rankBadgeWrap[data-rank-tier='emerald'] { --rank-edge:#4de3a0; }
+.rankBadgeWrap[data-rank-tier='master'] { --rank-edge:#ff6079; }
+.rankBadgeWrap[data-rank-tier='grandmaster'] { --rank-edge:#f5c24a; --rank-shape-mask:url('/ranks/grandmaster-shape-mask.svg'); --rank-outline-mask:url('/ranks/grandmaster-outline-mask.svg'); }
 .rankBadgeSM .rankBadgeIcon { width:42px; height:42px; }
 .rankBadgeMD .rankBadgeIcon { width:72px; height:72px; }
 .rankBadgeLG .rankBadgeIcon { width:176px; height:176px; }
 .rankBadgeLabel { min-width:0; color:var(--text,#313640); font-family:'Inter Variable',sans-serif; font-size:13px; line-height:1.2; white-space:nowrap; }
 .rankBadgeMD .rankBadgeLabel { font-size:15px; }
 .rankBadgeLG .rankBadgeLabel { font-size:20px; }
-.rankAssetShine { position:absolute; inset:0; pointer-events:none; opacity:0; background:linear-gradient(108deg,transparent 34%,rgba(255,255,255,.12) 43%,rgba(255,255,255,.92) 50%,rgba(255,255,255,.18) 57%,transparent 66%); background-size:240% 100%; background-position:155% 0; -webkit-mask-image:var(--rank-mask); mask-image:var(--rank-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+.rankAssetShine { position:absolute; inset:0; z-index:3; pointer-events:none; opacity:0; background:linear-gradient(108deg,transparent 34%,rgba(255,255,255,.12) 43%,rgba(255,255,255,.92) 50%,rgba(255,255,255,.18) 57%,transparent 66%); background-size:240% 100%; background-position:155% 0; -webkit-mask-image:var(--rank-shape-mask); mask-image:var(--rank-shape-mask); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
 .rankBadgeAnimated .rankAssetShine { animation:rankAssetShine 4.8s cubic-bezier(.45,.02,.2,1) infinite; }
 @keyframes rankAssetShine {
   0%,68% { opacity:0; background-position:155% 0; }

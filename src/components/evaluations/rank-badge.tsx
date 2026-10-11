@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import type { CSSProperties } from 'react';
 import { getSeasonRank } from '@/lib/evaluations';
 import styles from './evaluations.module.css';
 
@@ -14,11 +13,11 @@ function assetFor(tier: RankTier, level: number | null) {
 export function RankBadge({ score, size = 'md', animated = false, showLabel = true }: { score: number; size?: 'sm' | 'md' | 'lg'; animated?: boolean; showLabel?: boolean }) {
   const rank = getSeasonRank(score);
   const src = assetFor(rank.tier, rank.level);
-  const maskStyle = { '--rank-mask': `url("${src}")` } as CSSProperties;
   return <div className={`${styles.rankBadgeWrap} ${styles[`rankBadge${size.toUpperCase()}`]} ${animated ? styles.rankBadgeAnimated : ''}`} data-rank-tier={rank.tier} data-rank-level={rank.level ?? 'grandmaster'} aria-label={showLabel ? undefined : rank.name} role={showLabel ? undefined : 'img'}>
     <div className={styles.rankBadgeIcon}>
       <Image className={styles.rankAssetImage} src={src} width={1024} height={1024} alt="" aria-hidden="true" unoptimized priority={size === 'lg'} />
-      {animated && <span className={styles.rankAssetShine} style={maskStyle} data-rank-shine aria-hidden="true" />}
+      <span className={styles.rankVectorOutline} data-rank-outline aria-hidden="true" />
+      {animated && <span className={styles.rankAssetShine} data-rank-shine aria-hidden="true" />}
     </div>
     {showLabel && <div className={styles.rankBadgeLabel}><strong dir="ltr">{rank.name}</strong></div>}
   </div>;
