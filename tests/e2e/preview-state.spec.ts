@@ -135,6 +135,7 @@ test('reset clears every operational collection and remembered copy without rest
   expectEmpty(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).data, PREVIEW_DATA_STORAGE_KEY));
   const fresh = await context.newPage();
   await fresh.goto('/login');
+  await expect(fresh.locator('form button[type="submit"]')).toBeEnabled();
   await expect(fresh.getByLabel(/^اسم المستخدم/)).toBeVisible();
   await expect(fresh.locator('select')).toHaveCount(0);
   expect(await fresh.evaluate(key => JSON.parse(localStorage.getItem(key)!).employees, AUTH_STORAGE_KEY)).toEqual({});
@@ -162,6 +163,7 @@ test('legacy v2/v3 operational stores are purged instead of restoring old test d
     localStorage.setItem('centerpro-ui-preview-remembered-v1', JSON.stringify({ version: 3, data: fixture, session: { kind: 'SYSTEM', role: 'SUPER_ADMIN', name: 'مدير النظام' } }));
   }, { fixture });
   await gotoPreview(page, '/login');
+  await expect(page.locator('form button[type="submit"]')).toBeEnabled();
   expectEmpty(await readPreviewData(page));
   expect(await readPreviewSession(page)).toBeNull();
   await expect(page.getByLabel(/^اسم المستخدم/)).toBeVisible();

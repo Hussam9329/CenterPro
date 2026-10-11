@@ -207,7 +207,7 @@ test.describe('Employee and department preview workflows', () => {
     const username = state.employees.find(item => item.id === 'CP-0001')!.username;
     await fillLoginCredentials(page, username, TEST_PASSWORD);
     await submitLogin(page);
-    await expect(page.getByRole('alert')).toContainText('اسم المستخدم أو كلمة المرور غير صحيحة');
+    await expect(page.locator('form').getByRole('alert')).toContainText('اسم المستخدم أو كلمة المرور غير صحيحة');
     await expect(page.getByTestId('centerpro-welcome')).toBeHidden();
     await loginAccount(page, 'CP-0001', false, secret);
   });
