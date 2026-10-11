@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { createTestData } from '../../src/lib/mock-data';
-import { test, expect, finishWelcome, gotoPreview, loginPreview, seedPopulatedPreview } from './helpers/preview';
+import { test, expect, loginAccount, gotoPreview, loginPreview, seedPopulatedPreview } from './helpers/preview';
 
 const ranks = [
   ['Bronze 1', 0], ['Bronze 2', 500], ['Bronze 3', 1000],
@@ -219,9 +219,7 @@ test('shine is clipped to the rank asset and disabled by reduced motion without 
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await seedPopulatedPreview(page, rankScenario());
   await gotoPreview(page, '/login');
-  await page.getByLabel('الحساب', { exact: true }).selectOption('asset-corrector-21');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, 'asset-corrector-21');
   const season = page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true });
   const badge = season.locator('[data-rank-tier="grandmaster"]');
   const image = badge.locator('img');

@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { createPopulatedTestData } from '../fixtures/populated-data';
-import { test, expect, finishWelcome, gotoPreview, loginPreview, seedPopulatedPreview } from './helpers/preview';
+import { test, expect, loginAccount, gotoPreview, loginPreview, seedPopulatedPreview } from './helpers/preview';
 
 function darkModeScenario() {
   const data = createPopulatedTestData();
@@ -134,9 +134,7 @@ for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
     await employeeDialog.getByRole('button', { name: 'إغلاق النافذة', exact: true }).click();
 
     await gotoPreview(page, '/login?switch=1');
-    await page.getByLabel('الحساب', { exact: true }).selectOption('CP-0004');
-    await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-    await finishWelcome(page);
+    await loginAccount(page, 'CP-0004');
     await gotoPreview(page, '/employee/audit');
     await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption('dark-open-exam');
     await scan('إدخال التدقيق');

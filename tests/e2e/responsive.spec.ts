@@ -93,7 +93,8 @@ test('unified attendance navigation and legacy route redirect', async ({ page })
 test('empty key pages meet accessibility checks', async ({ page }) => {
   test.setTimeout(180_000);
   await gotoPreview(page, '/login');
-  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'اسم المستخدم', exact: false })).toBeVisible();
+  await expect(page.getByRole('combobox')).toHaveCount(0);
   await loginPreview(page);
   const violations: unknown[] = [];
   for (const path of ['/dashboard', '/employees', '/attendance', '/payroll', '/settings']) {

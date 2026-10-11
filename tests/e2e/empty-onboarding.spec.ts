@@ -1,4 +1,4 @@
-import { test, expect, gotoPreview, loginPreview, readPreviewData, PREVIEW_STORAGE_KEY } from './helpers/preview';
+import { test, expect, gotoPreview, loginPreview, readPreviewData, AUTH_STORAGE_KEY, loginAccount } from './helpers/preview';
 
 test.describe('Fresh CenterPro onboarding', () => {
   test.use({ viewport: { width: 1366, height: 900 } });
@@ -60,10 +60,13 @@ test.describe('Fresh CenterPro onboarding', () => {
     expect(state.employees[0]).toMatchObject({ code: 'CP-0001', name: 'موظف الفريق الأول', role: 'EMPLOYEE', departmentId });
     expect(state.audit.map(item => item.action)).toContain('إضافة موظف وحساب دخول');
     expect(state.audit.map(item => item.action)).toContain('إضافة قسم');
-    expect(await page.evaluate(key => sessionStorage.getItem(key), PREVIEW_STORAGE_KEY)).not.toContain(password);
+    expect(await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))).not.toContain(password);
+    expect(await page.evaluate(({ key, id }) => JSON.parse(localStorage.getItem(key)!).employees[id]?.version, { key: AUTH_STORAGE_KEY, id: state.employees[0].id })).toBe(1);
     await expect(page.getByLabel('نوع الراتب', { exact: true }).locator('option')).toHaveText(['جميع الأنواع', 'غير قطعي', 'قطعي']);
     await expect(page.locator('.desktop-table tbody')).toContainText('غير قطعي');
     await expect(page.locator('main')).not.toContainText(/شريحة|شرائح|نظام شرائح/);
+    await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
+    await loginAccount(page, state.employees[0].id, false, password);
   });
 
   test('an inactive-only department collection cannot open a broken employee form', async ({ page }) => {

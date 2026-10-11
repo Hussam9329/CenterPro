@@ -46,7 +46,8 @@ test('calculator requires the existing preview login', async ({ page }) => {
   await gotoPreview(page, '/calculator');
   await expect(page).toHaveURL(/\/login$/);
   await expect(result(page)).toHaveCount(0);
-  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'اسم المستخدم', exact: false })).toBeVisible();
+  await expect(page.getByRole('combobox')).toHaveCount(0);
 });
 
 test('calculator keeps immediate arithmetic, decimal precision and replacement operators', async ({ page }) => {

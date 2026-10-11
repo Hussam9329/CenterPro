@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { createPopulatedTestData } from '../fixtures/populated-data';
-import { test, expect, finishWelcome, gotoPreview, seedPopulatedPreview } from './helpers/preview';
+import { test, expect, loginAccount, gotoPreview, seedPopulatedPreview } from './helpers/preview';
 
 function filterFixture(extraEmployees = 0) {
   const data = createPopulatedTestData();
@@ -17,9 +17,7 @@ function filterFixture(extraEmployees = 0) {
 async function openAuditor(page: Page, extraEmployees = 0) {
   await seedPopulatedPreview(page, filterFixture(extraEmployees));
   await gotoPreview(page, '/login');
-  await page.getByLabel('الحساب', { exact: true }).selectOption('CP-0004');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, 'CP-0004');
   await expect(page).toHaveURL(/\/employee$/);
   await gotoPreview(page, '/employee/audit');
   await expect(page.getByRole('heading', { name: 'التدقيق', exact: true })).toBeVisible();

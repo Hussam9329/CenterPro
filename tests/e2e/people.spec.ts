@@ -1,4 +1,4 @@
-import { test, expect, gotoPreview, loginPreview, seedPopulatedPreview, readPreviewData, PREVIEW_STORAGE_KEY } from './helpers/preview';
+import { test, expect, gotoPreview, loginPreview, seedPopulatedPreview, readPreviewData, PREVIEW_STORAGE_KEY, AUTH_STORAGE_KEY, TEST_PASSWORD, fillLoginCredentials, submitLogin, loginAccount } from './helpers/preview';
 
 test.describe('Employee and department preview workflows', () => {
   test.use({ viewport: { width: 1366, height: 900 } });
@@ -35,6 +35,14 @@ test.describe('Employee and department preview workflows', () => {
     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
     await expect(dialog.getByRole('alert')).toContainText('اسم المستخدم مستخدم مسبقاً');
     await dialog.getByLabel('اسم المستخدم', { exact: false }).fill('TEST100');
+    await dialog.getByLabel('كلمة المرور الأولية', { exact: false }).fill('short');
+    await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('6 أحرف أو أرقام على الأقل');
+    await dialog.getByLabel('كلمة المرور الأولية', { exact: false }).fill(password);
+    await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
+    // Going back remounts the input; it must retain the in-memory draft.
+    await dialog.getByRole('button', { name: 'السابق', exact: true }).click();
+    await expect(dialog.getByLabel('كلمة المرور الأولية', { exact: false })).toHaveValue(password);
     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
     await dialog.getByRole('checkbox', { name: 'هذا الموظف راتبه قطعي', exact: true }).check();
     await expect(dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false })).toHaveValue('');
@@ -43,6 +51,26 @@ test.describe('Employee and department preview workflows', () => {
     expect((await readPreviewData(page)).employees.find(item => item.username === 'TEST100')).toBeUndefined();
     await dialog.getByLabel('الراتب القطعي (د.ع)', { exact: false }).fill('1000000');
     await dialog.getByLabel('قيمة اليومية الخاصة (د.ع)', { exact: false }).fill('25000');
+    const beforeSave = await readPreviewData(page);
+    const authBeforeSave = await page.evaluate(key => localStorage.getItem(key), AUTH_STORAGE_KEY);
+    // Simulate a real credential storage failure, then retry the same draft.
+    await page.evaluate(key => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (name, value) {
+        if (this === localStorage && name === key) {
+          Storage.prototype.setItem = original;
+          throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+        }
+        return original.call(this, name, value);
+      };
+    }, AUTH_STORAGE_KEY);
+    await dialog.getByRole('button', { name: 'إضافة الموظف', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toContainText('تعذر حفظ حساب الدخول');
+    expect((await readPreviewData(page)).employees).toEqual(beforeSave.employees);
+    expect((await readPreviewData(page)).audit).toEqual(beforeSave.audit);
+    expect(await page.evaluate(key => localStorage.getItem(key), AUTH_STORAGE_KEY)).toEqual(authBeforeSave);
+    await expect(dialog.getByLabel('كلمة المرور الأولية', { exact: false })).toHaveValue(password);
+    await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
     await dialog.getByRole('button', { name: 'إضافة الموظف', exact: true }).click();
     await expect(dialog).toBeHidden();
     await page.getByPlaceholder('الاسم، الرقم الوظيفي أو الهاتف', { exact: true }).fill('TEST100');
@@ -56,7 +84,15 @@ test.describe('Employee and department preview workflows', () => {
     expect(created).toMatchObject({ code: 'CP-0015', name: 'اختبار موظف جديد', gender: 'FEMALE', departmentId: 'dept-correction', startDate: '2026-09-20', phone: '07000001234', guardianPhone: '07000005678', telegram: 'centerpro_new_1', fixedOverride: true, fixedSalary: 1000000, dailyRateOverride: 25000 });
     expect(created.photo).toBeUndefined();
     expect(state.audit[0]).toMatchObject({ action: 'إضافة موظف وحساب دخول', employeeId: created.id });
-    expect(await page.evaluate(key => sessionStorage.getItem(key), PREVIEW_STORAGE_KEY)).not.toContain(password);
+    expect(state.employees.filter(item => item.username === 'TEST100')).toHaveLength(1);
+    expect(await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))).not.toContain(password);
+    const credential = await page.evaluate(({ key, id }) => JSON.parse(localStorage.getItem(key)!).employees[id], { key: AUTH_STORAGE_KEY, id: created.id });
+    expect(credential).toMatchObject({ version: 1 });
+    expect(credential.hash).toMatch(/^[A-Za-z0-9+/]{43}=$/);
+    expect(credential.salt).toMatch(/^[A-Za-z0-9+/]{22}==$/);
+    await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
+    await loginAccount(page, created.id, false, password);
+    await expect(page).toHaveURL(/\/employee$/);
   });
 
   test('editing and confirmed deactivation retain employee code and all historical records', async ({ page }) => {
@@ -146,7 +182,7 @@ test.describe('Employee and department preview workflows', () => {
     await expect(page.getByText('@newnametest_1', { exact: true })).toBeVisible();
   });
 
-  test('password reset saves directly without old password, confirmation or stored secret', async ({ page }) => {
+  test('password reset changes credentials, rejects the old password and stores no plaintext', async ({ page }) => {
     await loginPreview(page, 'مدير العمليات');
     await gotoPreview(page, '/employees/CP-0001');
     await page.getByRole('button', { name: 'حساب الدخول', exact: true }).click();
@@ -154,13 +190,26 @@ test.describe('Employee and department preview workflows', () => {
     const dialog = page.getByRole('dialog', { name: 'تغيير كلمة المرور', exact: true });
     await expect(dialog.locator('input[type=password]')).toHaveCount(1);
     await expect(dialog.getByLabel(/كلمة المرور الحالية|كلمة المرور القديمة|تأكيد كلمة المرور/)).toHaveCount(0);
+    const previousCredential = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).employees['CP-0001'], AUTH_STORAGE_KEY);
     const secret = 'Preview-Reset-Secret-8473';
     await dialog.getByLabel('كلمة المرور الجديدة', { exact: false }).fill(secret);
     await dialog.getByRole('button', { name: 'حفظ', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     const state = await readPreviewData(page);
-    expect(state.audit[0]).toMatchObject({ action: 'محاكاة تغيير كلمة مرور الموظف', employeeId: 'CP-0001', newValues: { simulated: true } });
-    expect(await page.evaluate(key => sessionStorage.getItem(key), PREVIEW_STORAGE_KEY)).not.toContain(secret);
+    expect(state.audit[0]).toMatchObject({ action: 'تغيير كلمة مرور الموظف', employeeId: 'CP-0001', newValues: { sessionsInvalidated: true } });
+    expect(await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))).not.toContain(secret);
+    const credential = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).employees['CP-0001'], AUTH_STORAGE_KEY);
+    expect(credential.version).toBe(previousCredential.version + 1);
+    expect(credential.hash).not.toBe(previousCredential.hash);
+    expect(credential.salt).not.toBe(previousCredential.salt);
+    await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    const username = state.employees.find(item => item.id === 'CP-0001')!.username;
+    await fillLoginCredentials(page, username, TEST_PASSWORD);
+    await submitLogin(page);
+    await expect(page.getByRole('alert')).toContainText('اسم المستخدم أو كلمة المرور غير صحيحة');
+    await expect(page.getByTestId('centerpro-welcome')).toBeHidden();
+    await loginAccount(page, 'CP-0001', false, secret);
   });
 
   test('employee fixed salary rejects a cleared amount and persists an explicitly entered zero', async ({ page }) => {

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { createPopulatedTestData } from '../fixtures/populated-data';
-import { test, expect, finishWelcome, gotoPreview, loginPreview, readPreviewData, seedPopulatedPreview } from './helpers/preview';
+import { test, expect, loginAccount, gotoPreview, loginPreview, readPreviewData, seedPopulatedPreview } from './helpers/preview';
 
 const firstExam = 'autosave-first';
 const secondExam = 'autosave-second';
@@ -23,9 +23,7 @@ function evaluationFixture() {
 }
 
 async function enterAccount(page: Page, account = 'CP-0004') {
-  await page.getByLabel('الحساب', { exact: true }).selectOption(account);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, account);
   await expect(page).toHaveURL(/\/employee$/);
   await page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true }).getByRole('link', { name: 'التدقيق', exact: true }).click();
   await expect(page).toHaveURL(/\/employee\/audit$/);

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, ImagePlus, ShieldCheck } from 'lucide-rea
 import { useDemo, useToast } from '@/components/demo-provider';
 import { Avatar, Badge, Button, ConfirmDialog, Dialog, Field, Input, Select, Textarea } from '@/components/ui';
 import { DEMO_TODAY } from '@/lib/mock-data';
+import { removeEmployeeCredential } from '@/lib/local-auth';
 import type { Employee, Role } from '@/lib/types';
 import styles from './people.module.css';
 
@@ -34,15 +35,20 @@ function initialEmployee(employee?: Employee): DraftEmployee {
 }
 
 export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClose: () => void; employee?: Employee }) {
-  const { data, session, updateData } = useDemo();
+  const { data, session, systemUsername, updateData, setEmployeePassword } = useDemo();
   const toast = useToast();
   const [draft, setDraft] = useState<DraftEmployee>(() => initialEmployee(employee));
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [confirmSalary, setConfirmSalary] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [fixedSalaryText, setFixedSalaryText] = useState(employee ? String(employee.fixedSalary) : '');
   const passwordRef = useRef<HTMLInputElement>(null);
-  const passwordProvided = useRef(false);
+  // The password field unmounts on the salary step. Retain it only in memory
+  // until the credential has been derived; never put it in Employee or audit data.
+  const pendingPassword = useRef('');
+  const pendingEmployeeId = useRef<string | null>(null);
+  const savingRef = useRef(false);
   const isSuper = session?.role === 'SUPER_ADMIN';
   const canModify = isSuper || !employee || employee.role === 'EMPLOYEE';
   const update = <K extends keyof DraftEmployee>(field: K, value: DraftEmployee[K]) => setDraft(previous => ({ ...previous, [field]: value }));
@@ -58,44 +64,69 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
     if (current === 3 && !draft.username.trim()) return 'اكتب اسم المستخدم الخاص بحساب الموظف.';
     if (current === 3 && /\s/.test(draft.username.trim())) return 'اسم المستخدم لا يحتوي على مسافات.';
     if (current === 3 && data.employees.some(item => item.id !== employee?.id && item.username.toLocaleLowerCase() === draft.username.trim().toLocaleLowerCase())) return 'اسم المستخدم مستخدم مسبقاً. اختر اسماً آخر.';
-    if (current === 3 && !employee && !passwordProvided.current) return 'أدخل كلمة مرور أولية لتجربة إنشاء الحساب.';
+    if (current === 3 && draft.username.trim().toLocaleLowerCase('en-US') === systemUsername.trim().toLocaleLowerCase('en-US')) return 'اسم المستخدم محجوز لحساب مدير النظام. اختر اسماً آخر.';
+    if (current === 3 && !employee && !pendingPassword.current.trim()) return 'أدخل كلمة مرور أولية للحساب.';
+    if (current === 3 && !employee && pendingPassword.current.length < 6) return 'كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.';
     if (current === 4 && draft.fixedOverride && fixedSalaryText.trim() === '') return 'أدخل الراتب القطعي. اكتب 0 بنفسك إذا كانت القيمة المقصودة صفراً.';
     if (current === 4 && (!Number.isSafeInteger(draft.fixedSalary) || draft.fixedSalary < 0 || (draft.dailyRateOverride !== null && (!Number.isSafeInteger(draft.dailyRateOverride) || draft.dailyRateOverride < 0)))) return 'قيم الراتب واليومية يجب أن تكون أعداداً صحيحة تساوي صفراً أو أكثر.';
     return '';
   };
 
-  const save = () => {
+  const save = async () => {
+    if (savingRef.current) return;
     if (!canModify) { setError('إدارة حسابات المسؤولين متاحة للمشرف العام فقط.'); return; }
     if (!data.departments.some(item => item.id === draft.departmentId && (item.active || item.id === employee?.departmentId))) { setError('أضف قسماً نشطاً أولاً قبل إضافة الموظفين.'); setStep(2); return; }
-    const stamp = new Date().toISOString();
-    const id = employee?.id ?? `employee-${crypto.randomUUID()}`;
-    const nextCode = Math.max(0, ...data.employees.map(item => Number(item.code.replace('CP-', '')) || 0)) + 1;
-    const updated: Employee = {
-      ...draft, name: draft.name.trim(), phone: fullPhone(phoneSuffix(draft.phone)), guardianPhone: fullPhone(phoneSuffix(draft.guardianPhone)), telegram: telegramUsername(draft.telegram), username: draft.username.trim(), id,
-      endDate: employee?.endDate,
-      code: employee?.code ?? `CP-${String(nextCode).padStart(4, '0')}`,
-      createdAt: employee?.createdAt ?? stamp, updatedAt: stamp,
-      role: isSuper ? draft.role : employee?.role ?? 'EMPLOYEE',
-      fixedOverride: isSuper ? draft.fixedOverride : employee?.fixedOverride ?? false,
-      fixedSalary: isSuper ? draft.fixedSalary : employee?.fixedSalary ?? 0,
-      dailyRateOverride: isSuper ? draft.dailyRateOverride : employee?.dailyRateOverride ?? null,
-    };
-    const auditProfile = (value: Employee) => { const { photo, ...fields } = value; return { ...fields, hasPhoto: Boolean(photo) }; };
-    updateData(state => { const index = state.employees.findIndex(item => item.id === id); if (index >= 0) state.employees[index] = updated; else state.employees.push(updated); }, {
-      action: employee ? 'تعديل بيانات موظف' : 'إضافة موظف وحساب دخول', entity: 'employee', entityId: id, employeeId: id,
-      oldValues: employee ? auditProfile(employee) : {},
-      newValues: auditProfile(updated),
-    });
-    passwordProvided.current = false;
-    if (passwordRef.current) passwordRef.current.value = '';
-    setConfirmSalary(false);
-    toast(employee ? 'تم تحديث بيانات الموظف في المعاينة.' : 'تمت إضافة الموظف وحساب المعاينة بنجاح.');
-    onClose();
+    const initialPassword = !employee ? pendingPassword.current : '';
+    if (!employee && initialPassword.length < 6) { setStep(3); setError('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.'); return; }
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const stamp = new Date().toISOString();
+      const id = employee?.id ?? (pendingEmployeeId.current ??= `employee-${crypto.randomUUID()}`);
+      const nextCode = Math.max(0, ...data.employees.map(item => Number(item.code.replace('CP-', '')) || 0)) + 1;
+      const updated: Employee = {
+        ...draft, name: draft.name.trim(), phone: fullPhone(phoneSuffix(draft.phone)), guardianPhone: fullPhone(phoneSuffix(draft.guardianPhone)), telegram: telegramUsername(draft.telegram), username: draft.username.trim(), id,
+        endDate: employee?.endDate,
+        code: employee?.code ?? `CP-${String(nextCode).padStart(4, '0')}`,
+        createdAt: employee?.createdAt ?? stamp, updatedAt: stamp,
+        role: isSuper ? draft.role : employee?.role ?? 'EMPLOYEE',
+        fixedOverride: isSuper ? draft.fixedOverride : employee?.fixedOverride ?? false,
+        fixedSalary: isSuper ? draft.fixedSalary : employee?.fixedSalary ?? 0,
+        dailyRateOverride: isSuper ? draft.dailyRateOverride : employee?.dailyRateOverride ?? null,
+      };
+      const auditProfile = (value: Employee) => { const { photo, ...fields } = value; return { ...fields, hasPhoto: Boolean(photo) }; };
+      // A credential write can fail (for example when browser storage is full).
+      // Persist it before publishing the employee, so retry cannot create an
+      // account with no usable password or a duplicate employee.
+      if (!employee) await setEmployeePassword(id, initialPassword);
+      try {
+        updateData(state => { const index = state.employees.findIndex(item => item.id === id); if (index >= 0) state.employees[index] = updated; else state.employees.push(updated); }, {
+          action: employee ? 'تعديل بيانات موظف' : 'إضافة موظف وحساب دخول', entity: 'employee', entityId: id, employeeId: id,
+          oldValues: employee ? auditProfile(employee) : {},
+          newValues: auditProfile(updated),
+        });
+      } catch (error) {
+        if (!employee) removeEmployeeCredential(id);
+        throw error;
+      }
+      pendingPassword.current = '';
+      if (passwordRef.current) passwordRef.current.value = '';
+      setConfirmSalary(false);
+      toast(employee ? 'تم تحديث بيانات الموظف.' : 'تمت إضافة الموظف وحساب الدخول بنجاح.');
+      onClose();
+    } catch {
+      setError('تعذر حفظ حساب الدخول. حاول مرة أخرى.');
+      setStep(3);
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (step === 3 && !employee && passwordRef.current?.value) passwordProvided.current = true;
+    if (savingRef.current) return;
+    if (step === 3 && !employee && passwordRef.current) pendingPassword.current = passwordRef.current.value;
     const message = validateStep(step);
     if (message) { setError(message); return; }
     setError('');
@@ -115,9 +146,9 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
   };
 
   return <>
-    <Dialog open={open} onClose={onClose} title={employee ? 'تعديل بيانات الموظف' : 'إضافة موظف جديد'} description={employee ? `${employee.name} · ${employee.code}` : 'بيانات الموظف وحساب دخوله في خطوات واضحة.'} wide>
+    <Dialog open={open} onClose={() => { if (!savingRef.current) { pendingPassword.current = ''; onClose(); } }} title={employee ? 'تعديل بيانات الموظف' : 'إضافة موظف جديد'} description={employee ? `${employee.name} · ${employee.code}` : 'بيانات الموظف وحساب دخوله في خطوات واضحة.'} wide>
       <form onSubmit={submit} noValidate>
-        <div className={styles.formSteps} aria-label="خطوات بيانات الموظف">{steps.map((label, index) => <button key={label} type="button" className={styles.step} aria-current={index === step ? 'step' : undefined} onClick={() => { if (index < step || employee) { setStep(index); setError(''); } }}><span className={styles.stepNumber}>{index < step ? '✓' : index + 1}</span>{label}</button>)}</div>
+        <div className={styles.formSteps} aria-label="خطوات بيانات الموظف">{steps.map((label, index) => <button key={label} type="button" disabled={saving} className={styles.step} aria-current={index === step ? 'step' : undefined} onClick={() => { if (index < step || employee) { setStep(index); setError(''); } }}><span className={styles.stepNumber}>{index < step ? '✓' : index + 1}</span>{label}</button>)}</div>
         <div className={styles.formIntro}><h3>{steps[step]}</h3><p>{['ابدأ بالاسم والبيانات التي تظهر في الملف.', 'وسائل التواصل الخاصة بالموظف.', 'القسم ومعلومات المباشرة والحالة الوظيفية.', 'تسجيل الدخول يكون باسم المستخدم وكلمة المرور.', 'تطبق قوانين القسم تلقائياً ما لم تخصص راتب الموظف.'][step]}</p></div>
         {step === 0 && <>
           <div className={styles.photoUpload}><Avatar name={draft.name || 'موظف'} src={draft.photo} size={64} /><div className="stack"><label className="inline"><ImagePlus size={16} /> صورة الموظف<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="صورة الموظف" onChange={event => uploadPhoto(event.target.files?.[0])} /></label><span className={styles.mutedNote}>صورة اختيارية · JPG / PNG / WebP · حتى 1 MB</span>{draft.photo && <Button type="button" variant="ghost" onClick={() => update('photo', undefined)}>إزالة الصورة</Button>}</div></div>
@@ -125,30 +156,51 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
         </>}
         {step === 1 && <div className="form-grid"><Field label="رقم الهاتف" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.phone)} onChange={event => update('phone', fullPhone(event.target.value))} autoComplete="tel" placeholder="xxxxxxxxx" /></div></Field><Field label="رقم هاتف ولي الأمر" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.guardianPhone)} onChange={event => update('guardianPhone', fullPhone(event.target.value))} placeholder="xxxxxxxxx" /></div></Field><Field label="معرف تيليغرام" hint="اكتب المعرف فقط من دون @."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>@</span><Input dir="ltr" value={draft.telegram} onChange={event => update('telegram', telegramUsername(event.target.value))} placeholder="username" /></div></Field><div className="field-span-2"><Field label="العنوان / محل السكن"><Input value={draft.address} onChange={event => update('address', event.target.value)} placeholder="المحافظة، المنطقة" autoComplete="street-address" /></Field></div></div>}
         {step === 2 && <div className="form-grid"><Field label="القسم" required><Select value={draft.departmentId} onChange={event => update('departmentId', event.target.value)}><option value="">اختر القسم</option>{data.departments.filter(item => item.active || item.id === employee?.departmentId).map(item => <option key={item.id} value={item.id}>{item.name}{!item.active ? ' (غير نشط)' : ''}</option>)}</Select></Field><Field label="تاريخ المباشرة" required><Input type="date" value={draft.startDate} onChange={event => update('startDate', event.target.value)} /></Field><Field label="الرقم الوظيفي"><Input value={employee?.code ?? 'يُنشأ تلقائياً عند الحفظ'} readOnly /></Field><div className="field-span-2"><Field label="ملاحظات" hint="اختياري"><Textarea value={draft.notes} onChange={event => update('notes', event.target.value)} rows={3} placeholder="ملاحظات إدارية عن الموظف (اختياري)" /></Field></div></div>}
-        {step === 3 && <><div className="form-grid"><Field label="اسم المستخدم" required hint="فريد، وتسجيل الدخول لا يفرق بين الحروف الكبيرة والصغيرة."><Input dir="ltr" value={draft.username} onChange={event => update('username', event.target.value)} autoComplete="off" placeholder="AHMED21" /></Field><Field label="الصلاحية"><Select value={draft.role} disabled={!isSuper} onChange={event => update('role', event.target.value as Role)}><option value="EMPLOYEE">موظف</option>{isSuper && <><option value="ADMIN">مدير</option><option value="SUPER_ADMIN">مشرف عام</option></>}</Select></Field>{!employee && <div className="field-span-2"><Field label="كلمة المرور الأولية" required hint="هذه معاينة؛ لن تُحفظ كلمة المرور أو تُستخدم لتسجيل دخول حقيقي."><Input type="password" ref={passwordRef} autoComplete="new-password" onChange={event => { passwordProvided.current = Boolean(event.target.value); }} /></Field></div>}</div><div className="notice" style={{ marginTop: 20 }}><ShieldCheck size={18} /><span>{employee ? 'يمكن تغيير كلمة المرور من تبويب «حساب الدخول» داخل ملف الموظف.' : 'تتم إضافة الملف وحساب المعاينة معاً. يستطيع الموظف الاطلاع على بياناته فقط.'}</span></div></>}
+        {step === 3 && <><div className="form-grid"><Field label="اسم المستخدم" required hint="فريد، وتسجيل الدخول لا يفرق بين الحروف الكبيرة والصغيرة."><Input dir="ltr" value={draft.username} onChange={event => update('username', event.target.value)} autoComplete="off" placeholder="AHMED21" /></Field><Field label="الصلاحية"><Select value={draft.role} disabled={!isSuper} onChange={event => update('role', event.target.value as Role)}><option value="EMPLOYEE">موظف</option>{isSuper && <><option value="ADMIN">مدير</option><option value="SUPER_ADMIN">مشرف عام</option></>}</Select></Field>{!employee && <div className="field-span-2"><Field label="كلمة المرور الأولية" required hint="6 أحرف أو أرقام على الأقل. لا يتم عرض كلمة المرور بعد حفظها."><Input type="password" ref={node => { passwordRef.current = node; if (node) node.value = pendingPassword.current; }} autoComplete="new-password" onChange={event => { pendingPassword.current = event.target.value; }} /></Field></div>}</div><div className="notice" style={{ marginTop: 20 }}><ShieldCheck size={18} /><span>{employee ? 'يمكن تغيير كلمة المرور من تبويب «حساب الدخول» داخل ملف الموظف.' : 'سيستخدم الموظف اسم المستخدم وكلمة المرور لتسجيل الدخول.'}</span></div></>}
         {step === 4 && <><div className={styles.salaryType}><span>نوع الراتب</span><Badge tone="brand">{draft.fixedOverride || data.departments.find(item => item.id === draft.departmentId)?.salary.mode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</Badge></div><div className="notice"><ShieldCheck size={18} /><span>{isSuper ? 'تخصيص الراتب متاح للمشرف العام. اترك اليومية فارغة لاستخدام قيمة القسم.' : 'إعدادات الراتب محمية؛ يتولى المشرف العام تعديلها.'}</span></div><label className={styles.checkLabel}><input type="checkbox" checked={draft.fixedOverride} disabled={!isSuper} onChange={event => update('fixedOverride', event.target.checked)} />هذا الموظف راتبه قطعي</label>{draft.fixedOverride ? <div className="form-grid"><Field label="الراتب القطعي (د.ع)" required><Input type="number" min={0} step={1000} value={fixedSalaryText} placeholder="0" disabled={!isSuper} onChange={event => { setFixedSalaryText(event.target.value); update('fixedSalary', event.target.value === '' ? 0 : Number(event.target.value)); }} /></Field><Field label="قيمة اليومية الخاصة (د.ع)" hint="اختياري — تُستخدم يومية القسم عند تركه فارغاً."><Input type="number" min={0} step={1000} value={draft.dailyRateOverride ?? ''} disabled={!isSuper} placeholder="يومية القسم" onChange={event => update('dailyRateOverride', event.target.value === '' ? null : Number(event.target.value))} /></Field></div> : <p className={styles.mutedNote}>سيطبق نوع الراتب المعتمد لقسم {data.departments.find(item => item.id === draft.departmentId)?.name || 'الموظف'} تلقائياً.</p>}<p className={styles.mutedNote}>في أول أو آخر شهر غير مكتمل للراتب القطعي، يعتمد الأساسي على الأيام المطلوبة × اليومية. ثم تطبق الخصومات والمكافآت.</p></>}
         {error && <p role="alert" className={styles.error}>{error}</p>}
-        <div className="form-actions"><Button type="submit" disabled={!canModify}>{step < steps.length - 1 ? <>التالي<ArrowLeft size={16} /></> : <><Check size={16} />{employee ? 'حفظ التعديلات' : 'إضافة الموظف'}</>}</Button><Button type="button" variant="secondary" onClick={() => { if (step) { setStep(step - 1); setError(''); } else onClose(); }}>{step ? <><ArrowRight size={16} />السابق</> : 'إلغاء'}</Button></div>
+        <div className="form-actions"><Button type="submit" loading={saving} disabled={!canModify}>{step < steps.length - 1 ? <>التالي<ArrowLeft size={16} /></> : <><Check size={16} />{employee ? 'حفظ التعديلات' : 'إضافة الموظف'}</>}</Button><Button type="button" variant="secondary" disabled={saving} onClick={() => { if (step) { setStep(step - 1); setError(''); } else { pendingPassword.current = ''; onClose(); } }}>{step ? <><ArrowRight size={16} />السابق</> : 'إلغاء'}</Button></div>
       </form>
     </Dialog>
-    <ConfirmDialog open={confirmSalary} onClose={() => setConfirmSalary(false)} onConfirm={save} title="تأكيد تعديل إعدادات الراتب" description="سيتم تطبيق هذا التعديل على الشهر المفتوح حالياً وإعادة احتساب الرواتب. الرواتب المؤرشفة تبقى محفوظة كما هي." confirmLabel="تأكيد وحفظ الإعدادات" />
+    <ConfirmDialog open={confirmSalary} onClose={() => { if (!savingRef.current) setConfirmSalary(false); }} onConfirm={save} title="تأكيد تعديل إعدادات الراتب" description="سيتم تطبيق هذا التعديل على الشهر المفتوح حالياً وإعادة احتساب الرواتب. الرواتب المؤرشفة تبقى محفوظة كما هي." confirmLabel="تأكيد وحفظ الإعدادات" />
   </>;
 }
 
 export function ResetPasswordDialog({ employee, onClose }: { employee: Employee | null; onClose: () => void }) {
-  const { session, updateData } = useDemo();
+  const { session, updateData, setEmployeePassword } = useDemo();
   const toast = useToast();
   const passwordRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!employee || (session?.role !== 'SUPER_ADMIN' && employee.role !== 'EMPLOYEE')) { setError('لا تمتلك صلاحية إدارة هذا الحساب.'); return; }
-    if (!passwordRef.current?.value.trim()) { setError('أدخل كلمة المرور الجديدة.'); return; }
-    updateData(() => {}, { action: 'محاكاة تغيير كلمة مرور الموظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: {}, newValues: { simulated: true } });
-    passwordRef.current.value = '';
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const close = () => {
+    if (savingRef.current) return;
+    if (passwordRef.current) passwordRef.current.value = '';
     setError('');
-    toast('تمت محاكاة تغيير كلمة المرور. لم تُحفظ كلمة المرور في المعاينة.');
     onClose();
   };
-  return <Dialog open={Boolean(employee)} onClose={onClose} title="تغيير كلمة المرور" description={employee ? `حساب ${employee.name} · ${employee.username}` : ''}><form onSubmit={submit}><Field label="كلمة المرور الجديدة" required hint="في هذه المعاينة لا تُحفظ كلمة المرور ولا تتغير جلسات حقيقية."><Input ref={passwordRef} type="password" autoComplete="new-password" autoFocus /></Field>{error && <p role="alert" className={styles.error}>{error}</p>}<div className="form-actions"><Button type="submit">حفظ</Button><Button type="button" variant="secondary" onClick={onClose}>إلغاء</Button></div></form></Dialog>;
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (savingRef.current) return;
+    if (!employee || (session?.role !== 'SUPER_ADMIN' && (session?.role !== 'ADMIN' || employee.role !== 'EMPLOYEE'))) { setError('لا تمتلك صلاحية إدارة هذا الحساب.'); return; }
+    const password = passwordRef.current?.value ?? '';
+    if (!password.trim()) { setError('أدخل كلمة المرور الجديدة.'); return; }
+    if (password.length < 6) { setError('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.'); return; }
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await setEmployeePassword(employee.id, password);
+      updateData(() => {}, { action: 'تغيير كلمة مرور الموظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: {}, newValues: { sessionsInvalidated: true } });
+      if (passwordRef.current) passwordRef.current.value = '';
+      setError('');
+      toast('تم تغيير كلمة المرور وإنهاء الجلسات السابقة للحساب.');
+      onClose();
+    } catch {
+      setError('تعذر تغيير كلمة المرور. حاول مرة أخرى.');
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+  return <Dialog open={Boolean(employee)} onClose={close} title="تغيير كلمة المرور" description={employee ? `حساب ${employee.name} · ${employee.username}` : ''}><form onSubmit={submit}><Field label="كلمة المرور الجديدة" required hint="6 أحرف أو أرقام على الأقل."><Input ref={passwordRef} disabled={saving} type="password" autoComplete="new-password" autoFocus /></Field>{error && <p role="alert" className={styles.error}>{error}</p>}<div className="form-actions"><Button type="submit" loading={saving}>حفظ</Button><Button type="button" variant="secondary" disabled={saving} onClick={close}>إلغاء</Button></div></form></Dialog>;
 }

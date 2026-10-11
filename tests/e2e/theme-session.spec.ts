@@ -1,4 +1,4 @@
-import { test, expect, finishWelcome, gotoPreview, readPreviewData, readPreviewSession, seedPopulatedPreview, PREVIEW_STORAGE_KEY, PREVIEW_TEST_TIME } from './helpers/preview';
+import { test, expect, loginAccount, fillLoginCredentials, submitLogin, seedLocalAuth, finishWelcome, gotoPreview, readPreviewData, readPreviewSession, seedPopulatedPreview, PREVIEW_STORAGE_KEY, PREVIEW_TEST_TIME } from './helpers/preview';
 import { PREVIEW_DATA_STORAGE_KEY, PREVIEW_PERSISTENT_STORAGE_KEY } from '../../src/lib/preview-config';
 
 test('theme toggle is explicit, persists locally, and supports light/dark without following the OS automatically', async ({ page }) => {
@@ -16,10 +16,7 @@ test('theme toggle is explicit, persists locally, and supports light/dark withou
 
 test('remembered sessions share owner data across tabs and logout clears sign-in without deleting the data', async ({ page, context }) => {
   await seedPopulatedPreview(page);
-  await gotoPreview(page, '/login');
-  await page.getByLabel('ابقني مسجلاً', { exact: true }).check();
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, 'SYSTEM', true);
   await expect(page).toHaveURL(/\/dashboard$/);
   expect(await page.evaluate(key => Boolean(localStorage.getItem(key)), PREVIEW_PERSISTENT_STORAGE_KEY)).toBe(true);
   await gotoPreview(page, '/settings');
@@ -48,7 +45,7 @@ test('remembered sessions share owner data across tabs and logout clears sign-in
   // Simulate a suspended tab that did not receive the logout storage event.
   await page.evaluate(({ key, raw }) => sessionStorage.setItem(key, raw), { key: PREVIEW_STORAGE_KEY, raw: staleRememberedTab });
   await page.reload();
-  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(page.getByLabel(/^اسم المستخدم/)).toBeVisible();
   expect(await readPreviewSession(page)).toBeNull();
   expect(await readPreviewData(page)).toEqual(latest);
   await reopened.close();
@@ -57,11 +54,12 @@ test('remembered sessions share owner data across tabs and logout clears sign-in
   const nextVisit = await context.newPage();
   await nextVisit.clock.install({ time: PREVIEW_TEST_TIME });
   await nextVisit.goto('/login');
-  await expect(nextVisit.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(nextVisit.getByLabel(/^اسم المستخدم/)).toBeVisible();
   await expect(nextVisit.getByTestId('centerpro-welcome')).toHaveCount(0);
   expect(await readPreviewSession(nextVisit)).toBeNull();
   expect(await readPreviewData(nextVisit)).toEqual(latest);
-  await nextVisit.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await fillLoginCredentials(nextVisit);
+  await submitLogin(nextVisit);
   await finishWelcome(nextVisit);
   await expect(nextVisit).toHaveURL(/\/dashboard$/);
   expect(await readPreviewData(nextVisit)).toEqual(latest);
@@ -70,12 +68,10 @@ test('remembered sessions share owner data across tabs and logout clears sign-in
 
 test('a session without remember remains in its tab and does not sign in a new tab', async ({ page, context }) => {
   await seedPopulatedPreview(page);
-  await gotoPreview(page, '/login');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page);
   const fresh = await context.newPage();
   await fresh.goto('/login');
-  await expect(fresh.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(fresh.getByLabel(/^اسم المستخدم/)).toBeVisible();
   expect(await readPreviewSession(fresh)).toBeNull();
   expect((await readPreviewData(fresh)).employees).toHaveLength(0);
   expect(await fresh.evaluate(key => localStorage.getItem(key), PREVIEW_PERSISTENT_STORAGE_KEY)).toBeNull();
@@ -84,26 +80,21 @@ test('a session without remember remains in its tab and does not sign in a new t
 
 test('switching accounts after remembered logout requires explicit login and keeps remember disabled', async ({ page }) => {
   await seedPopulatedPreview(page);
-  await gotoPreview(page, '/login');
-  await page.getByLabel('ابقني مسجلاً', { exact: true }).check();
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, 'SYSTEM', true);
   await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
-  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(page.getByLabel(/^اسم المستخدم/)).toBeVisible();
   expect(await readPreviewSession(page)).toBeNull();
   expect(await page.evaluate(key => localStorage.getItem(key), PREVIEW_PERSISTENT_STORAGE_KEY)).toBeNull();
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await expect(page.getByLabel('ابقني مسجلاً', { exact: true })).not.toBeChecked();
-  await page.getByLabel('الحساب', { exact: true }).selectOption('CP-0001');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, 'CP-0001');
   await expect(page).toHaveURL(/\/employee$/);
   expect(await readPreviewSession(page)).toMatchObject({ employeeId: 'CP-0001' });
   expect(await page.evaluate(key => localStorage.getItem(key), PREVIEW_PERSISTENT_STORAGE_KEY)).toBeNull();
 });
 
 for (const denied of [['localStorage'], ['sessionStorage', 'localStorage']] as const) {
-  test(`blocked ${denied.join(' and ')} keeps the in-memory login and theme usable`, async ({ page }) => {
+  test(`blocked ${denied.join(' and ')} rejects credential setup while the theme remains usable`, async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(kinds => {
@@ -112,12 +103,36 @@ for (const denied of [['localStorage'], ['sessionStorage', 'localStorage']] as c
     await gotoPreview(page, '/login');
     await page.getByRole('button', { name: 'تفعيل الوضع الداكن', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await fillLoginCredentials(page);
     await page.getByLabel('ابقني مسجلاً', { exact: true }).check();
-    await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-    await finishWelcome(page);
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
-    await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+    await submitLogin(page);
+    await expect(page.locator('form').getByRole('alert')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'إنشاء حساب مدير النظام', exact: true })).toBeEnabled();
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
+    await gotoPreview(page, '/dashboard');
+    await expect(page).toHaveURL(/\/login$/);
     expect(errors).toEqual([]);
   });
 }
+
+test('blocked session storage still permits password verification and remembered login through local storage', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await seedLocalAuth(page);
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'sessionStorage', { configurable: true, get() { throw new DOMException('Blocked for test', 'SecurityError'); } });
+  });
+  await gotoPreview(page, '/login');
+  await fillLoginCredentials(page);
+  await page.getByLabel('ابقني مسجلاً', { exact: true }).check();
+  await submitLogin(page);
+  await finishWelcome(page);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'تسجيل الخروج', exact: true })).toBeVisible();
+  await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
+  await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  expect(errors).toEqual([]);
+});

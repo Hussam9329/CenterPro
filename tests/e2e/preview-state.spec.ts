@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test';
 import { createInitialData } from '../../src/lib/mock-data';
 import type { DemoData } from '../../src/lib/types';
 import { createPopulatedTestData } from '../fixtures/populated-data';
-import { PREVIEW_DATA_STORAGE_KEY, PREVIEW_PERSISTENT_STORAGE_KEY, PREVIEW_SYSTEM_ADMIN } from '../../src/lib/preview-config';
-import { test, expect, gotoPreview, loginPreview, finishWelcome, seedPopulatedPreview, readPreviewData, readPreviewSession, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION } from './helpers/preview';
+import { PREVIEW_DATA_STORAGE_KEY, PREVIEW_PERSISTENT_STORAGE_KEY } from '../../src/lib/preview-config';
+import { test, expect, gotoPreview, loginPreview, loginAccount, seedLocalAuth, fillLoginCredentials, submitLogin, finishWelcome, seedPopulatedPreview, SYSTEM_TEST_SESSION, AUTH_STORAGE_KEY, readPreviewData, readPreviewSession, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION } from './helpers/preview';
 
 const collections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit', 'evaluationSeasons', 'evaluationCycles', 'evaluationExams', 'examEvaluations'] as const;
 const populatedFixtureCollections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit'] as const;
@@ -40,29 +40,30 @@ test('legacy v1 fictional records and session are discarded in favor of a clean 
   }, { key: PREVIEW_STORAGE_KEY, fixture: createPopulatedTestData() });
   await gotoPreview(page, '/login');
   // The server-rendered login is visible before the preview store hydrates.
-  await expect(page.getByRole('button', { name: 'تسجيل الدخول', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'إنشاء حساب مدير النظام', exact: true })).toBeEnabled();
   expectEmpty(await readPreviewData(page));
   expect(await readPreviewSession(page)).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v1'))).toBeNull();
   expect(await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)!).version, PREVIEW_STORAGE_KEY)).toBe(PREVIEW_STORAGE_VERSION);
-  await expect(page.getByLabel('الحساب', { exact: true })).toHaveValue('SYSTEM');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await expect(page.getByLabel(/^اسم المستخدم/)).toHaveValue('centerpro-owner');
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   expectEmpty(await readPreviewData(page));
-  expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
+  expect(await readPreviewSession(page)).toEqual(SYSTEM_TEST_SESSION);
 });
 
-test('the system Super Admin enters without becoming an employee and uncreated roles stay disabled', async ({ page }) => {
+test('system credential setup enters without creating an employee or exposing account choices', async ({ page }) => {
   await gotoPreview(page, '/login');
-  const accountSelect = page.getByLabel('الحساب', { exact: true });
-  await expect(accountSelect).toHaveValue('SYSTEM');
-  await expect(accountSelect.locator('option')).toHaveCount(1);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'تهيئة مدير النظام', exact: true })).toBeVisible();
+  await expect(page.locator('select')).toHaveCount(0);
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   const session = await readPreviewSession(page);
-  expect(session).toEqual(PREVIEW_SYSTEM_ADMIN);
+  expect(session).toEqual(SYSTEM_TEST_SESSION);
   expect(session).not.toHaveProperty('employeeId');
   expectEmpty(await readPreviewData(page));
   await expect(page.locator('a[href="/employees/undefined"]')).toHaveCount(0);
@@ -73,7 +74,7 @@ test('the system Super Admin enters without becoming an employee and uncreated r
   await expect(page.locator('.data-table tbody tr')).toHaveCount(0);
 });
 
-test('role choices become available only after the owner manually creates the corresponding accounts', async ({ page }) => {
+test('manually created employee and admin credentials enter their assigned roles', async ({ page }) => {
   test.setTimeout(90_000);
   await loginPreview(page);
   await gotoPreview(page, '/departments?add=1');
@@ -90,15 +91,14 @@ test('role choices become available only after the owner manually creates the co
   await addAccount(page, 'موظف يضاف يدوياً', 'MANUAL-EMP', 'EMPLOYEE', departmentId);
   await gotoPreview(page, '/login');
   const employeeAccount = (await readPreviewData(page)).employees.find(item => item.username === 'MANUAL-EMP')!;
-  await expect(page.getByLabel('الحساب', { exact: true }).locator(`option[value="${employeeAccount.id}"]`)).toHaveCount(1);
+  await loginAccount(page, employeeAccount.id);
+  expect(await readPreviewSession(page)).toMatchObject({ kind: 'EMPLOYEE', role: 'EMPLOYEE', employeeId: employeeAccount.id, authVersion: 1 });
 
   await loginPreview(page);
   await addAccount(page, 'مدير يضاف يدوياً', 'MANUAL-ADMIN', 'ADMIN', departmentId);
   await gotoPreview(page, '/login');
   const adminAccount = (await readPreviewData(page)).employees.find(item => item.username === 'MANUAL-ADMIN')!;
-  await page.getByLabel('الحساب', { exact: true }).selectOption(adminAccount.id);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, adminAccount.id);
   await expect(page).toHaveURL(/\/dashboard$/);
   const state = await readPreviewData(page);
   expect(state.employees).toHaveLength(2);
@@ -115,11 +115,7 @@ test('reset clears every operational collection and remembered copy without rest
   const fixture = createPopulatedTestData();
   fixture.settings = { centerName: 'اسم معدل قبل إعادة الضبط', qrInterval: 60 };
   await seedPopulatedPreview(page, fixture);
-  await gotoPreview(page, '/login');
-  await page.getByLabel('الحساب', { exact: true }).selectOption('CP-0012');
-  await page.getByLabel('ابقني مسجلاً', { exact: true }).check();
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, 'CP-0012', true);
   await expect(page).toHaveURL(/\/dashboard$/);
   expect(await readPreviewSession(page)).toMatchObject({ kind: 'EMPLOYEE', role: 'SUPER_ADMIN', employeeId: 'CP-0012' });
   for (const collection of populatedFixtureCollections) expect((await readPreviewData(page))[collection].length).toBeGreaterThan(0);
@@ -133,21 +129,27 @@ test('reset clears every operational collection and remembered copy without rest
   await expect(dialog).toBeHidden();
   expectEmpty(await readPreviewData(page));
   expect((await readPreviewData(page)).settings).toEqual({ centerName: 'CenterPro', qrInterval: 45 });
-  expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
+  expect(await readPreviewSession(page)).toEqual(SYSTEM_TEST_SESSION);
   expect(await readPreviewSession(page)).not.toHaveProperty('employeeId');
   expect(await page.evaluate(key => localStorage.getItem(key), PREVIEW_PERSISTENT_STORAGE_KEY)).toBeNull();
   expectEmpty(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).data, PREVIEW_DATA_STORAGE_KEY));
   const fresh = await context.newPage();
   await fresh.goto('/login');
-  await expect(fresh.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
+  await expect(fresh.getByLabel(/^اسم المستخدم/)).toBeVisible();
+  await expect(fresh.locator('select')).toHaveCount(0);
+  expect(await fresh.evaluate(key => JSON.parse(localStorage.getItem(key)!).employees, AUTH_STORAGE_KEY)).toEqual({});
   expectEmpty(await readPreviewData(fresh));
   expect(await readPreviewSession(fresh)).toBeNull();
 
   await gotoPreview(page, '/dashboard');
   expectEmpty(await readPreviewData(page));
-  expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
+  expect(await readPreviewSession(page)).toEqual(SYSTEM_TEST_SESSION);
   await gotoPreview(page, '/login');
-  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
+  await expect(page.getByLabel(/^اسم المستخدم/)).toBeVisible();
+  await expect(page.locator('select')).toHaveCount(0);
+  await loginAccount(page);
+  expect(await readPreviewSession(page)).toEqual(SYSTEM_TEST_SESSION);
+  expectEmpty(await readPreviewData(page));
 });
 
 
@@ -162,7 +164,8 @@ test('legacy v2/v3 operational stores are purged instead of restoring old test d
   await gotoPreview(page, '/login');
   expectEmpty(await readPreviewData(page));
   expect(await readPreviewSession(page)).toBeNull();
-  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
+  await expect(page.getByLabel(/^اسم المستخدم/)).toBeVisible();
+  await expect(page.locator('select')).toHaveCount(0);
   expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v2'))).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('centerpro-ui-preview-v3'))).toBeNull();
   expect(await page.evaluate(() => localStorage.getItem('centerpro-ui-preview-data-v1'))).toBeNull();
@@ -172,15 +175,16 @@ test('legacy v2/v3 operational stores are purged instead of restoring old test d
 
 test('a corrupt current payload does not erase a valid remembered owner dataset', async ({ page }) => {
   const fixture = createPopulatedTestData();
+  await seedLocalAuth(page, fixture);
   const corrupt = '{incomplete owner storage';
   await page.addInitScript(({ key, persistentKey, version, fixture, session, corrupt }) => {
     sessionStorage.setItem(key, corrupt);
     localStorage.setItem(persistentKey, JSON.stringify({ version, data: fixture, session }));
-  }, { key: PREVIEW_STORAGE_KEY, persistentKey: PREVIEW_PERSISTENT_STORAGE_KEY, version: PREVIEW_STORAGE_VERSION, fixture, session: PREVIEW_SYSTEM_ADMIN, corrupt });
+  }, { key: PREVIEW_STORAGE_KEY, persistentKey: PREVIEW_PERSISTENT_STORAGE_KEY, version: PREVIEW_STORAGE_VERSION, fixture, session: SYSTEM_TEST_SESSION, corrupt });
   await gotoPreview(page, '/login');
   await expect(page).toHaveURL(/\/dashboard$/);
   expect(await readPreviewData(page)).toEqual(fixture);
-  expect(await readPreviewSession(page)).toEqual(PREVIEW_SYSTEM_ADMIN);
+  expect(await readPreviewSession(page)).toEqual(SYSTEM_TEST_SESSION);
   expect(await page.evaluate(key => sessionStorage.getItem(`${key}-recovery`), PREVIEW_STORAGE_KEY)).toBe(corrupt);
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
 });
@@ -190,10 +194,11 @@ test('malformed remembered storage does not replace valid owner data in the curr
   await seedPopulatedPreview(page, fixture);
   await page.addInitScript(key => localStorage.setItem(key, '{invalid remembered data'), PREVIEW_PERSISTENT_STORAGE_KEY);
   await gotoPreview(page, '/login');
-  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(page.getByLabel(/^اسم المستخدم/)).toBeVisible();
   expect(await readPreviewData(page)).toEqual(fixture);
   expect(await readPreviewSession(page)).toBeNull();
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   expect(await readPreviewData(page)).toEqual(fixture);
@@ -201,12 +206,13 @@ test('malformed remembered storage does not replace valid owner data in the curr
 
 test('blocked session storage still restores remembered owner data from local storage', async ({ page }) => {
   const fixture = createPopulatedTestData();
+  await seedLocalAuth(page, fixture);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(({ persistentKey, version, fixture, session }) => {
     localStorage.setItem(persistentKey, JSON.stringify({ version, data: fixture, session }));
     Object.defineProperty(window, 'sessionStorage', { configurable: true, get() { throw new DOMException('Blocked for test', 'SecurityError'); } });
-  }, { persistentKey: PREVIEW_PERSISTENT_STORAGE_KEY, version: PREVIEW_STORAGE_VERSION, fixture, session: PREVIEW_SYSTEM_ADMIN });
+  }, { persistentKey: PREVIEW_PERSISTENT_STORAGE_KEY, version: PREVIEW_STORAGE_VERSION, fixture, session: SYSTEM_TEST_SESSION });
   await gotoPreview(page, '/login');
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true }).getByRole('link', { name: 'الموظفون', exact: true }).click();

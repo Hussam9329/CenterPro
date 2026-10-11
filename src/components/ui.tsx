@@ -1,7 +1,7 @@
 'use client';
 
 import type { ButtonHTMLAttributes, ComponentProps, SelectHTMLAttributes, TextareaHTMLAttributes, ReactNode } from 'react';
-import { createContext, useContext, useId } from 'react';
+import { createContext, useContext, useId, useState } from 'react';
 import * as D from '@radix-ui/react-dialog';
 import Image from 'next/image';
 import { X, Search, ChevronRight, ChevronLeft, Inbox, LoaderCircle } from 'lucide-react';
@@ -34,8 +34,14 @@ export function Textarea({ className = '', ...props }: TextareaHTMLAttributes<HT
 export function Dialog({ open, onClose, title, description, children, wide }: { open: boolean; onClose: () => void; title: string; description?: string; children: ReactNode; wide?: boolean }) {
   return <D.Root open={open} onOpenChange={value => { if (!value) onClose(); }}><D.Portal><D.Overlay className="dialog-overlay"/><D.Content className={`dialog-content ${wide ? 'dialog-wide' : ''}`} dir="rtl" aria-describedby={description ? undefined : undefined}><div className="dialog-header"><div><D.Title>{title}</D.Title>{description && <D.Description>{description}</D.Description>}</div><D.Close className="icon-button" aria-label="إغلاق النافذة"><X size={20}/></D.Close></div>{!description && <D.Description className="sr-only">{title}</D.Description>}<div className="dialog-body">{children}</div></D.Content></D.Portal></D.Root>;
 }
-export function ConfirmDialog({ open, onClose, onConfirm, title, description, confirmLabel = 'تأكيد', danger }: { open: boolean; onClose: () => void; onConfirm: () => void; title: string; description: string; confirmLabel?: string; danger?: boolean }) {
-  return <Dialog open={open} onClose={onClose} title={title} description={description}><div className="form-actions"><Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm}>{confirmLabel}</Button><Button variant="secondary" onClick={onClose}>إلغاء</Button></div></Dialog>;
+export function ConfirmDialog({ open, onClose, onConfirm, title, description, confirmLabel = 'تأكيد', danger }: { open: boolean; onClose: () => void; onConfirm: () => void | Promise<void>; title: string; description: string; confirmLabel?: string; danger?: boolean }) {
+  const [loading, setLoading] = useState(false);
+  async function confirm() {
+    if (loading) return;
+    setLoading(true);
+    try { await onConfirm(); } finally { setLoading(false); }
+  }
+  return <Dialog open={open} onClose={() => { if (!loading) onClose(); }} title={title} description={description}><div className="form-actions"><Button variant={danger ? 'danger' : 'primary'} loading={loading} onClick={confirm}>{confirmLabel}</Button><Button variant="secondary" disabled={loading} onClick={onClose}>إلغاء</Button></div></Dialog>;
 }
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) { return <div className="empty-state"><div className="empty-icon"><Inbox size={26}/></div><h3>{title}</h3>{description && <p>{description}</p>}{action}</div>; }
 export function Avatar({ name, src, size = 'md' }: { name: string; src?: string; size?: string | number }) { const style = typeof size === 'number' ? { width: size, height: size } : undefined; return <span className={`avatar avatar-${size}`} style={style}>{src ? <Image src={src} alt={name} width={80} height={80} unoptimized/> : name.split(' ').slice(0,2).map(s => s[0]).join('')}</span>; }

@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import type { Locator } from '@playwright/test';
-import { test, expect, gotoPreview, waitForWelcome, finishWelcome, readPreviewSession, PREVIEW_TEST_TIME, WELCOME_PERIOD_MS } from './helpers/preview';
+import { test, expect, gotoPreview, waitForWelcome, finishWelcome, readPreviewSession, fillLoginCredentials, submitLogin, PREVIEW_TEST_TIME, WELCOME_PERIOD_MS } from './helpers/preview';
 
 const sizes = [[360, 800], [390, 844], [430, 932], [768, 1024], [1024, 1366], [1366, 768], [1440, 900], [1920, 1080]];
 
@@ -30,7 +30,8 @@ async function expectApprovedWelcomeLogo(welcome: Locator) {
 test('fresh login page opens directly without a welcome splash', async ({ page }) => {
   await gotoPreview(page, '/login');
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
-  await expect(page.getByLabel('الحساب', { exact: true })).toBeVisible();
+  await expect(page.getByLabel(/^اسم المستخدم/)).toBeVisible();
+  await expect(page.getByLabel(/^كلمة المرور/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'CenterPro معك بكل خطوة.', exact: true })).toBeVisible();
   await expect(page.locator('.login-form-copyright')).toHaveText('Kal-EL VISIONS © 2026');
   await page.clock.fastForward(WELCOME_PERIOD_MS);
@@ -40,10 +41,12 @@ test('fresh login page opens directly without a welcome splash', async ({ page }
 test('clean login has no fixture loader or fictional employee accounts', async ({ page }) => {
   await gotoPreview(page, '/login');
   await expect(page.getByRole('button', { name: 'تحميل بيانات الاختبار', exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(1);
+  await expect(page.locator('select')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'تهيئة مدير النظام', exact: true })).toBeVisible();
   expect(await readPreviewSession(page)).toBeNull();
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.locator('.preview-strip')).toHaveCount(0);
@@ -52,7 +55,8 @@ test('clean login has no fixture loader or fictional employee accounts', async (
   expect(topbar?.y, 'Removing the preview strip leaves the header at the top of the viewport').toBe(0);
   await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   await finishWelcome(page);
   await expect(page).toHaveURL(/\/dashboard$/);
 });
@@ -60,7 +64,8 @@ test('clean login has no fixture loader or fictional employee accounts', async (
 test('successful login shows the centered three-second welcome and internal navigation/reload do not replay it', async ({ page }) => {
   await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 1_000));
   await gotoPreview(page, '/login');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   const welcome = await waitForWelcome(page);
   await expect(welcome).toHaveAttribute('data-welcome-sequence', 'login');
   await expect(welcome.getByText('اهلاً بيك', { exact: true })).toBeVisible();
@@ -84,7 +89,8 @@ test('reduced motion keeps the three-second post-login welcome without complex a
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 1_000));
   await gotoPreview(page, '/login');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   const welcome = await waitForWelcome(page);
   expect(await welcome.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
   await expectApprovedWelcomeLogo(welcome);
@@ -99,7 +105,8 @@ test('dark application theme does not recolor the branded welcome and persists a
   await gotoPreview(page, '/login');
   await page.getByRole('button', { name: 'تفعيل الوضع الداكن', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+  await fillLoginCredentials(page);
+  await submitLogin(page);
   const welcome = await waitForWelcome(page);
   const logo = await expectApprovedWelcomeLogo(welcome);
   expect(await welcome.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(255, 255, 255)');
@@ -129,7 +136,8 @@ for (const [width, height] of sizes) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.clock.pauseAt(new Date(PREVIEW_TEST_TIME.getTime() + 1_000));
     await gotoPreview(page, '/login');
-    await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
+    await fillLoginCredentials(page);
+    await submitLogin(page);
     const welcome = await waitForWelcome(page);
     await page.evaluate(() => document.fonts.ready);
     const logo = await (await expectApprovedWelcomeLogo(welcome)).boundingBox();

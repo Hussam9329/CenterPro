@@ -1322,3 +1322,9 @@ html[data-theme='dark'] .quick-action > svg { color:#ef879a; }
 }
 
 }
+
+/* Credential login: icon + field stay aligned in both themes without exposing account choices. */
+.login-input-wrap { position:relative; display:flex; align-items:center; }
+.login-input-wrap > svg { position:absolute; inset-inline-start:14px; color:var(--muted); pointer-events:none; z-index:1; }
+.login-input-wrap .input { padding-inline-start:44px; }
+html[data-theme='dark'] .login-input-wrap > svg { color:var(--text-secondary, #a7abb3); }

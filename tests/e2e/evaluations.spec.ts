@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect, finishWelcome, gotoPreview, readPreviewData, readPreviewSession, seedPopulatedPreview } from './helpers/preview';
+import { test, expect, loginAccount, gotoPreview, readPreviewData, readPreviewSession, seedPopulatedPreview } from './helpers/preview';
 import { createTestData } from '../../src/lib/mock-data';
 
 const correctorId = 'employee-abrar-haqi';
@@ -7,16 +7,15 @@ const auditorId = 'employee-jaafar-ali';
 
 async function enterAccount(page: Page, id = 'SYSTEM') {
   await gotoPreview(page, '/login');
-  await page.getByLabel('الحساب', { exact: true }).selectOption(id);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, id);
   await expect(page).toHaveURL(id === 'SYSTEM' ? /\/dashboard$/ : /\/employee$/);
 }
 
 async function loadExplicitTestData(page: Page) {
   await seedPopulatedPreview(page, createTestData());
   await gotoPreview(page, '/login');
-  await expect(page.getByLabel('الحساب', { exact: true }).locator('option')).toHaveCount(8);
+  await expect(page.getByRole('textbox', { name: 'اسم المستخدم', exact: false })).toBeVisible();
+  await expect(page.getByRole('combobox')).toHaveCount(0);
   const state = await readPreviewData(page);
   expect(state.employees.map(employee => employee.name)).toEqual(['ابرار حقي', 'هبة محمد', 'فاطمة فراس', 'مريم عصام', 'جعفر علي', 'مريم فهد', 'دانيا اياد']);
   expect(state.evaluationSeasons).toEqual([]);

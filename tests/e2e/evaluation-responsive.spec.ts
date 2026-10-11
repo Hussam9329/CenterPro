@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { createTestData } from '../../src/lib/mock-data';
 import type { DemoData } from '../../src/lib/types';
-import { test, expect, finishWelcome, gotoPreview, loginPreview, readPreviewData, seedPopulatedPreview } from './helpers/preview';
+import { test, expect, loginAccount, gotoPreview, loginPreview, readPreviewData, seedPopulatedPreview } from './helpers/preview';
 
 const sizes = [[360, 800], [390, 844], [430, 932], [768, 1024], [1024, 1366], [1366, 768], [1440, 900], [1920, 1080]];
 const examId = 'responsive-evaluation-exam';
@@ -43,9 +43,7 @@ function createEvaluationFixture(): DemoData {
 
 async function loginAsAuditor(page: Page) {
   await gotoPreview(page, '/login');
-  await page.getByLabel('الحساب', { exact: true }).selectOption(auditorId);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, auditorId);
   await expect(page).toHaveURL(/\/employee$/);
 }
 

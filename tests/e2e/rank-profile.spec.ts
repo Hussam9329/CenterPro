@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { createTestData } from '../../src/lib/mock-data';
 import { buildEvaluationCycleSnapshot, buildEvaluationSeasonSnapshot } from '../../src/lib/evaluations';
-import { test, expect, finishWelcome, gotoPreview, seedPopulatedPreview } from './helpers/preview';
+import { test, expect, loginAccount, gotoPreview, seedPopulatedPreview } from './helpers/preview';
 
 const correctorId = 'employee-abrar-haqi';
 const auditorId = 'employee-jaafar-ali';
@@ -39,10 +39,7 @@ function archivedScenario() {
 
 async function enterAccount(page: Page, id = 'SYSTEM') {
   await gotoPreview(page, '/login?switch=1');
-  await expect(page.getByRole('button', { name: 'تسجيل الدخول', exact: true })).toBeEnabled();
-  await page.getByLabel('الحساب', { exact: true }).selectOption(id);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await finishWelcome(page);
+  await loginAccount(page, id);
   await expect(page).toHaveURL(id === 'SYSTEM' ? /\/dashboard$/ : /\/employee$/);
 }
 
