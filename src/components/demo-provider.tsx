@@ -134,7 +134,7 @@ const getServerSnapshot = () => serverSnapshot;
 interface DemoContextValue extends Snapshot {
   login: (username: string, password: string, remember?: boolean) => Promise<boolean>;
   setupSystemAdmin: (username: string, password: string, remember?: boolean) => Promise<boolean>;
-  setEmployeePassword: (employeeId: string, password: string) => Promise<void>;
+  setEmployeePassword: (employeeId: string, password: string, onChanged?: () => void) => Promise<void>;
   logout: () => void;
   resetDemo: () => void;
   updateData: (updater: DataUpdater, audit?: AuditSource) => void;
@@ -189,7 +189,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     return true;
   }
 
-  async function setEmployeePassword(employeeId: string, password: string) {
+  async function setEmployeePassword(employeeId: string, password: string, onChanged?: () => void) {
     const actor = validSession(snapshot.data, snapshot.session);
     const operation = authOperation;
     const mayChange = () => {
@@ -200,11 +200,18 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     };
     if (!mayChange()) throw new Error('ليس لديك صلاحية تغيير كلمة المرور لهذا الحساب.');
     await setEmployeeCredential(employeeId, password, mayChange);
-    if (snapshot.session?.employeeId === employeeId) {
-      authOperation += 1;
-      emit({ ...snapshot, session: null, remembered: false }, true);
-    } else {
-      publish({ ...snapshot, ...authMeta() });
+    const changingOwnPassword = snapshot.session?.employeeId === employeeId;
+    // Commit the accompanying profile/audit while the verified actor is still
+    // available. A credential-storage failure never calls this callback.
+    try {
+      onChanged?.();
+    } finally {
+      if (changingOwnPassword) {
+        authOperation += 1;
+        emit({ ...snapshot, session: null, remembered: false }, true);
+      } else {
+        publish({ ...snapshot, ...authMeta() });
+      }
     }
   }
 

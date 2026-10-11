@@ -21,7 +21,7 @@ Employee-backed sessions have `kind: 'EMPLOYEE'`, an existing active employee ID
 - `data`, `session`, `ready`, `remembered`, `systemConfigured`, `systemUsername`
 - `login(username: string, password: string, remember?: boolean): Promise<boolean>`
 - `setupSystemAdmin(username: string, password: string, remember?: boolean): Promise<boolean>`
-- `setEmployeePassword(employeeId: string, password: string): Promise<void>`
+- `setEmployeePassword(employeeId: string, password: string, onChanged?: () => void): Promise<void>`
 - `logout()`, `resetDemo()`
 - `updateData(updater: (draft: DemoData, currentSession: DemoSession | null) => void, audit?: AuditInput | ((before: DemoData, after: DemoData) => AuditInput | undefined))`
 
@@ -36,6 +36,8 @@ There is no account selector or default password. A fresh browser with no config
 `src/lib/local-auth.ts` stores schema version 1 at `localStorage['centerpro-local-auth-v1']`. Each credential contains a unique 16-byte random salt, a 32-byte PBKDF2-SHA-256 hash using 150,000 iterations, its version and update time. Store the configured system username with its credential; key employee credentials by employee ID. Password changes increment credential versions so existing stale sessions cannot be restored. Remembered sign-in retains the verified session and matching `authVersion`, never a plaintext password.
 
 Employee creation persists the supplied password hash. Existing employees from older versions have no usable password until an authorized administrator sets one through **تغيير كلمة المرور**; do not invent or recover a password from previous simulated forms. Password reset remains subject to existing account-management roles and writes sanitized audit metadata only. System reset clears employee credentials and all operational records while preserving the system credential.
+
+The owner's October 11 follow-up also permits password changes directly in **تعديل بيانات الموظف → حساب الدخول**. The optional **كلمة المرور الجديدة** field leaves the current credential unchanged when blank; a nonempty password must have at least six characters and is applied only on saving the form. Retain its draft across form steps only in memory, and discard it on cancel. ADMIN can manage EMPLOYEE accounts; SUPER_ADMIN can manage all employee-backed accounts, following existing permissions. A failed credential write leaves profile data and audit unchanged. The combined profile audit records `passwordChanged` and `sessionsInvalidated` flags, never passwords or credential hashes. The optional synchronous `onChanged` callback commits this audit before invalidating the actor's own session when a super-admin edits their own employee-backed account.
 
 Credential setup and updates must fail if local storage or Web Crypto is unavailable. Malformed or inaccessible saved credentials must not be silently overwritten as a new owner setup, and failed persistence must not report success. Browser-local records and credentials are scoped to the current origin and browser; no Neon connection, server authentication or cross-device account synchronization is implemented by this patch.
 
