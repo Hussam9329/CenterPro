@@ -19,7 +19,21 @@ All 12 file changes applied without conflicts. Additional changes only align reg
 
 ## Verification
 
-Local lint, strict typecheck, all 196 unit/domain tests and production build pass. The full browser suite and release verification are recorded below after completion.
+Local lint, strict typecheck, all 196 unit/domain tests and production build pass. The first full browser run passed 135 of 136 tests. Its only failure was a new test assertion using an obsolete dark canvas color (`#101216`) instead of the current authored `#0f1115`; the application was correct. The test-only follow-up updates that expectation. All 13 welcome tests then passed, covering all eight responsive widths, the exact three-second lifecycle, reduced motion and theme restoration. The final exact-commit [GitHub run 38151619261](https://github.com/Hussam9329/CenterPro/actions/runs/38151619261) on `3e1e87d4d64eea30b31dd296a18b376a651cdfc1` completed successfully: lint, strict typecheck, all 196 unit/domain tests, production build and all 136 browser scenarios. No test was skipped. The two removed scenarios tested the superseded legacy-store migration; the supplied patch replaces that behavior with explicit cleanup checks.
+
+## Verified deployment
+
+- Application source: `d300957456944dda9f4e6a65c21248e4d2521e2b`.
+- Test-only follow-up on `main`: `3e1e87d4d64eea30b31dd296a18b376a651cdfc1`.
+- Preview: https://centerpro-1ryusvhfm-hussam9329s-projects.vercel.app/login
+- Deployment: `dpl_CwrKRpAixMifsBFdeP31aZVfuXfj`, status `READY`, target `null` (Preview).
+- All 121 deployment input files are identical between the application and test-only commits; source size is 11,453,554 bytes and the manifest SHA-256 is `d08ec5b8bbef4c04c0618acd186f8d57fd703d5eb604cf252fc460c90ef55cd8`. No additional application deployment is needed for a test-only expectation correction.
+
+Live browser verification confirmed one system account with no fixture loader, zero employees/attendance/payroll on the dashboard, no preview strip, the white welcome under dark mode, and the dark application after completion. The dashboard screenshot below comes from the live Preview; the mobile welcome screenshot comes from the passing 390px automated test with reduced motion.
+
+![Clean live dashboard in dark mode](cleanup-preview-dashboard.jpg)
+
+![Welcome at 390px](cleanup-welcome-mobile.png)
 
 ## Scope and environment
 
