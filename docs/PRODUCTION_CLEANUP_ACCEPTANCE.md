@@ -35,6 +35,22 @@ Live browser verification confirmed one system account with no fixture loader, z
 
 ![Welcome at 390px](cleanup-welcome-mobile.png)
 
+## Production deployment authorization — October 11, 2026
+
+After the Preview handoff, the owner explicitly requested deployment of `main` to Vercel Production. That instruction supersedes the earlier Preview-only hosting restriction. It changes the hosting target; the backend integration phase remains deferred.
+
+- Production source on `main`: `9d4e44af68be55b92d9379c992e100e19c0a10c6`.
+- Deployment: `dpl_8Gyx8JSYV1FUYyCSuVrpFuaPb1UT`, status `READY`, target `production`; the project's current Production deployment ID matches.
+- Verified canonical URL: https://centerpro-sigma.vercel.app/login
+- Deployment URL: https://centerpro-osfirqji4-hussam9329s-projects.vercel.app
+- Vercel confirms the assigned domains `centerpro-sigma.vercel.app` and `centerpro-hussam9329s-projects.vercel.app`, with no alias error.
+- All 121 deployment input files remain byte-for-byte identical to the verified Preview and tested application: 11,453,554 bytes, manifest SHA-256 `d08ec5b8bbef4c04c0618acd186f8d57fd703d5eb604cf252fc460c90ef55cd8`.
+- No application code changed for this deployment. The existing passing lint, typecheck, 196 unit tests, 136 browser scenarios and production build apply to the same application inputs; no new test run is claimed here.
+
+Live browser verification opened the canonical Production URL and confirmed that the login screen renders with its login action enabled.
+
+![Verified Production login](production-login.jpg)
+
 ## Scope and environment
 
 This remains the current frontend-only build with browser-local state, name-based simulated login and simulated QR validation. The patch does not authorize or implement the deferred Neon/authentication/backend phase. No Neon connection or database mutation was made. Payroll, attendance and evaluation formulas and the approved rank artwork are unchanged.

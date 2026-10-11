@@ -2,19 +2,19 @@
 
 Arabic-first, RTL employee, attendance and payroll management for one physical center. Built directly in the final Next.js application using the official CenterPro identity.
 
-## Current scope: revised Phase 1 — UI approval preview
+## Current scope: revised Phase 1 — frontend on Vercel Production
 
 The current revision starts as an **empty installation**. Departments, employees, attendance days and records, deductions, bonuses, payroll archives, payments and audit events all begin at zero. The owner creates records manually. The latest cleanup removes the login fixture loader and starts a new version-4 browser store, discarding the older preview stores. Evaluation cycles, exams and scores always start empty.
 
-This remains a browser-only frontend approval preview. It is not a live payroll or authentication system. Explicit UI approval is required before Neon, production authentication, server-side permissions, financial persistence or secure QR validation can be implemented.
+The owner explicitly authorized deployment of `main` to Vercel **Production** on October 11, 2026. This supersedes the earlier Preview-only hosting restriction. The application remains browser-only: Neon, production authentication, server-side permissions, financial persistence and secure QR validation still require the deferred backend phase and its approval.
 
 The original [Master Specification](docs/MASTER_SPECIFICATION.txt) is preserved unchanged. The later owner-approved [Phase 1 Revision Request](docs/PHASE1_REVISION_REQUEST.md) overrides its previous default data, salary terminology, attendance navigation/open-day and welcome-duration assumptions. The subsequent [required-days patch](docs/patches/required-days_employee-form_attendance.patch) changes the salary basis, employee contact fields, deactivation dates and attendance notes. The [audit and evaluation patch](docs/patches/audit-evaluation-testdata.patch) adds evaluation workflows, optional test accounts and direct name selection at login. The latest owner-approved season/rank/theme changes are recorded in [SEASON_RANK_UI_REVISION.md](docs/SEASON_RANK_UI_REVISION.md) and override older welcome/theme/evaluation presentation rules. The later [rank assets and audit hub patch](docs/patches/rank-assets-audit-hub-ui-cleanup.patch) replaces rank artwork, splits administration pages and updates profile/login presentation. The October 5 [native ranks and UI clarity patch](docs/patches/native-ranks-ui-clarity.patch) replaces displayed rank PNGs with native SVG and improves readability in both themes. The October 7 [UI clarity and rank assets patch](docs/patches/ui-clarity-rank-assets.patch) switches to the supplied shadow-free faceted assets and simplifies shared presentation and notifications. The October 11 [final UI and calculator patch](docs/patches/final-ui-calculator-rank-fix.patch) adds the standalone calculator to every account, uses the complete approved welcome logo, replaces all 22 rank images with the supplied 1024px assets and strengthens crimson accents. The later October 11 [rank edge patch](docs/patches/rank-edge-final-fix.patch) adds aligned vector silhouette masks and thin tier-colored outlines, including the four missing SVG dependencies. The latest [cleanup and dark welcome patch](docs/patches/production-cleanup-dark-welcome.patch) removes preview chrome and the fixture loader, clears legacy browser state, removes the production holding screen and keeps the welcome white with the colored brand logo in both themes. Current rules are recorded in [UI_CONTRACT.md](docs/UI_CONTRACT.md).
 
-**Verified Preview:** https://centerpro-1ryusvhfm-hussam9329s-projects.vercel.app/login
+**Verified Production:** https://centerpro-sigma.vercel.app/login — deployed from `main` and assigned to the project's Production domain. The earlier verified [Preview](https://centerpro-1ryusvhfm-hussam9329s-projects.vercel.app/login) remains historical release evidence.
 
-**Application commit:** `d300957456944dda9f4e6a65c21248e4d2521e2b`. Test-only follow-up: `3e1e87d4d64eea30b31dd296a18b376a651cdfc1`; its 121 deployment files are byte-for-byte identical. [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/38151619261) passes lint, typecheck, 196 unit tests, 136 browser scenarios and production build. See the [cleanup and dark welcome handoff](docs/PRODUCTION_CLEANUP_ACCEPTANCE.md) for the patch, test results, clean-state policy and verified screenshots. The previous [rank edge handoff](docs/RANK_EDGE_ACCEPTANCE.md), [final UI and calculator handoff](docs/FINAL_UI_CALCULATOR_ACCEPTANCE.md) and earlier acceptance documents remain historical evidence.
+**Production source on `main`:** `9d4e44af68be55b92d9379c992e100e19c0a10c6`. Its 121 deployment files are byte-for-byte identical to application commit `d300957456944dda9f4e6a65c21248e4d2521e2b` and tested follow-up `3e1e87d4d64eea30b31dd296a18b376a651cdfc1`. [GitHub CI](https://github.com/Hussam9329/CenterPro/actions/runs/38151619261) passes lint, typecheck, 196 unit tests, 136 browser scenarios and production build. See the [cleanup and dark welcome handoff](docs/PRODUCTION_CLEANUP_ACCEPTANCE.md) for the patch, test results, clean-state policy and deployment evidence. The previous [rank edge handoff](docs/RANK_EDGE_ACCEPTANCE.md), [final UI and calculator handoff](docs/FINAL_UI_CALCULATOR_ACCEPTANCE.md) and earlier acceptance documents remain historical evidence.
 
-## Starting the empty preview
+## Starting the empty frontend
 
 1. Open the application; the login screen appears directly with no welcome splash.
 2. Select **مدير النظام — Super Admin** and click **تسجيل الدخول**. A centered three-second CenterPro welcome appears only after this successful login. The preview-only system administrator has no employee record, department, attendance or payroll entry. No real password is required.
@@ -82,14 +82,14 @@ Broad populated regression scenarios remain in `tests/fixtures/populated-data.ts
 
 Responsive coverage targets 360×800, 390×844, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900 and 1920×1080. Generated test screenshots, PDFs and test reports remain ignored verification artifacts; selected live Preview screenshots accompany the committed handoff. The current suite contains 196 unit/domain tests and 136 browser scenarios; the latest cleanup replaces the older migration cases with clean-start checks. Coverage includes seasons, rank thresholds, archived snapshots, legacy-data cleanup and preservation of new version-4 records, explicit theme/session persistence, result publication/reopening, anchored keyboard filtering, eight responsive widths, light/dark accessibility checks, all 22 supplied rank images, notification replacement timing and the standalone calculator across roles, themes, inputs and viewport sizes.
 
-## Vercel Preview
+## Vercel Production
 
 - Framework: **Next.js**.
 - Node.js: **24.x**.
 - Install: `npm ci`.
 - Build: `npm run build`.
 - Root directory: repository root.
-- Deploy to **Preview**, not Production.
+- Deploy branch **`main`** to **Production**, as explicitly authorized by the owner on October 11, 2026.
 - No environment variables or database credentials are required for Phase 1.
 
 Camera access requires HTTPS and explicit user permission. Preview QR payloads are unsigned and cannot authorize real attendance. The requested patch removes the Production holding screen. This changes rendering only: authentication, state and QR remain browser-side simulations, with no backend integration.
@@ -133,4 +133,4 @@ Phase 2 will add normalized Drizzle migrations, secure Super Admin bootstrap, pa
 
 Roles and attendance/payment operations are simulated in the browser. Client checks demonstrate intended UX; they are not production authorization. Use manually entered test data only. Real passwords are not accepted or saved by preview forms; resets simulate the success flow and sanitized audit event. Photo previews are temporary client data, not production object storage.
 
-There is no production database to migrate, seed or back up in Phase 1. Stop after the revised Preview is delivered and wait for explicit UI/UX approval.
+There is no production database to migrate, seed or back up in Phase 1. Production hosting of the current frontend is authorized; backend integration remains deferred until explicit UI/UX approval.
