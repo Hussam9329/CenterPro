@@ -113,13 +113,13 @@ test('dark application theme does not recolor the branded welcome and persists a
   await expect(welcome).toBeHidden();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 18, 22)');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(15, 17, 21)');
   await expect(page.getByRole('button', { name: 'تفعيل الوضع الفاتح', exact: true })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('centerpro-theme'))).toBe('dark');
   await page.reload();
   await expect(page.getByTestId('centerpro-welcome')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 18, 22)');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(15, 17, 21)');
 });
 
 for (const [width, height] of sizes) {
