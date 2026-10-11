@@ -62,14 +62,15 @@ async function expectRankAssets(scope: Locator) {
         const context = canvas.getContext('2d')!;
         context.drawImage(image, 0, 0, 256, 256);
         const pixels = context.getImageData(0, 0, 256, 256).data;
-        let painted = 0; let touchesEdge = false;
+        let painted = 0; let alphaArea = 0; let touchesEdge = false;
         for (let offset = 0; offset < pixels.length; offset += 4) {
+          alphaArea += pixels[offset + 3] / 255;
           if (pixels[offset + 3] <= 16) continue;
           painted += 1;
           const x = (offset / 4) % 256; const y = Math.floor(offset / 4 / 256);
           if (x === 0 || y === 0 || x === 255 || y === 255) touchesEdge = true;
         }
-        return { path: new URL(source, location.href).pathname, pixels, painted, touchesEdge, square: image.naturalWidth === image.naturalHeight };
+        return { path: new URL(source, location.href).pathname, pixels, painted, alphaArea, touchesEdge, square: image.naturalWidth === image.naturalHeight };
       } finally {
         URL.revokeObjectURL(objectUrl);
       }
@@ -127,8 +128,8 @@ async function expectRankAssets(scope: Locator) {
       name: badge.textContent?.trim(), source, pixelHash, painted, touchesEdge, resolution: [img.naturalWidth, img.naturalHeight],
       fitsImage: css.objectFit === 'contain' && css.objectPosition === '50% 50%',
       correctMasks: shapeMask.path === `/ranks/${prefix}-shape-mask.svg` && outlineMask.path === `/ranks/${prefix}-outline-mask.svg`,
-      masksContainArtwork: shapeMask.square && outlineMask.square && !shapeMask.touchesEdge && !outlineMask.touchesEdge
-        && shapeMask.painted > 1000 && shapeMask.painted < 60_000 && outlineMask.painted > 0 && outlineMask.painted < shapeMask.painted * .2,
+      maskGeometry: [shapeMask, outlineMask].map(({ path, painted, alphaArea, touchesEdge, square }) => ({ path, painted, alphaArea, touchesEdge, square })),
+      outlineAreaRatio: outlineMask.alphaArea / shapeMask.alphaArea,
       retainedArtwork: retainedAlpha / originalAlpha, detachedOutline,
       alignedMasks: [css, outlineCss].every(layer => layer.maskSize === 'contain' && layer.maskRepeat === 'no-repeat' && layer.maskPosition === '50% 50%')
         && ['x', 'y', 'width', 'height'].every(key => imageBounds[key as keyof DOMRect] === outlineBounds[key as keyof DOMRect]),
@@ -152,7 +153,16 @@ async function expectRankAssets(scope: Locator) {
     expect(rank.touchesEdge, `${rank.name}: artwork must not be clipped`).toBeFalsy();
     expect(rank.fitsImage, `${rank.name}: intrinsic artwork keeps its aspect ratio and is centered`).toBeTruthy();
     expect(rank.correctMasks, `${rank.name}: normal and Grandmaster silhouettes are assigned correctly`).toBeTruthy();
-    expect(rank.masksContainArtwork, `${rank.name}: both decoded vector masks have unclipped, nonempty artwork`).toBeTruthy();
+    for (const mask of rank.maskGeometry) {
+      expect(mask.square, `${rank.name}: ${mask.path} preserves the square coordinate system`).toBeTruthy();
+      expect(mask.painted, `${rank.name}: ${mask.path} contains visible artwork`).toBeGreaterThan(0);
+      expect(mask.painted, `${rank.name}: ${mask.path} has transparent breathing room`).toBeLessThan(60_000);
+      expect(mask.touchesEdge, `${rank.name}: ${mask.path} is not clipped by its image bounds`).toBeFalsy();
+    }
+    expect(rank.maskGeometry[0].painted, `${rank.name}: the silhouette is a substantial filled shape`).toBeGreaterThan(1000);
+    // Weight partial alpha coverage: counting every antialiased fringe pixel as
+    // solid overstates a thin outline, especially Grandmaster's fourth component.
+    expect(rank.outlineAreaRatio, `${rank.name}: the outline remains a thin edge, not a filled tile`).toBeLessThan(.2);
     // Approved PNG contours vary; the shared clean silhouette trims their rough
     // perimeter (about 13% at most). Catch substantial clipping or disappearance
     // without requiring the mask to retain the very edges this patch removes.
