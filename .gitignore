@@ -45,3 +45,6 @@ yarn-error.log*
 next-env.d.ts
 
 /qa-review/
+
+# Private exports contain employee, financial and credential-verification data.
+CenterPro-backup-*.json
