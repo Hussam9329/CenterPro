@@ -10,7 +10,6 @@ import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select } fro
 import { getMonthPayroll } from '@/lib/payroll';
 import { isExpected, statusLabel } from '@/lib/attendance';
 import { date, duration, money, monthLabel, time } from '@/lib/format';
-import { DEMO_MONTH } from '@/lib/mock-data';
 import type { CenterReport, ReportCell, ReportColumn, ReportSection } from '@/lib/report-export';
 import type { AttendanceRecord, DemoData, PayrollResult } from '@/lib/types';
 import { paymentLabels } from './payroll-breakdown';
@@ -44,13 +43,13 @@ function payslipSections(result: PayrollResult, data: DemoData): ReportSection[]
 }
 
 export function ReportsPage() {
-  const { data } = useDemo();
+  const { data, month: currentMonth, backend } = useDemo();
   const toast = useToast();
   const params = useSearchParams();
   const initialType = params.get('type');
   const initialMonth = params.get('month');
   const [type, setType] = useState<ReportType>(reportTypes.some(item => item.value === initialType) ? initialType as ReportType : 'payroll');
-  const [month, setMonth] = useState(initialMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(initialMonth) ? initialMonth : DEMO_MONTH);
+  const [month, setMonth] = useState(initialMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(initialMonth) ? initialMonth : currentMonth);
   const [department, setDepartment] = useState('');
   const [employee, setEmployee] = useState(params.get('employee') ?? '');
   const [status, setStatus] = useState('');
@@ -88,7 +87,7 @@ export function ReportsPage() {
   async function exportExcel() {
     if(!hasRows) return;
     setExporting(true);
-    try { const { exportReportExcel } = await import('@/lib/report-export'); await exportReportExcel(report); toast('تم تصدير Excel ببيانات منظمة وخلايا مالية رقمية.'); }
+    try { const { exportReportExcel } = await import('@/lib/report-export'); await exportReportExcel(report, { preview: backend !== 'neon' }); toast('تم تصدير Excel ببيانات منظمة وخلايا مالية رقمية.'); }
     catch { toast('تعذر إنشاء ملف Excel. حاول مرة أخرى.'); }
     finally { setExporting(false); }
   }
@@ -97,12 +96,12 @@ export function ReportsPage() {
   return <div className={`page-stack ${styles.reportPage}`}><PageHeader title="التقارير" actions={<div className="inline"><Button variant="secondary" disabled={!hasRows || exporting} onClick={exportExcel} loading={exporting}><Download size={17} /> Excel</Button><Button disabled={!hasRows} onClick={() => window.print()}><Printer size={17} /> طباعة / حفظ PDF</Button></div>} />
     <div className={styles.reportTypes}>{reportTypes.map(item => <button key={item.value} aria-pressed={type === item.value} className={styles.reportType} onClick={() => { setType(item.value); setStatus(''); if (item.value === 'payroll' || item.value === 'payslip') { setFrom(''); setTo(''); } }}><item.icon /><span>{item.label}</span></button>)}</div>
     <Card title="تخصيص التقرير"><div className={styles.filterPanel}><Field label="الشهر"><Input type="month" value={month} onChange={e => { if(e.target.value) { setMonth(e.target.value); setFrom(''); setTo(''); } }} /></Field><Field label="القسم"><Select value={department} onChange={e => { setDepartment(e.target.value); setEmployee(''); }}><option value="">كل الأقسام</option>{source.departments.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</Select></Field><Field label="الموظف"><Select value={selectedEmployee} onChange={e => setEmployee(e.target.value)}>{!personReport && <option value="">كل الموظفين</option>}{personReport && !filteredEmployees.length && <option value="">لا يوجد موظفون</option>}{filteredEmployees.map(item => <option value={item.id} key={item.id}>{item.name} — {item.code}</option>)}</Select></Field>{dateRangeAvailable && <><Field label="من تاريخ"><Input type="date" value={from} min={`${month}-01`} max={monthEnd} onChange={e => setFrom(e.target.value)} /></Field><Field label="إلى تاريخ"><Input type="date" value={to} min={`${month}-01`} max={monthEnd} onChange={e => setTo(e.target.value)} /></Field></>}{attendanceReport && <Field label="حالة الحضور"><Select value={status} onChange={e => setStatus(e.target.value)}><option value="">كل الحالات</option>{(type === 'absences' ? ['EXCUSED', 'UNEXCUSED', 'UNRESOLVED'] : ['PRESENT', 'EXCUSED', 'UNEXCUSED', 'EXEMPT', 'UNRESOLVED']).map(value => <option key={value} value={value}>{statusLabel(value as Parameters<typeof statusLabel>[0])}</option>)}</Select></Field>}</div>{invalidRange && <p role="alert" className="text-danger">يجب أن يكون تاريخ البداية قبل تاريخ النهاية.</p>}</Card>
-    <div className="notice">لحفظ PDF: افتح «طباعة / حفظ PDF» ثم اختر «حفظ كملف PDF». التقرير مهيأ للطباعة على A4، وجميع بيانات هذه النسخة تجريبية.</div>
-    <article className={styles.report} aria-label="معاينة التقرير"><header className={styles.reportHeader}><div><Image className={styles.reportLogo} src="/brand/logo.svg" width={175} height={51} alt="CenterPro" unoptimized priority /><h2>{report.title}</h2><div className="muted">{report.subtitle}</div></div><div className="stack"><strong>{monthLabel(month)}</strong><span className={styles.reportsPreviewOnly}>بيانات تجريبية للمعاينة — غير معتمدة مالياً</span><Badge tone={data.months.find(item => item.month === month)?.state === 'ARCHIVED' ? 'success' : 'neutral'}>{data.months.find(item => item.month === month)?.state === 'ARCHIVED' ? 'نسخة أرشيفية ثابتة' : 'نسخة للمراجعة'}</Badge></div></header>
+    <div className="notice">لحفظ PDF: افتح «طباعة / حفظ PDF» ثم اختر «حفظ كملف PDF». التقرير مهيأ للطباعة على A4.{backend !== 'neon' && ' جميع بيانات هذه النسخة تجريبية.'}</div>
+    <article className={styles.report} aria-label="معاينة التقرير"><header className={styles.reportHeader}><div><Image className={styles.reportLogo} src="/brand/logo.svg" width={175} height={51} alt="CenterPro" unoptimized priority /><h2>{report.title}</h2><div className="muted">{report.subtitle}</div></div><div className="stack"><strong>{monthLabel(month)}</strong>{backend !== 'neon' && <span className={styles.reportsPreviewOnly}>بيانات تجريبية للمعاينة — غير معتمدة مالياً</span>}<Badge tone={data.months.find(item => item.month === month)?.state === 'ARCHIVED' ? 'success' : 'neutral'}>{data.months.find(item => item.month === month)?.state === 'ARCHIVED' ? 'نسخة أرشيفية ثابتة' : 'نسخة للمراجعة'}</Badge></div></header>
     {dateRangeAvailable && (from || to) && <p className={styles.small}>الفترة: {from ? date(from) : 'بداية الشهر'} — {to ? date(to) : 'نهاية الشهر'}</p>}
     {personReport && results[0] && <div className={styles.compactMetrics}><div><span>الأيام المطلوبة</span><strong>{results[0].requiredDays}</strong></div><div><span>أيام الحضور</span><strong>{results[0].attendanceDays}</strong></div><div><span>نوع الراتب</span><strong style={{ fontFamily: 'inherit', fontSize: 14 }}>{results[0].salaryMode === 'FIXED' ? 'قطعي' : 'غير قطعي'}</strong></div><div><span>حالة الصرف</span><strong style={{ fontFamily: 'inherit', fontSize: 14 }}>{paymentLabels[results[0].paymentStatus]}</strong></div></div>}
     {!hasRows ? <EmptyState title={!data.employees.length ? "لا توجد بيانات للتقارير حتى الآن." : "لا توجد بيانات لهذا التقرير"} description={!data.employees.length ? "أضف أقسام المركز وفريقك للبدء. ستصبح كشوف الرواتب والحضور والتقارير متاحة بعد تسجيل بياناتها." : "غيّر الفترة أو الفلاتر لإظهار النتائج."} action={!data.employees.length ? <Link className="button-link" href={data.departments.length ? "/employees?add=1" : "/departments"}>{data.departments.length ? "إضافة أول موظف" : "إضافة أول قسم"}</Link> : undefined} /> : report.sections.map(section => <section key={section.title} className={styles.reportSection}><h3 style={{ fontSize: 14 }}>{section.title}</h3>{section.rows.length ? <div className={styles.reportScroll} role="region" aria-label={section.title} tabIndex={0}><table className={styles.reportTable}><thead><tr>{section.columns.map(column => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>{section.rows.map((row, index) => <tr key={index}>{section.columns.map(column => <td className={column.type === 'money' || column.type === 'number' ? 'amount' : ''} key={column.key}>{column.type === 'money' || column.type === 'number' ? <bdi dir="ltr">{displayCell(row[column.key], column)}</bdi> : displayCell(row[column.key], column)}</td>)}</tr>)}</tbody></table></div> : <p className={styles.small}>لا توجد سجلات في هذا القسم.</p>}</section>)}
     {type === 'payroll' && hasRows && <div className={`${styles.breakdownRow} ${styles.reportTotal}`}><strong>إجمالي صافي الرواتب</strong><strong className="amount"><bdi dir="ltr">{money(results.reduce((sum, item) => sum + item.finalSalary, 0))}</bdi></strong></div>}
-    <footer className={styles.reportFooter}><span>CenterPro · {data.settings.centerName}</span><span>بيانات محاكاة لغرض مراجعة الواجهات فقط</span></footer></article>
+    <footer className={styles.reportFooter}><span>CenterPro · {data.settings.centerName}</span><span>{backend === 'neon' ? 'تقرير من السجلات المحفوظة' : 'بيانات محاكاة لغرض مراجعة الواجهات فقط'}</span></footer></article>
   </div>;
 }

@@ -5,7 +5,6 @@ import { CalendarCheck, Clock3, UserRoundX } from 'lucide-react';
 import { Badge, Card, EmptyState, Field, Input, PageHeader, Pagination, Select, Skeleton, StatCard } from '@/components/ui';
 import { useDemo } from '@/components/demo-provider';
 import { monthSource } from '@/components/finance/finance-data';
-import { DEMO_MONTH } from '@/lib/mock-data';
 import { getMonthPayroll } from '@/lib/payroll';
 import { statusLabel } from '@/lib/attendance';
 import { date, duration, money, monthLabel, time } from '@/lib/format';
@@ -15,8 +14,8 @@ const statuses: AttendanceStatus[] = ['PRESENT', 'UNRESOLVED', 'EXCUSED', 'UNEXC
 const tone = (status: AttendanceStatus) => status === 'PRESENT' ? 'success' as const : status === 'UNEXCUSED' ? 'danger' as const : status === 'UNRESOLVED' ? 'warning' as const : 'neutral' as const;
 
 export default function EmployeeAttendancePage() {
-  const { data, session, ready } = useDemo();
-  const [month, setMonth] = useState(DEMO_MONTH);
+  const { data, session, ready, month: currentMonth } = useDemo();
+  const [month, setMonth] = useState(currentMonth);
   const [status, setStatus] = useState('ALL');
   const [page, setPage] = useState(1);
   if (!ready || !session) return <div className="page-stack"><Skeleton className="skeleton-heading" /><Skeleton className="skeleton-card" /></div>;

@@ -96,6 +96,8 @@ export interface EvaluationSeason {
 
 export interface DemoSettings { centerName: string; qrInterval: number }
 export interface DemoData {
+  /** Read-only server aggregates; never persisted or accepted as mutation input. */
+  serverEvaluation?: { seasons: Record<string, SeasonLeaderboardRow[]> };
   employees: Employee[];
   departments: Department[];
   workdays: Workday[];

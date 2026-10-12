@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
-import { createInitialData } from '@/lib/mock-data';
+import { createInitialData, DEMO_TODAY, DEMO_MONTH } from '@/lib/mock-data';
+import { diffData, type MutationOptions, type RemoteSnapshot } from '@/lib/server-contract';
 import { assertSingleOpenWorkday } from '@/lib/attendance';
 import { canManageEmployeeAccount } from '@/lib/permissions';
 import { assertEvaluationMutation, assertEvaluationState } from '@/lib/evaluations';
 import { PREVIEW_DATA_STORAGE_KEY, PREVIEW_PERSISTENT_STORAGE_KEY, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION, PREVIEW_SYSTEM_ADMIN, PREVIEW_SYSTEM_USERNAME } from '@/lib/preview-config';
-import { AUTH_STORAGE_KEY, clearEmployeeCredentials, configureSystemCredential, normalizeUsername, readAuthStore, readAuthStoreForBackup, setEmployeeCredential, verifyCredential } from '@/lib/local-auth';
+import { AUTH_STORAGE_KEY, clearEmployeeCredentials, configureSystemCredential, normalizeUsername, removeEmployeeCredential, readAuthStore, readAuthStoreForBackup, setEmployeeCredential, verifyCredential } from '@/lib/local-auth';
 import { createSystemBackup, type SystemBackup } from '@/lib/system-backup';
 import type { DemoData, DemoSession, AuditInput } from '@/lib/types';
 
@@ -19,11 +20,17 @@ interface Snapshot {
   systemConfigured: boolean;
   systemUsername: string;
   revision?: number;
+  backend: 'local' | 'neon';
+  today: string;
+  month: string;
+  pendingImport: boolean;
+  serverTime?: string;
+  connectionError?: string;
 }
 const collections: Array<keyof DemoData> = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit', 'evaluationSeasons', 'evaluationCycles', 'evaluationExams', 'examEvaluations'];
 type DataUpdater = (draft: DemoData, currentSession: DemoSession | null) => void;
 type AuditSource = AuditInput | ((before: DemoData, after: DemoData) => AuditInput | undefined);
-const serverSnapshot: Snapshot = { data: createInitialData(), session: null, ready: false, remembered: false, systemConfigured: false, systemUsername: PREVIEW_SYSTEM_USERNAME };
+const serverSnapshot: Snapshot = { backend: 'local', today: DEMO_TODAY, month: DEMO_MONTH, pendingImport: false, data: createInitialData(), session: null, ready: false, remembered: false, systemConfigured: false, systemUsername: PREVIEW_SYSTEM_USERNAME };
 let snapshot = serverSnapshot;
 let initialized = false;
 let durableData = false;
@@ -83,7 +90,7 @@ function hydrateStored(raw: string | null, remembered = false): Snapshot | null 
     assertSingleOpenWorkday(stored.data.workdays);
     assertEvaluationState(stored.data);
     const session = validSession(stored.data, stored.session);
-    return { data: stored.data, session, ready: true, remembered: Boolean((remembered || stored.remembered) && session), revision: Number.isSafeInteger(stored.revision) ? stored.revision : 0, ...authMeta() };
+    return { backend: 'local', today: DEMO_TODAY, month: DEMO_MONTH, pendingImport: false, data: stored.data, session, ready: true, remembered: Boolean((remembered || stored.remembered) && session), revision: Number.isSafeInteger(stored.revision) ? stored.revision : 0, ...authMeta() };
   } catch { return null; }
 }
 function sameAccount(left: DemoSession | null, right: DemoSession | null) {
@@ -133,18 +140,20 @@ function subscribe(listener: () => void) { listeners.add(listener); queueMicrota
 const getSnapshot = () => snapshot;
 const getServerSnapshot = () => serverSnapshot;
 interface DemoContextValue extends Snapshot {
-  login: (username: string, password: string, remember?: boolean) => Promise<boolean>;
-  setupSystemAdmin: (username: string, password: string, remember?: boolean) => Promise<boolean>;
-  setEmployeePassword: (employeeId: string, password: string, onChanged?: () => void) => Promise<void>;
+  login: (username: string, password: string, remember?: boolean) => Promise<DemoSession | null>;
+  setupSystemAdmin: (username: string, password: string, remember?: boolean) => Promise<DemoSession | null>;
+  setEmployeePassword: (employeeId: string, password: string) => Promise<void>;
   prepareSystemBackup: (theme: 'light' | 'dark') => Promise<SystemBackup>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
+  discardDraft: (form: HTMLFormElement | null) => void;
   resetDemo: () => void;
-  updateData: (updater: DataUpdater, audit?: AuditSource) => void;
+  updateData: (updater: DataUpdater, audit?: AuditSource, options?: MutationOptions) => Promise<void>;
   notify: (message: string) => void;
 }
 const DemoContext = createContext<DemoContextValue | null>(null);
 
-export function DemoProvider({ children }: { children: ReactNode }) {
+function LocalDemoProvider({ children }: { children: ReactNode }) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
   const toastSequence = useRef(0);
@@ -158,40 +167,40 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   async function login(username: string, password: string, remember = false) {
     const operation = ++authOperation;
     const normalized = normalizeUsername(username);
-    if (!normalized || !password) return false;
+    if (!normalized || !password) return null;
     const auth = readAuthStore();
     if (auth.system && normalizeUsername(auth.system.username) === normalized) {
-      if (!await verifyCredential(password, auth.system) || operation !== authOperation) return false;
+      if (!await verifyCredential(password, auth.system) || operation !== authOperation) return null;
       const current = readAuthStore().system;
       if (!current || current.version !== auth.system.version || current.hash !== auth.system.hash
-        || current.salt !== auth.system.salt || normalizeUsername(current.username) !== normalized) return false;
+        || current.salt !== auth.system.salt || normalizeUsername(current.username) !== normalized) return null;
       emit({ ...snapshot, session: { ...PREVIEW_SYSTEM_ADMIN, authVersion: current.version }, remembered: remember, systemConfigured: true, systemUsername: current.username }, true);
-      return true;
+      return snapshot.session;
     }
     const employee = snapshot.data.employees.find(item => item.active && normalizeUsername(item.username) === normalized);
-    if (!employee) return false;
+    if (!employee) return null;
     const credential = auth.employees[employee.id];
-    if (!credential || !await verifyCredential(password, credential) || operation !== authOperation) return false;
+    if (!credential || !await verifyCredential(password, credential) || operation !== authOperation) return null;
     const current = readAuthStore().employees[employee.id];
     const account = snapshot.data.employees.find(item => item.id === employee.id && item.active && normalizeUsername(item.username) === normalized);
-    if (!current || current.version !== credential.version || current.hash !== credential.hash || current.salt !== credential.salt || !account) return false;
+    if (!current || current.version !== credential.version || current.hash !== credential.hash || current.salt !== credential.salt || !account) return null;
     emit({ ...snapshot, session: { kind: 'EMPLOYEE', role: account.role, employeeId: account.id, name: account.name, authVersion: current.version }, remembered: remember }, true);
-    return true;
+    return snapshot.session;
   }
 
   async function setupSystemAdmin(username: string, password: string, remember = false) {
     const operation = ++authOperation;
-    if (readAuthStore().system) return false;
+    if (readAuthStore().system) return null;
     const normalized = normalizeUsername(username);
     const usernameAvailable = () => normalized && !snapshot.data.employees.some(employee => normalizeUsername(employee.username) === normalized);
-    if (!usernameAvailable()) return false;
+    if (!usernameAvailable()) return null;
     const system = await configureSystemCredential(username.trim(), password, () => operation === authOperation && Boolean(usernameAvailable()));
-    if (operation !== authOperation) return false;
+    if (operation !== authOperation) return null;
     emit({ ...snapshot, session: { ...PREVIEW_SYSTEM_ADMIN, authVersion: system.version }, remembered: remember, systemConfigured: true, systemUsername: system.username }, true);
-    return true;
+    return snapshot.session;
   }
 
-  async function setEmployeePassword(employeeId: string, password: string, onChanged?: () => void) {
+  async function setEmployeePassword(employeeId: string, password: string, onChanged?: () => void | Promise<void>) {
     const actor = validSession(snapshot.data, snapshot.session);
     const operation = authOperation;
     const mayChange = () => {
@@ -206,7 +215,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     // Commit the accompanying profile/audit while the verified actor is still
     // available. A credential-storage failure never calls this callback.
     try {
-      onChanged?.();
+      await onChanged?.();
     } finally {
       if (changingOwnPassword) {
         authOperation += 1;
@@ -230,15 +239,15 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     return backup;
   }
 
-  function logout() { authOperation += 1; emit({ ...snapshot, session: null, remembered: false }, true); }
+  async function logout() { authOperation += 1; emit({ ...snapshot, session: null, remembered: false }, true); }
   function resetDemo() {
     authOperation += 1;
     clearEmployeeCredentials();
     const auth = readAuthStore();
-    emit({ data: createInitialData(), session: auth.system ? { ...PREVIEW_SYSTEM_ADMIN, authVersion: auth.system.version } : null, ready: true, remembered: false, systemConfigured: Boolean(auth.system), systemUsername: auth.system?.username || PREVIEW_SYSTEM_USERNAME }, true);
+    emit({ backend: 'local', today: DEMO_TODAY, month: DEMO_MONTH, pendingImport: false, data: createInitialData(), session: auth.system ? { ...PREVIEW_SYSTEM_ADMIN, authVersion: auth.system.version } : null, ready: true, remembered: false, systemConfigured: Boolean(auth.system), systemUsername: auth.system?.username || PREVIEW_SYSTEM_USERNAME }, true);
     notify('تم تصفير النظام. يمكنك إنشاء الأقسام والموظفين من البداية.');
   }
-  function updateData(updater: DataUpdater, auditSource?: AuditSource) {
+  async function updateData(updater: DataUpdater, auditSource?: AuditSource, options?: MutationOptions) {
     const before = snapshot.data;
     const draft = structuredClone(before);
     updater(draft, snapshot.session);
@@ -248,10 +257,171 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     if (audit && snapshot.session) {
       draft.audit.unshift({ id: crypto.randomUUID(), actor: snapshot.session.name, role: snapshot.session.role, action: audit.action, entity: audit.entity, entityId: audit.entityId, employeeId: audit.employeeId, oldValues: audit.oldValues || {}, newValues: audit.newValues || {}, timestamp: new Date().toISOString(), userAgent: 'CenterPro' });
     }
-    const session = validSession(draft, snapshot.session);
-    emit({ ...snapshot, data: draft, session, remembered: Boolean(snapshot.remembered && session) }, !session);
+    const commit = () => {
+      const session = validSession(draft, snapshot.session);
+      emit({ ...snapshot, data: draft, session, remembered: Boolean(snapshot.remembered && session) }, !session);
+    };
+    if (options?.password) {
+      try { await setEmployeePassword(options.password.employeeId, options.password.value, commit); }
+      catch (error) {
+        if (!before.employees.some(employee => employee.id === options.password?.employeeId)) removeEmployeeCredential(options.password.employeeId);
+        throw error;
+      }
+    } else commit();
   }
-  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, prepareSystemBackup, logout, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
+  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, prepareSystemBackup, logout, refresh: async () => {}, discardDraft: () => {}, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
+}
+class RemoteRequestError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
+async function remoteRequest<T>(path: string, body?: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store',
+      ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch { throw new RemoteRequestError('تعذر الاتصال بالخادم. تحقق من اتصالك وحاول مرة أخرى. لم يتم تأكيد حفظ التغيير.', 0); }
+  let result: unknown;
+  try { result = await response.json(); }
+  catch { throw new RemoteRequestError('لم تصل استجابة صالحة من الخادم. حدّث البيانات وتحقق من النتيجة قبل إعادة المحاولة.', response.status); }
+  if (!response.ok) {
+    const message = typeof result === 'object' && result !== null && 'error' in result && typeof result.error === 'string'
+      ? result.error : 'تعذر تنفيذ العملية. حاول مرة أخرى.';
+    throw new RemoteRequestError(message, response.status);
+  }
+  return result as T;
+}
+
+const remoteInitialSnapshot: Snapshot = { ...serverSnapshot, backend: 'neon', today: '', month: '', pendingImport: false };
+function RemoteDemoProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<Snapshot>(remoteInitialSnapshot);
+  const current = useRef<Snapshot>(remoteInitialSnapshot);
+  const operation = useRef(0);
+  const changing = useRef(false);
+  const editedForms = useRef(new Set<Element>());
+  const conflictedForms = useRef(new Set<Element>());
+  const conflictMessage = 'تغيّرت البيانات من جهاز آخر. أعد فتح النموذج، أو ألغِ التغييرات لمراجعة البيانات الجديدة قبل الحفظ.';
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
+  const toastSequence = useRef(0);
+  const notify = useCallback((message: string) => setToast({ id: ++toastSequence.current, message }), []);
+  const publishRemote = useCallback((next: Snapshot) => {
+    current.current = next;
+    setState(next);
+  }, []);
+  const refreshState = useCallback(async (background = false) => {
+    const sequence = operation.current;
+    try {
+      const next = await remoteRequest<RemoteSnapshot>('/api/state');
+      if (sequence === operation.current && !changing.current) {
+        if (current.current.ready && sameAccount(next.session, current.current.session) && next.revision < (current.current.revision ?? 0)) return;
+        for (const form of editedForms.current) if (!form.isConnected) editedForms.current.delete(form);
+        const editing = document.querySelector('[role="dialog"]') || editedForms.current.size > 0;
+        if (background && editing && sameAccount(next.session, current.current.session)) {
+          // Preserve the edit's original revision. A save after someone else
+          // changes the server must conflict instead of overwriting their work.
+          publishRemote({ ...current.current, today: next.today, month: next.month, connectionError: undefined });
+        } else publishRemote(next);
+      }
+    } catch (error) {
+      if (sequence === operation.current) publishRemote({ ...current.current, connectionError: error instanceof Error ? error.message : 'تعذر الاتصال بالخادم.' });
+      throw error;
+    }
+  }, [publishRemote]);
+  const refresh = useCallback(() => refreshState(), [refreshState]);
+  useEffect(() => {
+    let active = true;
+    const markEdited = (event: Event) => { const target = event.target; if (target instanceof Element) { const form = target.closest('form'); if (form) editedForms.current.add(form); } };
+    const load = () => { if (active && !changing.current && document.visibilityState !== 'hidden') void refreshState(true).catch(() => {}); };
+    load();
+    const timer = window.setInterval(load, 15_000);
+    document.addEventListener('input', markEdited);
+    document.addEventListener('change', markEdited);
+    window.addEventListener('focus', load);
+    document.addEventListener('visibilitychange', load);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', load); document.removeEventListener('visibilitychange', load); document.removeEventListener('input', markEdited); document.removeEventListener('change', markEdited); };
+  }, [refreshState]);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(value => value?.id === toast.id ? null : value), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  async function login(username: string, password: string, remember = false) {
+    if (changing.current) throw new Error('انتظر اكتمال العملية الحالية.');
+    changing.current = true;
+    operation.current += 1;
+    try {
+      const next = await remoteRequest<RemoteSnapshot>('/api/auth/login', { username, password, remember });
+      editedForms.current.clear();
+      publishRemote(next);
+      return next.session;
+    } catch (error) {
+      if (error instanceof RemoteRequestError && error.status === 401) return null;
+      throw error;
+    } finally { changing.current = false; }
+  }
+  async function logout() {
+    if (changing.current) throw new Error('انتظر اكتمال العملية الحالية.');
+    changing.current = true;
+    operation.current += 1;
+    try { publishRemote(await remoteRequest<RemoteSnapshot>('/api/auth/logout', {})); }
+    finally { changing.current = false; }
+  }
+  function discardDraft(form: HTMLFormElement | null) {
+    if (!form) return;
+    editedForms.current.delete(form);
+    conflictedForms.current.delete(form);
+  }
+  async function updateData(updater: DataUpdater, auditSource?: AuditSource, options?: MutationOptions) {
+    for (const form of conflictedForms.current) if (!form.isConnected) conflictedForms.current.delete(form);
+    if (conflictedForms.current.size) throw new Error(conflictMessage);
+    if (changing.current) throw new Error('توجد عملية حفظ قيد التنفيذ. انتظر اكتمالها ثم أعد المحاولة.');
+    const before = current.current;
+    if (!before.ready || !before.session) throw new Error('انتهت الجلسة. سجّل الدخول مجدداً.');
+    if (before.connectionError) throw new Error('تعذر الاتصال بالخادم. حدّث البيانات قبل محاولة الحفظ.');
+    const draft = structuredClone(before.data);
+    updater(draft, before.session);
+    const audit = typeof auditSource === 'function' ? auditSource(before.data, draft) : auditSource;
+    const command = diffData(before.data, draft, before.revision ?? 0, audit, options);
+    if (!command.changes.length && !command.settings && !command.password && !command.audit) return;
+    changing.current = true;
+    operation.current += 1;
+    try {
+      const next = await remoteRequest<RemoteSnapshot>('/api/mutations', command);
+      editedForms.current.clear();
+      publishRemote(next);
+    }
+    catch (error) {
+      // The failed command never changes the local snapshot. Refresh conflicts
+      // and revoked sessions so the next user action starts from server truth.
+      if (error instanceof RemoteRequestError && error.status === 409) {
+        for (const form of document.querySelectorAll('form, [role="dialog"]')) conflictedForms.current.add(form);
+      }
+      if (error instanceof RemoteRequestError && [401, 403, 409].includes(error.status)) {
+        try { publishRemote(await remoteRequest<RemoteSnapshot>('/api/state')); } catch { /* Keep the last confirmed read model. */ }
+      }
+      if (error instanceof RemoteRequestError && error.status === 409 && conflictedForms.current.size) throw new Error(conflictMessage);
+      throw error;
+    } finally { changing.current = false; }
+  }
+  async function setEmployeePassword(employeeId: string, password: string) {
+    await updateData(() => {}, { action: 'تغيير كلمة مرور الموظف', entity: 'employee', entityId: employeeId, employeeId, newValues: { passwordChanged: true, sessionsInvalidated: true } }, { password: { employeeId, value: password } });
+  }
+  async function prepareSystemBackup(theme: 'light' | 'dark') {
+    if (current.current.session?.role !== 'SUPER_ADMIN') throw new Error('تحميل النسخة الاحتياطية متاح للمشرف العام فقط.');
+    return remoteRequest<SystemBackup>(`/api/backup?theme=${theme}`);
+  }
+  const setupSystemAdmin = async (): Promise<DemoSession | null> => { throw new Error('تهيئة الحسابات متوقفة إلى حين استيراد النسخة الاحتياطية إلى قاعدة البيانات.'); };
+  const resetDemo = () => { throw new Error('تصفير بيانات قاعدة البيانات غير متاح من الواجهة.'); };
+  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, prepareSystemBackup, logout, refresh, discardDraft, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
+}
+
+export function DemoProvider({ children, backend = 'local' }: { children: ReactNode; backend?: 'local' | 'neon' }) {
+  // The production branch never initializes, reads, copies, or removes the
+  // legacy browser-local stores. They remain available for backup recovery.
+  return backend === 'neon' ? <RemoteDemoProvider>{children}</RemoteDemoProvider> : <LocalDemoProvider>{children}</LocalDemoProvider>;
 }
 export function useDemo() { const context = useContext(DemoContext); if (!context) throw new Error('DemoProvider is required'); return context; }
 export function useToast() { return useDemo().notify; }

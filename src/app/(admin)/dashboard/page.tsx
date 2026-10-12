@@ -3,13 +3,12 @@ import Link from 'next/link';
 import { UsersRound, CalendarCheck2, Wallet, Clock3, Plus, ArrowLeft, CalendarPlus, Receipt, Gift, FileChartColumnIncreasing, UserRoundPlus, ClipboardCheck, ShieldCheck, ChevronLeft, Building2, CheckCircle2 } from 'lucide-react';
 import { useDemo } from '@/components/demo-provider';
 import { Badge, Card, StatCard, Avatar, EmptyState } from '@/components/ui';
-import { DEMO_MONTH } from '@/lib/mock-data';
 import { getMonthPayroll } from '@/lib/payroll';
 import { money, number, time, duration } from '@/lib/format';
 import { getOpenWorkday, statusLabel } from '@/lib/attendance';
 
 export default function DashboardPage() {
-  const { data, session } = useDemo();
+  const { data, session, today, month: currentMonth } = useDemo();
   const day = getOpenWorkday(data.workdays);
   const activeDepartments = data.departments.filter(item => item.active);
   const activeEmployees = data.employees.filter(item => item.active);
@@ -23,13 +22,13 @@ export default function DashboardPage() {
   const unresolved = records.filter(item => item.status === 'UNRESOLVED');
   const absent = records.filter(item => item.status === 'EXCUSED' || item.status === 'UNEXCUSED');
   const expected = records.filter(item => item.status !== 'EXEMPT').length;
-  const payroll = getMonthPayroll(data, DEMO_MONTH);
+  const payroll = getMonthPayroll(data, currentMonth);
   const total = payroll.reduce((sum,item) => sum + item.finalSalary,0);
   const unpaid = payroll.filter(item => item.paymentStatus !== 'PAID');
   const adjustments = payroll.reduce((sum,item) => sum + item.otherDeductions,0);
   const bonuses = payroll.reduce((sum,item) => sum + item.bonuses,0);
   const actions = [{label:'فتح يوم حضور',href:'/attendance?open=new',icon:CalendarPlus},{label:'إضافة موظف',href:'/employees?add=1',icon:UserRoundPlus},{label:'إضافة خصم',href:'/deductions?add=1',icon:Receipt},{label:'إضافة مكافأة',href:'/bonuses?add=1',icon:Gift}];
-  return <div className="page-stack"><header className="page-header"><div><div className="welcome-line"><span className="line"/>الاثنين، 28 أيلول 2026</div><h1>{data.employees.length ? `مرحباً، ${session?.name.split(' ')[0]}.` : 'مرحباً بك في CenterPro.'}</h1></div><div className="page-actions"><Link className="btn btn-secondary" href="/reports"><FileChartColumnIncreasing size={17}/>عرض التقارير</Link><Link className="btn btn-primary" href="/attendance?open=new"><Plus size={17}/>فتح يوم حضور</Link></div></header>
+  return <div className="page-stack"><header className="page-header"><div><div className="welcome-line"><span className="line"/>{new Intl.DateTimeFormat('ar-IQ-u-nu-latn', { timeZone: 'Asia/Baghdad', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${today}T12:00:00+03:00`))}</div><h1>{data.employees.length ? `مرحباً، ${session?.name.split(' ')[0]}.` : 'مرحباً بك في CenterPro.'}</h1></div><div className="page-actions"><Link className="btn btn-secondary" href="/reports"><FileChartColumnIncreasing size={17}/>عرض التقارير</Link><Link className="btn btn-primary" href="/attendance?open=new"><Plus size={17}/>فتح يوم حضور</Link></div></header>
     <div className="stats-grid"><StatCard label="الموظفون الفعّالون" value={number(data.employees.filter(e=>e.active).length)} icon={<UsersRound/>}/><StatCard label="الحاضرون اليوم" value={present.length} icon={<CalendarCheck2/>}/><StatCard label="غير محسوم" value={unresolved.length} icon={<Clock3/>}/><StatCard label="صافي رواتب الشهر" value={<>{number(total)} <small style={{fontSize:11,letterSpacing:0}}>د.ع</small></>} icon={<Wallet/>} accent/></div>
     {data.workdays.length === 0 && <Card title="البدء"><ol className="setup-guide">{setupSteps.map((step, index) => <li key={step.title} className={step.done ? 'setup-step completed' : 'setup-step'}><div className="setup-step-top"><span className="setup-step-number">{step.done ? <CheckCircle2 size={20}/> : `0${index + 1}`}</span><step.icon size={22}/></div><h3>{step.title}</h3>{step.done ? <Badge tone="success">مكتمل</Badge> : step.available ? <Link href={step.href} className="button-link">{step.title}<ArrowLeft size={15}/></Link> : <span className="muted">{index === 0 ? 'متاح للمدير العام' : 'أكمل الخطوة السابقة'}</span>}</li>)}</ol></Card>}
     <div className="dashboard-split"><Card title="يوم الحضور المفتوح" action={<Badge tone={day?.state === 'OPEN' ? 'success':'neutral'}>{day?.state === 'OPEN' ? 'اليوم مفتوح' : day ? 'اليوم مغلق':'لم يُفتح اليوم'}</Badge>}>{day ? <><div className="today-summary"><div><div className="big-metric">{expected ? Math.round(present.length / expected * 100) : 0}<small> %</small></div></div><div style={{textAlign:'left'}}><div className="muted">بداية الدوام</div><strong dir="ltr" style={{fontSize:13}}>{time(day.startTime)}</strong></div></div><div className="progress-track" role="img" aria-label={`حاضر ${present.length}، غير محسوم ${unresolved.length}، غائب ${absent.length}`}><span style={{width:`${present.length / (expected || 1) * 100}%`}}/><span className="pending" style={{width:`${unresolved.length / (expected || 1) * 100}%`}}/><span className="absent" style={{width:`${absent.length / (expected || 1) * 100}%`}}/></div><div className="attendance-legend"><div className="legend-item"><span><i/>حاضر</span><strong>{present.length}</strong></div><div className="legend-item"><span><i/>غير محسوم</span><strong>{unresolved.length}</strong></div><div className="legend-item"><span><i/>غائب</span><strong>{absent.length}</strong></div></div><div className="card-bottom"><Link className="button-link" href={`/attendance/${day.id}`}>مراجعة حضور اليوم<ArrowLeft size={14}/></Link></div></> : <EmptyState title="لا يوجد يوم حضور مفتوح حالياً." action={<Link className="btn btn-primary" href="/attendance?open=new">فتح يوم حضور</Link>}/>}</Card><Card title="اختصارات يومك"><div className="quick-actions">{actions.map(action=><Link key={action.href} className="quick-action" href={action.href}><action.icon/><span>{action.label}</span></Link>)}</div><div className="card-bottom"><span>الرواتب</span><Link className="button-link" href="/payroll">{unpaid.length} موظفين<ChevronLeft size={14}/></Link></div></Card></div>

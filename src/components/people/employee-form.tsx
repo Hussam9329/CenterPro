@@ -4,8 +4,6 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, ImagePlus, ShieldCheck } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { Avatar, Badge, Button, ConfirmDialog, Dialog, Field, Input, Select, Textarea } from '@/components/ui';
-import { DEMO_TODAY } from '@/lib/mock-data';
-import { removeEmployeeCredential } from '@/lib/local-auth';
 import { canManageEmployeeAccount } from '@/lib/permissions';
 import type { Employee, Role } from '@/lib/types';
 import styles from './people.module.css';
@@ -17,7 +15,7 @@ const phoneSuffix = (value: string) => value.replace(/\D/g, '').replace(/^07/, '
 // Input values are suffixes: a suffix beginning with 07 is still nine digits.
 const fullPhone = (suffix: string) => `07${suffix.replace(/\D/g, '').slice(0, 9)}`;
 const telegramUsername = (value: string) => value.replace(/^@+/, '').replace(/[^A-Za-z0-9_]/g, '');
-function initialEmployee(employee?: Employee): DraftEmployee {
+function initialEmployee(today: string, employee?: Employee): DraftEmployee {
   if (employee) {
     // Pick the supported editable fields so removed legacy properties are not
     // copied back from an older browser session.
@@ -32,13 +30,13 @@ function initialEmployee(employee?: Employee): DraftEmployee {
       fixedSalary: employee.fixedSalary, dailyRateOverride: employee.dailyRateOverride,
     };
   }
-  return { name: '', address: '', phone: '07', guardianPhone: '07', departmentId: '', startDate: DEMO_TODAY, active: true, gender: 'MALE', birthDate: '', notes: '', qualification: '', telegram: '', username: '', role: 'EMPLOYEE', fixedOverride: false, fixedSalary: 0, dailyRateOverride: null };
+  return { name: '', address: '', phone: '07', guardianPhone: '07', departmentId: '', startDate: today, active: true, gender: 'MALE', birthDate: '', notes: '', qualification: '', telegram: '', username: '', role: 'EMPLOYEE', fixedOverride: false, fixedSalary: 0, dailyRateOverride: null };
 }
 
 export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClose: () => void; employee?: Employee }) {
-  const { data, session, systemUsername, updateData, setEmployeePassword } = useDemo();
+  const { data, session, systemUsername, today, backend, updateData } = useDemo();
   const toast = useToast();
-  const [draft, setDraft] = useState<DraftEmployee>(() => initialEmployee(employee));
+  const [draft, setDraft] = useState<DraftEmployee>(() => initialEmployee(today, employee));
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [confirmSalary, setConfirmSalary] = useState(false);
@@ -56,7 +54,7 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
 
   const validateStep = (current: number) => {
     if (current === 0 && !draft.name.trim()) return 'اكتب الاسم الكامل للموظف.';
-    if (current === 0 && draft.birthDate && draft.birthDate > DEMO_TODAY) return 'تاريخ الميلاد يجب أن يكون في الماضي.';
+    if (current === 0 && draft.birthDate && draft.birthDate > today) return 'تاريخ الميلاد يجب أن يكون في الماضي.';
     if (current === 1 && !/^07\d{9}$/.test(draft.phone)) return 'رقم الهاتف مطلوب ويجب أن يتكون من 11 رقماً ويبدأ بـ 07.';
     if (current === 1 && !/^07\d{9}$/.test(draft.guardianPhone)) return 'رقم هاتف ولي الأمر مطلوب ويجب أن يتكون من 11 رقماً ويبدأ بـ 07.';
     if (current === 1 && draft.telegram && !/^[A-Za-z0-9_]+$/.test(draft.telegram)) return 'معرف تيليغرام يقبل الأحرف الإنجليزية والأرقام والشرطة السفلية فقط.';
@@ -97,30 +95,18 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
         dailyRateOverride: isSuper ? draft.dailyRateOverride : employee?.dailyRateOverride ?? null,
       };
       const auditProfile = (value: Employee) => { const { photo, ...fields } = value; return { ...fields, hasPhoto: Boolean(photo) }; };
-      // A credential write can fail (for example when browser storage is full).
-      // Persist it before publishing the employee, so retry cannot create an
-      // account with no usable password or a duplicate employee.
-      const commitProfile = () => {
-        updateData(state => { const index = state.employees.findIndex(item => item.id === id); if (index >= 0) state.employees[index] = updated; else state.employees.push(updated); }, {
-          action: employee ? 'تعديل بيانات موظف' : 'إضافة موظف وحساب دخول', entity: 'employee', entityId: id, employeeId: id,
-          oldValues: employee ? auditProfile(employee) : {},
-          newValues: { ...auditProfile(updated), ...(employee && changesPassword ? { passwordChanged: true, sessionsInvalidated: true } : {}) },
-        });
-      };
-      try {
-        if (changesPassword) await setEmployeePassword(id, newPassword, commitProfile);
-        else commitProfile();
-      } catch (error) {
-        if (!employee) removeEmployeeCredential(id);
-        throw error;
-      }
+      await updateData(state => { const index = state.employees.findIndex(item => item.id === id); if (index >= 0) state.employees[index] = updated; else state.employees.push(updated); }, {
+        action: employee ? 'تعديل بيانات موظف' : 'إضافة موظف وحساب دخول', entity: 'employee', entityId: id, employeeId: id,
+        oldValues: employee ? auditProfile(employee) : {},
+        newValues: { ...auditProfile(updated), ...(employee && changesPassword ? { passwordChanged: true, sessionsInvalidated: true } : {}) },
+      }, changesPassword ? { password: { employeeId: id, value: newPassword } } : undefined);
       pendingPassword.current = '';
       if (passwordRef.current) passwordRef.current.value = '';
       setConfirmSalary(false);
       toast(employee ? changesPassword ? 'تم تحديث بيانات الموظف وكلمة المرور وإنهاء الجلسات السابقة للحساب.' : 'تم تحديث بيانات الموظف.' : 'تمت إضافة الموظف وحساب الدخول بنجاح.');
       onClose();
-    } catch {
-      setError('تعذر حفظ حساب الدخول. حاول مرة أخرى.');
+    } catch (failure) {
+      setError(backend === 'neon' && failure instanceof Error ? failure.message : 'تعذر حفظ حساب الدخول. حاول مرة أخرى.');
       setStep(3);
     } finally {
       savingRef.current = false;
@@ -157,7 +143,7 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
         <div className={styles.formIntro}><h3>{steps[step]}</h3><p>{['ابدأ بالاسم والبيانات التي تظهر في الملف.', 'وسائل التواصل الخاصة بالموظف.', 'القسم ومعلومات المباشرة والحالة الوظيفية.', 'تسجيل الدخول يكون باسم المستخدم وكلمة المرور.', 'تطبق قوانين القسم تلقائياً ما لم تخصص راتب الموظف.'][step]}</p></div>
         {step === 0 && <>
           <div className={styles.photoUpload}><Avatar name={draft.name || 'موظف'} src={draft.photo} size={64} /><div className="stack"><label className="inline"><ImagePlus size={16} /> صورة الموظف<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="صورة الموظف" onChange={event => uploadPhoto(event.target.files?.[0])} /></label><span className={styles.mutedNote}>صورة اختيارية · JPG / PNG / WebP · حتى 1 MB</span>{draft.photo && <Button type="button" variant="ghost" onClick={() => update('photo', undefined)}>إزالة الصورة</Button>}</div></div>
-          <div className="form-grid"><Field label="الاسم الكامل" required><Input value={draft.name} onChange={event => update('name', event.target.value)} autoFocus placeholder="اسم الموظف الكامل" autoComplete="name" /></Field><Field label="الجنس"><Select value={draft.gender} onChange={event => update('gender', event.target.value as Employee['gender'])}><option value="MALE">ذكر</option><option value="FEMALE">أنثى</option></Select></Field><Field label="تاريخ الميلاد"><Input type="date" value={draft.birthDate} max={DEMO_TODAY} onChange={event => update('birthDate', event.target.value)} /></Field><Field label="التحصيل الدراسي"><Input value={draft.qualification} onChange={event => update('qualification', event.target.value)} placeholder="مثال: بكالوريوس علوم" /></Field></div>
+          <div className="form-grid"><Field label="الاسم الكامل" required><Input value={draft.name} onChange={event => update('name', event.target.value)} autoFocus placeholder="اسم الموظف الكامل" autoComplete="name" /></Field><Field label="الجنس"><Select value={draft.gender} onChange={event => update('gender', event.target.value as Employee['gender'])}><option value="MALE">ذكر</option><option value="FEMALE">أنثى</option></Select></Field><Field label="تاريخ الميلاد"><Input type="date" value={draft.birthDate} max={today} onChange={event => update('birthDate', event.target.value)} /></Field><Field label="التحصيل الدراسي"><Input value={draft.qualification} onChange={event => update('qualification', event.target.value)} placeholder="مثال: بكالوريوس علوم" /></Field></div>
         </>}
         {step === 1 && <div className="form-grid"><Field label="رقم الهاتف" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.phone)} onChange={event => update('phone', fullPhone(event.target.value))} autoComplete="tel" placeholder="xxxxxxxxx" /></div></Field><Field label="رقم هاتف ولي الأمر" required hint="اكتب 9 أرقام فقط بعد 07."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>07</span><Input type="tel" inputMode="numeric" maxLength={9} value={phoneSuffix(draft.guardianPhone)} onChange={event => update('guardianPhone', fullPhone(event.target.value))} placeholder="xxxxxxxxx" /></div></Field><Field label="معرف تيليغرام" hint="اكتب المعرف فقط من دون @."><div className={styles.prefixedInput} dir="ltr"><span className={styles.inputPrefix}>@</span><Input dir="ltr" value={draft.telegram} onChange={event => update('telegram', telegramUsername(event.target.value))} placeholder="username" /></div></Field><div className="field-span-2"><Field label="العنوان / محل السكن"><Input value={draft.address} onChange={event => update('address', event.target.value)} placeholder="المحافظة، المنطقة" autoComplete="street-address" /></Field></div></div>}
         {step === 2 && <div className="form-grid"><Field label="القسم" required><Select value={draft.departmentId} onChange={event => update('departmentId', event.target.value)}><option value="">اختر القسم</option>{data.departments.filter(item => item.active || item.id === employee?.departmentId).map(item => <option key={item.id} value={item.id}>{item.name}{!item.active ? ' (غير نشط)' : ''}</option>)}</Select></Field><Field label="تاريخ المباشرة" required><Input type="date" value={draft.startDate} onChange={event => update('startDate', event.target.value)} /></Field><Field label="الرقم الوظيفي"><Input value={employee?.code ?? 'يُنشأ تلقائياً عند الحفظ'} readOnly /></Field><div className="field-span-2"><Field label="ملاحظات" hint="اختياري"><Textarea value={draft.notes} onChange={event => update('notes', event.target.value)} rows={3} placeholder="ملاحظات إدارية عن الموظف (اختياري)" /></Field></div></div>}
@@ -172,7 +158,7 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
 }
 
 export function ResetPasswordDialog({ employee, onClose }: { employee: Employee | null; onClose: () => void }) {
-  const { session, updateData, setEmployeePassword } = useDemo();
+  const { session, updateData, backend } = useDemo();
   const toast = useToast();
   const passwordRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
@@ -194,15 +180,13 @@ export function ResetPasswordDialog({ employee, onClose }: { employee: Employee 
     savingRef.current = true;
     setSaving(true);
     try {
-      await setEmployeePassword(employee.id, password, () => {
-        updateData(() => {}, { action: 'تغيير كلمة مرور الموظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: {}, newValues: { sessionsInvalidated: true } });
-      });
+      await updateData(() => {}, { action: 'تغيير كلمة مرور الموظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: {}, newValues: { sessionsInvalidated: true } }, { password: { employeeId: employee.id, value: password } });
       if (passwordRef.current) passwordRef.current.value = '';
       setError('');
       toast('تم تغيير كلمة المرور وإنهاء الجلسات السابقة للحساب.');
       onClose();
-    } catch {
-      setError('تعذر تغيير كلمة المرور. حاول مرة أخرى.');
+    } catch (failure) {
+      setError(backend === 'neon' && failure instanceof Error ? failure.message : 'تعذر تغيير كلمة المرور. حاول مرة أخرى.');
     } finally {
       savingRef.current = false;
       setSaving(false);

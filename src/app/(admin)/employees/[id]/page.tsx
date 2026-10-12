@@ -5,10 +5,10 @@ import { useParams } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { ArrowRight, CalendarDays, KeyRound, Pencil, ShieldCheck, UserCheck, UserX, Wallet } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Avatar, Badge, Button, Card, ConfirmDialog, EmptyState, PageHeader, Select, StatCard, Tabs } from '@/components/ui';
 import { EmployeeForm, ResetPasswordDialog } from '@/components/people/employee-form';
 import { date, duration, money, monthLabel, time } from '@/lib/format';
-import { DEMO_MONTH, DEMO_TODAY } from '@/lib/mock-data';
 import { getEmployeePayroll } from '@/lib/payroll';
 import { statusLabel } from '@/lib/attendance';
 import { getLatestEvaluationSeason, getRankProgress, getSeasonLeaderboard, isCorrectionDepartmentName } from '@/lib/evaluations';
@@ -22,13 +22,14 @@ const attendanceTone: Record<AttendanceStatus, 'success' | 'neutral' | 'warning'
 
 export default function EmployeeProfilePage() {
   const params = useParams<{ id: string }>();
-  const { data, session, updateData } = useDemo();
+  const { data, session, updateData, today, month: currentMonth } = useDemo();
   const toast = useToast();
+  const { mutate } = useAsyncMutation(toast);
   const [tab, setTab] = useState('profile');
   const [editing, setEditing] = useState(false);
   const [password, setPassword] = useState(false);
   const [confirmToggle, setConfirmToggle] = useState(false);
-  const [month, setMonth] = useState(DEMO_MONTH);
+  const [month, setMonth] = useState(currentMonth);
   const employee = data.employees.find(item => item.id === params.id);
   if (!employee) return <div className="page-stack"><PageHeader title="ملف الموظف" /><Card><EmptyState title="ملف الموظف غير موجود" description="تحقق من الرابط أو عد إلى قائمة الموظفين." action={<Link className="button-link" href="/employees">العودة إلى الموظفين</Link>} /></Card></div>;
   const department = data.departments.find(item => item.id === employee.departmentId);
@@ -42,10 +43,10 @@ export default function EmployeeProfilePage() {
   const historical = payrollMonth && payrollMonth.state !== 'OPEN' && payrollMonth.sourceSnapshot ? { ...data, ...payrollMonth.sourceSnapshot, payments: data.payments } : data;
   const attendance = historical.attendance.filter(item => item.employeeId === employee.id && historical.workdays.some(day => day.id === item.workdayId && day.date.startsWith(month))).sort((a, b) => (historical.workdays.find(day => day.id === b.workdayId)?.date ?? '').localeCompare(historical.workdays.find(day => day.id === a.workdayId)?.date ?? ''));
   const canModify = session?.role === 'SUPER_ADMIN' || employee.role === 'EMPLOYEE';
-  const months = Array.from(new Set([DEMO_MONTH, ...data.months.map(item => item.month)])).sort().reverse();
-  const toggle = () => {
+  const months = Array.from(new Set([currentMonth, ...data.months.map(item => item.month)])).sort().reverse();
+  const toggle = async () => {
     if (!canModify) return;
-    updateData(draft => { const item = draft.employees.find(person => person.id === employee.id); if (item) { const nextActive = !item.active; item.active = nextActive; item.endDate = nextActive ? undefined : DEMO_TODAY; item.updatedAt = new Date().toISOString(); } }, { action: employee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: { active: employee.active, endDate: employee.endDate }, newValues: { active: !employee.active, endDate: employee.active ? DEMO_TODAY : undefined } });
+    if (!await mutate(() => updateData(draft => { const item = draft.employees.find(person => person.id === employee.id); if (item) { const nextActive = !item.active; item.active = nextActive; item.endDate = nextActive ? undefined : today; item.updatedAt = new Date().toISOString(); } }, { action: employee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: employee.id, employeeId: employee.id, oldValues: { active: employee.active, endDate: employee.endDate }, newValues: { active: !employee.active, endDate: employee.active ? today : undefined } }))) return;
     toast(employee.active ? 'تم إيقاف الموظف مع حفظ سجلاته.' : 'تم تفعيل الموظف.');
     setConfirmToggle(false);
   };

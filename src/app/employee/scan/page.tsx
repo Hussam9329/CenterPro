@@ -7,7 +7,7 @@ import type { IScannerControls } from '@zxing/browser';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { Badge, Button, Card, Field, PageHeader, Select } from '@/components/ui';
 import { getLatenessSeconds, getOpenWorkday, isExpected } from '@/lib/attendance';
-import { DEMO_TODAY } from '@/lib/mock-data';
+import { apiRequest } from '@/lib/api-client';
 import { duration, time } from '@/lib/format';
 import styles from '@/components/attendance/attendance.module.css';
 
@@ -15,7 +15,7 @@ type Outcome = { kind: 'success' | 'warning' | 'error'; title: string; message: 
 type Scenario = 'SUCCESS' | 'INVALID' | 'EXPIRED' | 'DUPLICATE' | 'CLOSED' | 'EXEMPT' | 'NETWORK';
 
 export default function EmployeeScanPage() {
-  const { data, session, updateData } = useDemo();
+  const { data, session, updateData, backend, today, refresh } = useDemo();
   const toast = useToast();
   const video = useRef<HTMLVideoElement>(null);
   const controls = useRef<IScannerControls | null>(null);
@@ -38,11 +38,11 @@ export default function EmployeeScanPage() {
   useEffect(() => () => { cameraGeneration.current += 1; controls.current?.stop(); controls.current = null; }, []);
   const stopCamera = () => { cameraGeneration.current += 1; release(); setCameraActive(false); setStarting(false); };
 
-  function simulatedOutcome(selected: Scenario, decoded?: string, scannedAt = 0) {
+  async function simulatedOutcome(selected: Scenario, decoded?: string, scannedAt = 0) {
     setCameraError('');
     if (selected === 'INVALID') { setOutcome({ kind: 'error', title: 'رمز QR غير صالح', message: 'امسح رمز CenterPro المعروض على شاشة الحضور.' }); return; }
     if (selected === 'EXPIRED') { setOutcome({ kind: 'warning', title: 'انتهت صلاحية رمز QR', message: 'امسح الرمز الجديد على شاشة الحضور.' }); return; }
-    if (selected === 'DUPLICATE') { setOutcome({ kind: 'warning', title: 'تم تسجيل حضورك مسبقاً اليوم', message: 'لا يمكن إنشاء تسجيل حضور إضافي لليوم نفسه.', timestamp: attendance?.checkIn || `${day?.date || DEMO_TODAY}T14:17:43+03:00` }); return; }
+    if (selected === 'DUPLICATE') { setOutcome({ kind: 'warning', title: 'تم تسجيل حضورك مسبقاً اليوم', message: 'لا يمكن إنشاء تسجيل حضور إضافي لليوم نفسه.', timestamp: attendance?.checkIn || `${day?.date || today}T14:17:43+03:00` }); return; }
     if (selected === 'CLOSED') { setOutcome({ kind: 'warning', title: 'لا يوجد يوم حضور مفتوح حالياً', message: 'راجع الإدارة لفتح يوم الحضور.' }); return; }
     if (selected === 'EXEMPT') { setOutcome({ kind: 'warning', title: 'أنت مستثنى من دوام هذا اليوم', message: 'لن يُسجل حضور أو غياب أو خصم لهذا اليوم.' }); return; }
     if (selected === 'NETWORK' || !navigator.onLine) { setOutcome({ kind: 'error', title: 'تعذر الاتصال', message: 'تحقق من اتصال الإنترنت ثم أعد المحاولة. لم يُسجل حضور.' }); return; }
@@ -59,7 +59,7 @@ export default function EmployeeScanPage() {
     if (attendance?.status === 'PRESENT') { simulatedOutcome('DUPLICATE'); return; }
     if (data.months.some(item => item.month === day.date.slice(0, 7) && item.state !== 'OPEN')) { setOutcome({ kind: 'warning', title: 'الشهر محمي', message: 'لا يمكن تسجيل حضور ذاتي في شهر مؤرشف أو أعيد فتحه للتعديل.' }); return; }
     const timestamp = `${day.date}T14:17:43+03:00`;
-    updateData(draft => {
+    await updateData(draft => {
       const existing = draft.attendance.find(item => item.employeeId === employee.id && item.workdayId === day.id);
       if (existing?.status === 'PRESENT') return;
       const next = { id: existing?.id || crypto.randomUUID(), employeeId: employee.id, workdayId: day.id, status: 'PRESENT' as const, checkIn: timestamp, latenessSeconds: getLatenessSeconds(timestamp, day.date, day.startTime), source: 'QR' as const, reason: 'محاكاة حضور في معاينة الواجهة', updatedAt: new Date().toISOString() };
@@ -67,6 +67,18 @@ export default function EmployeeScanPage() {
     }, { action: 'محاكاة تسجيل حضور QR', entity: 'الحضور', entityId: attendance?.id || day.id, employeeId: employee.id, newValues: { status: 'PRESENT', checkIn: timestamp, preview: true } });
     setOutcome({ kind: 'success', title: 'تم تسجيل حضورك التجريبي', message: 'تم تحديث بيانات المعاينة على هذا المتصفح فقط.', timestamp });
     toast('تمت محاكاة تسجيل الحضور بنجاح.');
+  }
+
+  async function scan(decoded: string, scannedAt: number) {
+    if (backend !== 'neon') { await simulatedOutcome('SUCCESS', decoded, scannedAt); return; }
+    setOutcome(null);
+    try {
+      const result = await apiRequest<{ checkIn: string; duplicate?: boolean }>('/api/attendance/check-in', { token: decoded });
+      setOutcome({ kind: result.duplicate ? 'warning' : 'success', title: result.duplicate ? 'تم تسجيل حضورك مسبقاً اليوم' : 'تم تسجيل حضورك', message: 'وقت الحضور محفوظ في قاعدة البيانات بتوقيت بغداد.', timestamp: result.checkIn });
+      await refresh();
+    } catch (cause) {
+      setOutcome({ kind: 'error', title: 'تعذر تسجيل الحضور', message: cause instanceof Error ? cause.message : 'تحقق من الاتصال ثم امسح الرمز مرة أخرى.' });
+    }
   }
 
   async function activateCamera() {
@@ -79,7 +91,7 @@ export default function EmployeeScanPage() {
       const reader = new BrowserQRCodeReader();
       const scanner = await reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' } }, audio: false }, video.current, result => {
         if (result && !scanLock.current && generation === cameraGeneration.current) {
-          scanLock.current = true; simulatedOutcome('SUCCESS', result.getText(), Date.now()); stopCamera();
+          scanLock.current = true; void scan(result.getText(), Date.now()); stopCamera();
         }
       });
       if (generation !== cameraGeneration.current) { scanner.stop(); return; }
@@ -94,12 +106,12 @@ export default function EmployeeScanPage() {
 
   return <div className={`page-stack ${styles.scannerPage}`}>
     <PageHeader title="تسجيل الحضور" />
-    <div className={styles.previewNotice}><Badge tone="brand">معاينة تجريبية</Badge><span>الكاميرا تقرأ الرمز فعلياً؛ النتيجة محاكاة محلية ولا تمثل حضوراً حقيقياً.</span></div>
+    {backend !== 'neon' && <div className={styles.previewNotice}><Badge tone="brand">معاينة تجريبية</Badge><span>الكاميرا تقرأ الرمز فعلياً؛ النتيجة محاكاة محلية ولا تمثل حضوراً حقيقياً.</span></div>}
     <div className={styles.scannerViewport}><video ref={video} muted autoPlay playsInline aria-label="معاينة الكاميرا لمسح رمز الحضور" className={cameraActive || starting ? styles.videoVisible : styles.videoHidden} /><div className={styles.scanTarget}>{(cameraActive || starting) && <><ScanLine size={36} /><span>{cameraActive ? 'ضع الرمز داخل الإطار' : 'جارٍ تشغيل الكاميرا'}</span></>}</div>{!cameraActive && !starting && <div className={styles.cameraPlaceholder}><QrCode size={52} /><p>الكاميرا متوقفة</p></div>}<div className={styles.cameraControls}>{cameraActive ? <Button variant="secondary" onClick={stopCamera}><CameraOff size={18} />إيقاف الكاميرا</Button> : <Button onClick={activateCamera} loading={starting}><Camera size={18} />{starting ? 'جارٍ تشغيل الكاميرا' : 'تشغيل الكاميرا'}</Button>}</div></div>
     {cameraError && <div className="notice notice-warning" role="alert"><CircleAlert size={20} /><span>{cameraError}</span></div>}
-    {outcome && <section role="status" aria-live="polite" className={`${styles.scanOutcome} ${outcome.kind === 'success' ? styles.scanSuccess : styles.scanWarning}`}><div className={styles.outcomeIcon}>{outcome.kind === 'success' ? <CheckCircle2 size={32} /> : <CircleAlert size={32} />}</div><h2>{outcome.title}</h2><p>{outcome.message}</p>{outcome.timestamp && <div className={styles.scanTime}><Clock3 size={19} /><span>وقت الحضور التجريبي</span><strong dir="ltr">{time(outcome.timestamp)}</strong></div>}<Button variant="secondary" onClick={() => { setOutcome(null); scanLock.current = false; }}><RefreshCw size={16} />مسح رمز آخر</Button></section>}
-    {attendance?.status === 'PRESENT' && <Card title="حضورك مسجل في المعاينة"><div className="detail-grid"><div className="detail-item"><span className="muted">وقت الحضور</span><strong dir="ltr">{attendance.checkIn ? time(attendance.checkIn) : '—'}</strong></div><div className="detail-item"><span className="muted">التأخير</span><strong>{duration(attendance.latenessSeconds)}</strong></div></div><Link className="button-link" href="/employee/attendance">عرض سجل حضوري</Link></Card>}
-    <details className={styles.demoControls}><summary>تجربة حالات الواجهة</summary><p className="muted">للمراجعة دون كاميرا. النجاح يحدّث سجل موظفك التجريبي إذا كان مؤهلاً؛ بقية الخيارات تعرض رسائل فقط.</p><Field label="حالة التجربة"><Select value={scenario} onChange={event => setScenario(event.target.value as Scenario)}><option value="SUCCESS">تسجيل حضور تجريبي</option><option value="INVALID">رمز غير صالح</option><option value="EXPIRED">رمز منتهي الصلاحية</option><option value="DUPLICATE">حضور مسجل مسبقاً</option><option value="CLOSED">لا يوجد يوم مفتوح</option><option value="EXEMPT">موظف مستثنى</option><option value="NETWORK">انقطاع الاتصال</option></Select></Field><Button variant="secondary" onClick={() => { stopCamera(); simulatedOutcome(scenario); }}>تجربة الحالة</Button></details>
+    {outcome && <section role="status" aria-live="polite" className={`${styles.scanOutcome} ${outcome.kind === 'success' ? styles.scanSuccess : styles.scanWarning}`}><div className={styles.outcomeIcon}>{outcome.kind === 'success' ? <CheckCircle2 size={32} /> : <CircleAlert size={32} />}</div><h2>{outcome.title}</h2><p>{outcome.message}</p>{outcome.timestamp && <div className={styles.scanTime}><Clock3 size={19} /><span>{backend === 'neon' ? 'وقت الحضور' : 'وقت الحضور التجريبي'}</span><strong dir="ltr">{time(outcome.timestamp)}</strong></div>}<Button variant="secondary" onClick={() => { setOutcome(null); scanLock.current = false; }}><RefreshCw size={16} />مسح رمز آخر</Button></section>}
+    {attendance?.status === 'PRESENT' && <Card title={backend === 'neon' ? 'حضورك مسجل' : 'حضورك مسجل في المعاينة'}><div className="detail-grid"><div className="detail-item"><span className="muted">وقت الحضور</span><strong dir="ltr">{attendance.checkIn ? time(attendance.checkIn) : '—'}</strong></div><div className="detail-item"><span className="muted">التأخير</span><strong>{duration(attendance.latenessSeconds)}</strong></div></div><Link className="button-link" href="/employee/attendance">عرض سجل حضوري</Link></Card>}
+    {backend !== 'neon' && <details className={styles.demoControls}><summary>تجربة حالات الواجهة</summary><p className="muted">للمراجعة دون كاميرا. النجاح يحدّث سجل موظفك التجريبي إذا كان مؤهلاً؛ بقية الخيارات تعرض رسائل فقط.</p><Field label="حالة التجربة"><Select value={scenario} onChange={event => setScenario(event.target.value as Scenario)}><option value="SUCCESS">تسجيل حضور تجريبي</option><option value="INVALID">رمز غير صالح</option><option value="EXPIRED">رمز منتهي الصلاحية</option><option value="DUPLICATE">حضور مسجل مسبقاً</option><option value="CLOSED">لا يوجد يوم مفتوح</option><option value="EXEMPT">موظف مستثنى</option><option value="NETWORK">انقطاع الاتصال</option></Select></Field><Button variant="secondary" onClick={() => { stopCamera(); simulatedOutcome(scenario); }}>تجربة الحالة</Button></details>}
     <p className={styles.scannerFootnote}>لا يتطلب التسجيل مشاركة الموقع أو الاتصال بشبكة Wi-Fi محددة.</p>
   </div>;
 }

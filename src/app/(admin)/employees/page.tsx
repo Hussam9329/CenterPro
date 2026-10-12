@@ -5,18 +5,19 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyRound, Pencil, Plus, UserCheck, Users, UserX } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Avatar, Badge, Button, Card, ConfirmDialog, EmptyState, Field, PageHeader, Pagination, SearchInput, Select, StatCard } from '@/components/ui';
 import { EmployeeForm, ResetPasswordDialog } from '@/components/people/employee-form';
 import type { Employee } from '@/lib/types';
 import { date, money } from '@/lib/format';
-import { DEMO_TODAY } from '@/lib/mock-data';
 import styles from '@/components/people/people.module.css';
 
 export default function EmployeesPage() {
-  const { data, session, updateData } = useDemo();
+  const { data, session, updateData, today } = useDemo();
   const searchParams = useSearchParams();
   const hasActiveDepartment = data.departments.some(item => item.active);
   const toast = useToast();
+  const { mutate } = useAsyncMutation(toast);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [department, setDepartment] = useState('all');
@@ -47,9 +48,9 @@ export default function EmployeesPage() {
   const currentPage = Math.min(page, Math.max(1, Math.ceil(rows.length / pageSize)));
   const visible = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const setFilter = (set: (value: string) => void, value: string) => { set(value); setPage(1); };
-  const toggle = () => {
+  const toggle = async () => {
     if (!toggleEmployee || (!isSuper && toggleEmployee.role !== 'EMPLOYEE')) return;
-    updateData(draft => { const employee = draft.employees.find(item => item.id === toggleEmployee.id); if (employee) { const nextActive = !employee.active; employee.active = nextActive; employee.endDate = nextActive ? undefined : DEMO_TODAY; employee.updatedAt = new Date().toISOString(); } }, { action: toggleEmployee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: toggleEmployee.id, employeeId: toggleEmployee.id, oldValues: { active: toggleEmployee.active, endDate: toggleEmployee.endDate }, newValues: { active: !toggleEmployee.active, endDate: toggleEmployee.active ? DEMO_TODAY : undefined } });
+    if (!await mutate(() => updateData(draft => { const employee = draft.employees.find(item => item.id === toggleEmployee.id); if (employee) { const nextActive = !employee.active; employee.active = nextActive; employee.endDate = nextActive ? undefined : today; employee.updatedAt = new Date().toISOString(); } }, { action: toggleEmployee.active ? 'إيقاف موظف' : 'تفعيل موظف', entity: 'employee', entityId: toggleEmployee.id, employeeId: toggleEmployee.id, oldValues: { active: toggleEmployee.active, endDate: toggleEmployee.endDate }, newValues: { active: !toggleEmployee.active, endDate: toggleEmployee.active ? today : undefined } }))) return;
     toast(toggleEmployee.active ? 'تم إيقاف الموظف مع الاحتفاظ بسجلاته.' : 'تم تفعيل الموظف.');
     setToggleEmployee(null);
   };

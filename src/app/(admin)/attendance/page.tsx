@@ -8,17 +8,16 @@ import { useDemo } from '@/components/demo-provider';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, StatCard } from '@/components/ui';
 import { getOpenWorkday } from '@/lib/attendance';
 import { date, monthLabel, time } from '@/lib/format';
-import { DEMO_MONTH } from '@/lib/mock-data';
 import { getDaySummary } from '@/components/attendance/day-helpers';
 import { WorkdayEditor } from '@/components/attendance/day-dialogs';
 import styles from '@/components/attendance/attendance.module.css';
 
 function AttendanceHub() {
-  const { data, session } = useDemo();
+  const { data, session, month: currentMonth } = useDemo();
   const query = useSearchParams();
   const router = useRouter();
   const [opening, setOpening] = useState(query.get('open') === 'new');
-  const [month, setMonth] = useState(DEMO_MONTH);
+  const [month, setMonth] = useState(currentMonth);
   const [state, setState] = useState('');
   const currentOpen = getOpenWorkday(data.workdays);
   const monthDays = data.workdays.filter(day => day.date.startsWith(month));

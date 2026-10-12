@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Minus, Plus, Search, UsersRound } from 'lucide-react';
 import { useDemo } from '@/components/demo-provider';
-import { Avatar, Badge, EmptyState, Input } from '@/components/ui';
+import { Avatar, Badge, Button, EmptyState, Input } from '@/components/ui';
 import { calculateEvaluationScore, getCorrectionEmployees, getExamEvaluation, isAuditEmployee, isCorrectionEmployee } from '@/lib/evaluations';
 import { date, time } from '@/lib/format';
 import type { DemoSession } from '@/lib/types';
@@ -31,7 +31,7 @@ function Stepper({ label, value, disabled, onImmediate, onType, onBlur }: { labe
 }
 
 function EvaluationEditor({ examId, employeeId, disabled }: { examId: string; employeeId: string; disabled: boolean }) {
-  const { data, session, updateData, notify } = useDemo();
+  const { data, session, updateData, notify, backend } = useDemo();
   const employee = data.employees.find(item => item.id === employeeId)!;
   const current = getExamEvaluation(data, examId, employeeId);
   const inputId = useId();
@@ -41,88 +41,114 @@ function EvaluationEditor({ examId, employeeId, disabled }: { examId: string; em
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [error, setError] = useState('');
   const pending = useRef<PendingValues>({});
+  const saving = useRef(false);
+  const mounted = useRef(true);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const statusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const flushRef = useRef<(showStatus?: boolean) => void>(() => {});
   const owner = actorKey(session);
 
-  const persist = useCallback((showStatus = true) => {
+  const persist = useCallback(async (showStatus = true) => {
     clearTimeout(debounce.current);
     debounce.current = undefined;
-    const values = pending.current;
-    const fields = numericFields.filter(field => values[field] !== undefined);
-    if (!fields.length) return;
-    pending.current = {};
+    if (saving.current) return;
+    saving.current = true;
     try {
-      updateData((draft, currentSession) => {
-        // Timers and unmount cleanup check the live store instead of the
-        // account or exam state captured when typing began.
-        if (!currentSession || actorKey(currentSession) !== owner) throw new Error('لم تُحفظ التغييرات لأن حساب الدخول تغيّر.');
-        const auditor = draft.employees.find(item => item.id === currentSession.employeeId);
-        if (!auditor || !isAuditEmployee(draft, auditor)) throw new Error('لم تُحفظ التغييرات لأن الحساب لا يملك صلاحية التدقيق.');
-        const exam = draft.evaluationExams.find(item => item.id === examId);
-        const cycle = draft.evaluationCycles.find(item => item.id === exam?.cycleId);
-        if (!exam || exam.state !== 'OPEN' || cycle?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الامتحان مغلق أو الدورة مؤرشفة.');
-        if (cycle.seasonId && draft.evaluationSeasons.find(item => item.id === cycle.seasonId)?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الموسم مؤرشف.');
-        const targetEmployee = draft.employees.find(item => item.id === employeeId);
-        if (!targetEmployee || !isCorrectionEmployee(draft, targetEmployee)) throw new Error('لم تُحفظ التغييرات لأن الموظف لم يعد ضمن المصححين الفعالين.');
+      // A second keystroke may arrive while the first request is in flight.
+      // Drain those fields in order using the confirmed server revision.
+      while (Object.keys(pending.current).length) {
+        const values = pending.current;
+        const fields = numericFields.filter(field => values[field] !== undefined);
+        pending.current = {};
+        try {
+          await updateData((draft, currentSession) => {
+            // Timers and unmount cleanup check the live store instead of the
+            // account or exam state captured when typing began.
+            if (!currentSession || actorKey(currentSession) !== owner) throw new Error('لم تُحفظ التغييرات لأن حساب الدخول تغيّر.');
+            const auditor = draft.employees.find(item => item.id === currentSession.employeeId);
+            if (!auditor || !isAuditEmployee(draft, auditor)) throw new Error('لم تُحفظ التغييرات لأن الحساب لا يملك صلاحية التدقيق.');
+            const exam = draft.evaluationExams.find(item => item.id === examId);
+            const cycle = draft.evaluationCycles.find(item => item.id === exam?.cycleId);
+            if (!exam || exam.state !== 'OPEN' || cycle?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الامتحان مغلق أو الدورة مؤرشفة.');
+            if (cycle.seasonId && draft.evaluationSeasons.find(item => item.id === cycle.seasonId)?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الموسم مؤرشف.');
+            const targetEmployee = draft.employees.find(item => item.id === employeeId);
+            if (!targetEmployee || !isCorrectionEmployee(draft, targetEmployee)) throw new Error('لم تُحفظ التغييرات لأن الموظف لم يعد ضمن المصححين الفعالين.');
 
-        const existing = getExamEvaluation(draft, examId, employeeId);
-        const changed = fields.filter(field => (existing?.[field] ?? null) !== safeNumber(values[field]!));
-        if (!changed.length) return;
-        const now = new Date().toISOString();
-        const target = existing ?? { id: crypto.randomUUID(), examId, employeeId, papers: null, correctionErrors: null, behaviorErrors: null, note: '', createdBy: currentSession.name, createdAt: now, updatedBy: currentSession.name, updatedAt: now };
-        changed.forEach(field => { target[field] = safeNumber(values[field]!); });
-        target.updatedBy = currentSession.name;
-        target.updatedAt = now;
-        if (numericFields.every(field => target[field] === null) && !target.note.trim()) {
-          draft.examEvaluations = draft.examEvaluations.filter(item => item.id !== target.id);
-        } else if (!existing) {
-          draft.examEvaluations.push(target);
+            const existing = getExamEvaluation(draft, examId, employeeId);
+            const changed = fields.filter(field => (existing?.[field] ?? null) !== safeNumber(values[field]!));
+            if (!changed.length) return;
+            const now = new Date().toISOString();
+            const target = existing ?? { id: crypto.randomUUID(), examId, employeeId, papers: null, correctionErrors: null, behaviorErrors: null, note: '', createdBy: currentSession.name, createdAt: now, updatedBy: currentSession.name, updatedAt: now };
+            changed.forEach(field => { target[field] = safeNumber(values[field]!); });
+            target.updatedBy = currentSession.name;
+            target.updatedAt = now;
+            if (numericFields.every(field => target[field] === null) && !target.note.trim()) {
+              draft.examEvaluations = draft.examEvaluations.filter(item => item.id !== target.id);
+            } else if (!existing) {
+              draft.examEvaluations.push(target);
+            }
+          }, (beforeData, afterData) => {
+            const before = getExamEvaluation(beforeData, examId, employeeId);
+            const after = getExamEvaluation(afterData, examId, employeeId);
+            const changed = fields.filter(field => (before?.[field] ?? null) !== (after?.[field] ?? null));
+            if (!changed.length) return undefined;
+            return {
+              action: before ? 'تعديل بيانات تدقيق مصحح' : 'إضافة بيانات تدقيق مصحح',
+              entity: 'exam-evaluation', entityId: after?.id ?? before!.id, employeeId,
+              oldValues: Object.fromEntries(changed.map(field => [field, before?.[field] ?? null])),
+              newValues: { ...Object.fromEntries(changed.map(field => [field, after?.[field] ?? null])), examId },
+            };
+          });
+          if (showStatus && mounted.current) {
+            setDraftValues(previous => Object.fromEntries(Object.entries(previous).filter(([field, value]) => values[field as NumericField] !== value)));
+            setError('');
+            if (!Object.keys(pending.current).length) {
+              setSaveState('saved');
+              clearTimeout(statusTimer.current);
+              statusTimer.current = setTimeout(() => setSaveState('idle'), 1200);
+            }
+          }
+        } catch (failure) {
+          const message = failure instanceof Error ? failure.message : 'تعذر حفظ التغييرات. راجع حالة الامتحان ثم حاول مجدداً.';
+          // Keep the user's text available for retry; newer typed fields win.
+          pending.current = { ...values, ...pending.current };
+          if (showStatus && mounted.current) { setError(message); setSaveState('error'); }
+          notify(message);
+          break;
         }
-      }, (beforeData, afterData) => {
-        const before = getExamEvaluation(beforeData, examId, employeeId);
-        const after = getExamEvaluation(afterData, examId, employeeId);
-        const changed = fields.filter(field => (before?.[field] ?? null) !== (after?.[field] ?? null));
-        if (!changed.length) return undefined;
-        return {
-          action: before ? 'تعديل بيانات تدقيق مصحح' : 'إضافة بيانات تدقيق مصحح',
-          entity: 'exam-evaluation', entityId: after?.id ?? before!.id, employeeId,
-          oldValues: Object.fromEntries(changed.map(field => [field, before?.[field] ?? null])),
-          newValues: { ...Object.fromEntries(changed.map(field => [field, after?.[field] ?? null])), examId },
-        };
-      });
-      if (showStatus) {
-        setDraftValues(previous => Object.fromEntries(Object.entries(previous).filter(([field, value]) => values[field as NumericField] !== value)));
-        setError('');
-        setSaveState('saved');
-        clearTimeout(statusTimer.current);
-        statusTimer.current = setTimeout(() => setSaveState('idle'), 1200);
       }
-    } catch (failure) {
-      const message = failure instanceof Error ? failure.message : 'تعذر حفظ التغييرات. راجع حالة الامتحان ثم حاول مجدداً.';
-      if (showStatus) { setDraftValues({}); setError(message); setSaveState('error'); }
-      notify(message);
+    } finally {
+      saving.current = false;
     }
   }, [employeeId, examId, notify, owner, updateData]);
 
   useEffect(() => { flushRef.current = persist; }, [persist]);
   useEffect(() => {
+    mounted.current = true;
     const flush = () => flushRef.current(false);
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (backend === 'neon' && (saving.current || Object.keys(pending.current).length)) {
+        // A browser cannot guarantee delivery of an async write on shutdown.
+        event.preventDefault();
+        event.returnValue = '';
+      }
+      flush();
+    };
     const flushHidden = () => { if (document.visibilityState === 'hidden') flushRef.current(); };
     window.addEventListener('pagehide', flush);
-    window.addEventListener('beforeunload', flush);
+    window.addEventListener('beforeunload', beforeUnload);
     document.addEventListener('visibilitychange', flushHidden);
     return () => {
       // Exam/filter/route changes flush to this editor's immutable identity.
+      mounted.current = false;
       flush();
       clearTimeout(debounce.current);
       clearTimeout(statusTimer.current);
       window.removeEventListener('pagehide', flush);
-      window.removeEventListener('beforeunload', flush);
+      window.removeEventListener('beforeunload', beforeUnload);
       document.removeEventListener('visibilitychange', flushHidden);
     };
-  }, []);
+  }, [backend]);
 
   function schedule(field: NumericField, raw: string, immediately = false) {
     if (disabled) return;
@@ -154,7 +180,7 @@ function EvaluationEditor({ examId, employeeId, disabled }: { examId: string; em
       <Stepper label="أخطاء السلوك" value={behaviorErrors} disabled={disabled} onImmediate={value => schedule('behaviorErrors', String(value), true)} onType={value => schedule('behaviorErrors', value)} onBlur={() => persist()}/>
     </div>
     <div className={styles.scoreStrip}><div><span className="muted">التقييم الحالي</span><strong dir="ltr">{score} نقطة</strong></div><span className={styles.saveState} data-state={saveState} role="status" aria-live="polite">{saveState === 'saving' ? 'جارٍ الحفظ…' : saveState === 'saved' ? <><Check size={13}/>تم الحفظ</> : saveState === 'error' ? 'لم يُحفظ التعديل' : current ? 'حفظ تلقائي' : 'أدخل القيم للبدء'}</span></div>
-    {error && <p className="text-danger" role="alert">{error}</p>}
+    {error && <div className="stack"><p className="text-danger" role="alert">{error}</p><Button variant="secondary" disabled={disabled} onClick={() => { setError(''); setSaveState('saving'); void persist(); }}>إعادة محاولة الحفظ</Button></div>}
     {current && <div className={styles.metaLine}>آخر تحديث بواسطة {current.updatedBy} · <span dir="ltr">{date(current.updatedAt)} — {time(current.updatedAt)}</span></div>}
   </article>;
 }

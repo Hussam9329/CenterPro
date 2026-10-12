@@ -6,19 +6,18 @@ import { Avatar, Badge, Card, EmptyState, PageHeader, Skeleton, StatCard } from 
 import { RankBadge } from '@/components/evaluations/rank-badge';
 import styles from '@/components/evaluations/evaluations.module.css';
 import { useDemo } from '@/components/demo-provider';
-import { DEMO_MONTH, DEMO_TODAY } from '@/lib/mock-data';
 import { getEmployeePayroll } from '@/lib/payroll';
 import { getOpenWorkday, isExpected, statusLabel } from '@/lib/attendance';
 import { date, money, monthLabel, time } from '@/lib/format';
 import { formatAccuracy, formatAveragePapers, getLatestEvaluationSeason, getRankProgress, getSeasonLeaderboard, isCorrectionEmployee } from '@/lib/evaluations';
 
 export default function EmployeeHomePage() {
-  const { data, session, ready } = useDemo();
+  const { data, session, ready, today: currentDate, month: currentMonth } = useDemo();
   if (!ready || !session) return <div className="page-stack"><Skeleton className="skeleton-heading" /><Skeleton className="skeleton-card" /></div>;
   const employee = data.employees.find(item => item.id === session.employeeId);
   if (!employee || session.role !== 'EMPLOYEE') return null;
   if (!employee.active) return <EmptyState title="حسابك غير فعال حالياً" description="يرجى مراجعة إدارة المركز بخصوص حالة حسابك." />;
-  const result = getEmployeePayroll(data, employee.id, DEMO_MONTH);
+  const result = getEmployeePayroll(data, employee.id, currentMonth);
   const today = getOpenWorkday(data.workdays);
   const todayAttendance = data.attendance.find(item => item.employeeId === employee.id && item.workdayId === today?.id);
   const expected = today ? isExpected(employee, today) : false;
@@ -31,11 +30,11 @@ export default function EmployeeHomePage() {
   const rankProgress = getRankProgress(seasonRow?.score ?? 0);
   const recentAttendance = data.attendance.filter(item => item.employeeId === employee.id).map(record => ({ record, workday: data.workdays.find(item => item.id === record.workdayId) })).filter(item => item.workday).sort((a, b) => b.workday!.date.localeCompare(a.workday!.date)).slice(0, 5);
   const movements = [
-    ...data.deductions.filter(item => item.employeeId === employee.id && item.date.startsWith(DEMO_MONTH)).map(item => ({ ...item, kind: 'deduction' as const })),
-    ...data.bonuses.filter(item => item.employeeId === employee.id && item.date.startsWith(DEMO_MONTH)).map(item => ({ ...item, kind: 'bonus' as const })),
+    ...data.deductions.filter(item => item.employeeId === employee.id && item.date.startsWith(currentMonth)).map(item => ({ ...item, kind: 'deduction' as const })),
+    ...data.bonuses.filter(item => item.employeeId === employee.id && item.date.startsWith(currentMonth)).map(item => ({ ...item, kind: 'bonus' as const })),
   ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   return <div className="page-stack">
-    <PageHeader title={`مرحباً بك، ${employee.name.split(' ')[0]}`} actions={<Badge tone="brand">{monthLabel(DEMO_MONTH)}</Badge>} />
+    <PageHeader title={`مرحباً بك، ${employee.name.split(' ')[0]}`} actions={<Badge tone="brand">{monthLabel(currentMonth)}</Badge>} />
     {season && seasonRow && <section className={styles.employeeSeasonCard} aria-label="ملخص تقييم الموسم">
       <RankBadge score={seasonRow?.score ?? 0} size="lg" animated showLabel={false}/>
       <div className={styles.employeeSeasonMain}><span className="eyebrow">{season.name}</span><h2 dir="ltr">{rankProgress.rank.name}</h2><strong className={styles.seasonPoints} dir="ltr">{seasonRow?.score ?? 0} pts</strong>{rankProgress.rank.next !== null ? <><div className={styles.rankProgress} role="progressbar" aria-label="التقدم إلى الرتبة التالية" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rankProgress.progress} aria-valuetext={`متبقي ${rankProgress.pointsToNext} نقطة`}><span style={{ width:`${rankProgress.progress}%` }}/></div><small>متبقي <bdi dir="ltr">{rankProgress.pointsToNext}</bdi> نقطة إلى {getRankProgress(rankProgress.rank.next).rank.name}</small></> : <small>أعلى رتبة موسمية</small>}</div>
@@ -44,7 +43,7 @@ export default function EmployeeHomePage() {
     </section>}
     <section className="employee-hero" aria-label="ملخص راتبك وحضورك">
       <div className="employee-hero-main"><div className="inline"><Avatar name={employee.name} src={employee.photo} size={52} /><div><strong>{employee.name}</strong><p>{department?.name} · <bdi>{employee.code}</bdi></p></div></div><div className="employee-salary"><span>صافي راتبك المتوقع</span><strong><bdi dir="ltr">{money(result.finalSalary)}</bdi></strong><span>بعد احتساب الغياب والخصومات والمكافآت</span></div><Link href="/employee/salary" className="button-link">عرض تفاصيل الراتب <ArrowLeft size={17} /></Link></div>
-      <div className="employee-hero-scan"><div className="employee-scan-icon"><QrCode size={38} strokeWidth={1.5} /></div><h2>{registered ? 'تم تسجيل حضورك لهذا اليوم' : 'سجّل حضورك بسهولة'}</h2><p>{registered ? `وقت الدخول: ${time(todayAttendance.checkIn ?? '')}` : today?.state === 'OPEN' && expected ? `يبدأ الدوام المفتوح ${time(today.startTime)}` : !today ? 'لا يوجد يوم حضور مفتوح حالياً.' : !expected ? 'أنت مستثنى من دوام هذا اليوم.' : 'يوم الحضور مغلق حالياً.'}</p><Link href="/employee/scan" className="btn btn-primary"><QrCode size={18} />{registered ? 'عرض حالة تسجيل الحضور' : 'تسجيل الحضور'}</Link><span className="muted">{date(today?.date || DEMO_TODAY)} · بتوقيت بغداد</span></div>
+      <div className="employee-hero-scan"><div className="employee-scan-icon"><QrCode size={38} strokeWidth={1.5} /></div><h2>{registered ? 'تم تسجيل حضورك لهذا اليوم' : 'سجّل حضورك بسهولة'}</h2><p>{registered ? `وقت الدخول: ${time(todayAttendance.checkIn ?? '')}` : today?.state === 'OPEN' && expected ? `يبدأ الدوام المفتوح ${time(today.startTime)}` : !today ? 'لا يوجد يوم حضور مفتوح حالياً.' : !expected ? 'أنت مستثنى من دوام هذا اليوم.' : 'يوم الحضور مغلق حالياً.'}</p><Link href="/employee/scan" className="btn btn-primary"><QrCode size={18} />{registered ? 'عرض حالة تسجيل الحضور' : 'تسجيل الحضور'}</Link><span className="muted">{date(today?.date || currentDate)} · بتوقيت بغداد</span></div>
     </section>
     {result.paymentStatus === 'REVIEW' && <div className="notice notice-warning" role="status"><strong>راتبك يحتاج إلى مراجعة بعد الصرف</strong><p>المصروف سابقاً <bdi dir="ltr">{money(result.paidAmount)}</bdi> · الفرق <bdi dir="ltr">{money(result.difference)}</bdi></p></div>}
     <div className="stats-grid">

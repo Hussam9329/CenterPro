@@ -36,7 +36,7 @@ function AccessLabel({ access }: { access: Access }) {
 }
 
 export default function SettingsPage() {
-  const { data, session, updateData, resetDemo, prepareSystemBackup } = useDemo();
+  const { data, session, updateData, resetDemo, prepareSystemBackup, backend, connectionError, discardDraft } = useDemo();
   const { theme } = useTheme();
   const toast = useToast();
   const [centerName, setCenterName] = useState(data.settings.centerName);
@@ -46,6 +46,9 @@ export default function SettingsPage() {
   const [resetWord, setResetWord] = useState('');
   const [exporting, setExporting] = useState(false);
   const [backupError, setBackupError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState('');
   const exportingRef = useRef(false);
   const dirty = centerName.trim() !== data.settings.centerName || Number(qrInterval) !== data.settings.qrInterval;
   const adminAccounts = data.employees.filter(employee => employee.role !== 'EMPLOYEE');
@@ -79,9 +82,9 @@ export default function SettingsPage() {
     }
   }
 
-  function save(event: FormEvent<HTMLFormElement>) {
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (session?.role !== 'SUPER_ADMIN') return;
+    if (savingRef.current || session?.role !== 'SUPER_ADMIN') return;
     const nextErrors: typeof errors = {};
     const interval = Number(qrInterval);
     if (!centerName.trim()) nextErrors.name = 'أدخل اسم المركز.';
@@ -89,14 +92,20 @@ export default function SettingsPage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length || !dirty) return;
     const next = { centerName: centerName.trim(), qrInterval: interval };
-    updateData(draft => { draft.settings = next; }, { action: 'تعديل إعدادات النظام', entity: 'settings', entityId: 'center-settings', oldValues: { ...data.settings }, newValues: next });
-    setCenterName(next.centerName);
-    setQrInterval(String(next.qrInterval));
-    toast('تم حفظ الإعدادات وتسجيل التغيير في سجل العمليات.');
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await updateData(draft => { draft.settings = next; }, { action: 'تعديل إعدادات النظام', entity: 'settings', entityId: 'center-settings', oldValues: { ...data.settings }, newValues: next });
+      setCenterName(next.centerName);
+      setQrInterval(String(next.qrInterval));
+      toast('تم حفظ الإعدادات وتسجيل التغيير في سجل العمليات.');
+    } catch (error) { setSaveError(error instanceof Error ? error.message : 'تعذر حفظ الإعدادات. حاول مرة أخرى.'); }
+    finally { savingRef.current = false; setSaving(false); }
   }
 
   function reset() {
-    if (resetWord.trim() !== 'إعادة ضبط' || session?.role !== 'SUPER_ADMIN') return;
+    if (backend === 'neon' || resetWord.trim() !== 'إعادة ضبط' || session?.role !== 'SUPER_ADMIN') return;
     resetDemo();
     setCenterName('CenterPro');
     setQrInterval('45');
@@ -111,7 +120,7 @@ export default function SettingsPage() {
     <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
     <Card title="نسخة احتياطية كاملة">
       <div className="stack">
-        <p>تنزيل كل البيانات المحفوظة في هذا المتصفح بملف واحد، لنقلها لاحقاً إلى قاعدة البيانات.</p>
+        <p>{backend === 'neon' ? 'تنزيل نسخة كاملة من البيانات المحفوظة في قاعدة البيانات بملف واحد.' : 'تنزيل كل البيانات المحفوظة في هذا المتصفح بملف واحد، لنقلها لاحقاً إلى قاعدة البيانات.'}</p>
         <p className="muted">يشمل الحسابات وصور الموظفين والأقسام والحضور والرواتب والأرشيف والتقييمات والإعدادات وسجل العمليات.</p>
         <div className="notice"><LockKeyhole size={18} /><span>ملف JSON خاص بالمركز، يتضمن بيانات تحقق الدخول. احتفظ به في مكان آمن.</span></div>
         <div className="form-actions"><Button onClick={downloadBackup} loading={exporting} disabled={exporting}><Download size={17} />تحميل نسخة احتياطية كاملة</Button></div>
@@ -120,15 +129,16 @@ export default function SettingsPage() {
     </Card>
     <div className="grid-2">
       <Card title="إعدادات المركز">
-        <form onSubmit={save} className="stack">
+        <form onSubmit={save} className="stack">{saveError && <p className="text-danger" role="alert">{saveError}</p>}
           <Field label="اسم المركز" required error={errors.name}><Input value={centerName} onChange={event => setCenterName(event.target.value)} autoComplete="organization" aria-invalid={Boolean(errors.name)} /></Field>
           <Field label="تجديد رمز الحضور" required hint="من 30 إلى 60 ثانية. القيمة الافتراضية 45 ثانية." error={errors.interval}><div className="inline"><Input type="number" min={30} max={60} step={1} value={qrInterval} onChange={event => setQrInterval(event.target.value)} dir="ltr" aria-invalid={Boolean(errors.interval)} /><span className="muted">ثانية</span></div></Field>
           <div className="notice"><Clock3 size={18} /><span>يُستخدم هذا الفاصل الزمني لتجديد رمز الحضور.</span></div>
-          <div className="form-actions"><Button type="submit" disabled={!dirty}><Save size={17} />حفظ الإعدادات</Button>{dirty && <Button variant="secondary" onClick={() => { setCenterName(data.settings.centerName); setQrInterval(String(data.settings.qrInterval)); setErrors({}); }}>إلغاء التغييرات</Button>}</div>
+          <div className="form-actions"><Button type="submit" loading={saving} disabled={!dirty}><Save size={17} />حفظ الإعدادات</Button>{(dirty || saveError) && <Button variant="secondary" onClick={event => { setCenterName(data.settings.centerName); setQrInterval(String(data.settings.qrInterval)); setErrors({}); setSaveError(''); discardDraft(event.currentTarget.closest('form')); }}>إلغاء التغييرات</Button>}</div>
         </form>
       </Card>
       <Card title="أساسيات النظام">
         <div className="stack">
+          {backend === 'neon' && <div className="list-row"><strong>قاعدة البيانات</strong><Badge tone={connectionError ? 'warning' : 'success'}>{connectionError ? 'تعذر الاتصال' : 'Neon · متصل'}</Badge></div>}
           <div className="list-row"><div className="inline"><Globe2 size={19} /><div><strong>لغة الواجهة</strong><div className="muted">العربية · من اليمين إلى اليسار</div></div></div><Badge>ثابت</Badge></div>
           <div className="list-row"><div className="inline">{theme === 'dark' ? <Moon size={19} /> : <Sun size={19} />}<div><strong>مظهر الواجهة</strong><div className="muted">{theme === 'dark' ? 'داكن' : 'فاتح'} · هوية CenterPro</div></div></div><Badge>حسب اختيارك</Badge></div>
           <div className="list-row"><div className="inline"><Clock3 size={19} /><div><strong>المنطقة الزمنية</strong><div className="muted">بغداد <span dir="ltr">(Asia/Baghdad)</span></div></div></div><Badge>ثابت</Badge></div>
@@ -153,11 +163,11 @@ export default function SettingsPage() {
         </div>)}
       </div>
     </Card>
-    <Card title="إعادة ضبط النظام">
+    {backend === 'local' && <><Card title="إعادة ضبط النظام">
       <div className="list-row"><p className="muted">تُحذف كل الأقسام والموظفين وأيام الحضور والبيانات المالية والسجل. يبقى حساب مدير النظام متاحاً.</p><Button variant="danger" onClick={() => { setResetWord(''); setResetOpen(true); }}><RotateCcw size={17} />تصفير بيانات النظام</Button></div>
     </Card>
     <Dialog open={resetOpen} onClose={() => setResetOpen(false)} title="إعادة ضبط جميع بيانات النظام؟" description="ستُحذف الموظفون والأقسام والحضور والرواتب والتقييمات وسجل العمليات وتعود المنظومة إلى حالة فارغة. لا يمكن التراجع عن هذا الإجراء.">
       <div className="stack"><Field label="اكتب «إعادة ضبط» للتأكيد"><Input value={resetWord} onChange={event => setResetWord(event.target.value)} autoComplete="off" placeholder="إعادة ضبط" /></Field><div className="form-actions"><Button variant="danger" disabled={resetWord.trim() !== 'إعادة ضبط'} onClick={reset}>تأكيد إعادة ضبط النظام</Button><Button variant="secondary" onClick={() => setResetOpen(false)}>إلغاء</Button></div></div>
-    </Dialog>
+    </Dialog></>}
   </div>;
 }

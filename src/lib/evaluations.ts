@@ -177,6 +177,9 @@ function cycleRowsForSeason(data: DemoData, cycle: EvaluationCycle, publishedOnl
 }
 
 export function getSeasonLeaderboard(data: DemoData, seasonId: string, options: { publishedOnly?: boolean } = {}): SeasonLeaderboardRow[] {
+  // The server provides the authorized aggregate without exposing colleagues'
+  // private attendance records to the employee browser.
+  if (data.serverEvaluation?.seasons[seasonId]) return structuredClone(data.serverEvaluation.seasons[seasonId]);
   const season = data.evaluationSeasons.find(item => item.id === seasonId);
   if (!season) return [];
   if (season.state === 'ARCHIVED') return structuredClone(season.snapshot?.rows ?? []);

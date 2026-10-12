@@ -9,5 +9,5 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, view
 // Static, parser-blocking bootstrap applies only the saved choice before body paint.
 const themeBootstrap = "(()=>{let t='light';try{if(localStorage.getItem('centerpro-theme')==='dark')t='dark'}catch{}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t})()";
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ar" dir="rtl" data-theme="light" suppressHydrationWarning><head><script id="centerpro-theme-init" dangerouslySetInnerHTML={{ __html: themeBootstrap }} /></head><body><ThemeProvider><WelcomeProvider><a href="#main-content" className="skip-link">انتقل إلى المحتوى</a><DemoProvider><PwaRegistration/>{children}</DemoProvider></WelcomeProvider></ThemeProvider></body></html>;
+  return <html lang="ar" dir="rtl" data-theme="light" suppressHydrationWarning><head><script id="centerpro-theme-init" dangerouslySetInnerHTML={{ __html: themeBootstrap }} /></head><body><ThemeProvider><WelcomeProvider><a href="#main-content" className="skip-link">انتقل إلى المحتوى</a><DemoProvider backend={process.env.DATABASE_URL || process.env.VERCEL ? 'neon' : 'local'}><PwaRegistration/>{children}</DemoProvider></WelcomeProvider></ThemeProvider></body></html>;
 }

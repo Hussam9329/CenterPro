@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Building2, Plus, Power, Settings2, ShieldCheck, Users } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Badge, Button, Card, ConfirmDialog, EmptyState, PageHeader, SearchInput, Select } from '@/components/ui';
 import { DepartmentForm } from '@/components/people/department-form';
 import { money } from '@/lib/format';
@@ -14,15 +15,16 @@ export default function DepartmentsPage() {
   const { data, session, updateData } = useDemo();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { mutate } = useAsyncMutation(toast);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [editing, setEditing] = useState<Department | 'new' | null>(() => searchParams.get('add') === '1' && session?.role === 'SUPER_ADMIN' ? 'new' : null);
   const [toggling, setToggling] = useState<Department | null>(null);
   const isSuper = session?.role === 'SUPER_ADMIN';
   const departments = data.departments.filter(item => item.name.includes(search.trim()) && (status === 'all' || item.active === (status === 'active')));
-  const toggle = () => {
+  const toggle = async () => {
     if (!toggling || !isSuper) return;
-    updateData(draft => { const item = draft.departments.find(department => department.id === toggling.id); if (item) item.active = !item.active; }, { action: toggling.active ? 'إيقاف قسم' : 'تفعيل قسم', entity: 'department', entityId: toggling.id, oldValues: { active: toggling.active }, newValues: { active: !toggling.active } });
+    if (!await mutate(() => updateData(draft => { const item = draft.departments.find(department => department.id === toggling.id); if (item) item.active = !item.active; }, { action: toggling.active ? 'إيقاف قسم' : 'تفعيل قسم', entity: 'department', entityId: toggling.id, oldValues: { active: toggling.active }, newValues: { active: !toggling.active } }))) return;
     toast(toggling.active ? 'تم إيقاف القسم مع الاحتفاظ بجميع سجلاته.' : 'تم تفعيل القسم.');
     setToggling(null);
   };
