@@ -192,7 +192,8 @@ test.describe('Full system backup for future database migration', () => {
       localStorage.setItem(key, JSON.stringify(auth));
       (window as typeof window & { releaseBackupDigest?: () => void }).releaseBackupDigest?.();
     }, AUTH_STORAGE_KEY);
-    await expect(page.getByRole('alert')).toContainText('انتهت الجلسة');
+    const backupCard = page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'نسخة احتياطية كاملة', exact: true }) });
+    await expect(backupCard.getByRole('alert')).toContainText('انتهت الجلسة');
     expect(downloadsAfterRevocation).toEqual([]);
     expect(await readPreviewData(page)).toEqual(backup.payload.data);
   });

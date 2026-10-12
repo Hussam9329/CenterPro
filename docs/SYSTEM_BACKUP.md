@@ -35,6 +35,7 @@ Use this file as the migration source after the separately approved backend is r
 - Local `npm run check` passes lint, strict typecheck, **229 unit tests** and optimized production build.
 - Unit checks compare all saved data after serialization and parsing, independently verify the checksum and password derivation metadata, and reject damaged files or incomplete credentials without changing storage.
 - Four browser scenarios cover actual download, mobile layout, preserved archives/photos, storage-full recovery from live memory, error handling, role permissions and credential revocation during preparation.
-- Local browser execution could not start because the ephemeral Chromium binary was absent and Playwright's download was invalid. Full exact-commit GitHub CI will provide the browser result before release is considered complete.
+- Restored the bundled Chromium after the ephemeral browser binary was cleared. All **4 backup browser scenarios** pass; **19 existing authentication/persistence scenarios** also pass. A selector in the revocation test was scoped to the backup card to avoid the unrelated Next.js route announcer.
+- [Mobile verification screenshot](system-backup-mobile.png) uses synthetic test data and shows the actual download control in dark mode at 390px width.
 
 Full GitHub CI and Production deployment evidence will be recorded after completion. No new environment variables are required.
