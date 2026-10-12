@@ -7,7 +7,8 @@ import { assertSingleOpenWorkday } from '@/lib/attendance';
 import { canManageEmployeeAccount } from '@/lib/permissions';
 import { assertEvaluationMutation, assertEvaluationState } from '@/lib/evaluations';
 import { PREVIEW_DATA_STORAGE_KEY, PREVIEW_PERSISTENT_STORAGE_KEY, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION, PREVIEW_SYSTEM_ADMIN, PREVIEW_SYSTEM_USERNAME } from '@/lib/preview-config';
-import { AUTH_STORAGE_KEY, clearEmployeeCredentials, configureSystemCredential, normalizeUsername, readAuthStore, setEmployeeCredential, verifyCredential } from '@/lib/local-auth';
+import { AUTH_STORAGE_KEY, clearEmployeeCredentials, configureSystemCredential, normalizeUsername, readAuthStore, readAuthStoreForBackup, setEmployeeCredential, verifyCredential } from '@/lib/local-auth';
+import { createSystemBackup, type SystemBackup } from '@/lib/system-backup';
 import type { DemoData, DemoSession, AuditInput } from '@/lib/types';
 
 interface Snapshot {
@@ -135,6 +136,7 @@ interface DemoContextValue extends Snapshot {
   login: (username: string, password: string, remember?: boolean) => Promise<boolean>;
   setupSystemAdmin: (username: string, password: string, remember?: boolean) => Promise<boolean>;
   setEmployeePassword: (employeeId: string, password: string, onChanged?: () => void) => Promise<void>;
+  prepareSystemBackup: (theme: 'light' | 'dark') => Promise<SystemBackup>;
   logout: () => void;
   resetDemo: () => void;
   updateData: (updater: DataUpdater, audit?: AuditSource) => void;
@@ -215,6 +217,19 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function prepareSystemBackup(theme: 'light' | 'dark') {
+    const actor = validSession(snapshot.data, snapshot.session);
+    const operation = authOperation;
+    if (!snapshot.ready || actor?.role !== 'SUPER_ADMIN') throw new Error('تحميل النسخة الاحتياطية متاح للمشرف العام فقط.');
+    const auth = readAuthStoreForBackup();
+    const credential = actor.kind === 'SYSTEM' ? auth.system : actor.employeeId ? auth.employees[actor.employeeId] : null;
+    if (!credential || credential.version !== actor.authVersion) throw new Error('انتهت الجلسة. سجّل الدخول مجدداً قبل تحميل النسخة.');
+    const backup = await createSystemBackup({ data: snapshot.data, auth, theme, revision: snapshot.revision ?? 0, origin: window.location.origin });
+    const currentActor = validSession(snapshot.data, snapshot.session);
+    if (operation !== authOperation || currentActor?.role !== 'SUPER_ADMIN' || !sameAccount(actor, currentActor)) throw new Error('انتهت الجلسة. سجّل الدخول مجدداً قبل تحميل النسخة.');
+    return backup;
+  }
+
   function logout() { authOperation += 1; emit({ ...snapshot, session: null, remembered: false }, true); }
   function resetDemo() {
     authOperation += 1;
@@ -236,7 +251,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     const session = validSession(draft, snapshot.session);
     emit({ ...snapshot, data: draft, session, remembered: Boolean(snapshot.remembered && session) }, !session);
   }
-  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, logout, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
+  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, prepareSystemBackup, logout, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
 }
 export function useDemo() { const context = useContext(DemoContext); if (!context) throw new Error('DemoProvider is required'); return context; }
 export function useToast() { return useDemo().notify; }

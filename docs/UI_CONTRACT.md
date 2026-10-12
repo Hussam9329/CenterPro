@@ -137,6 +137,10 @@ Employees cannot enter admin pages or edit their own profile, credentials, atten
 
 Mutations update linked views, show clear feedback and preserve audit behavior. Strong confirmation is required for deactivation, removing attendance, deleting adjustments, salary setting changes and archive/reopen. Employee password reset remains a simple form without unnecessary confirmation; save a salted password hash and sanitized audit event, never the plaintext password.
 
+## Complete local backup
+
+An active SUPER_ADMIN can download **تحميل نسخة احتياطية كاملة** from Settings. `prepareSystemBackup(theme)` validates the current session before and after snapshot preparation. It includes the entire live saved data object and all current password hash records with their derivation parameters. The JSON file is versioned and carries a SHA-256 integrity checksum. Browser sessions and unrelated storage are excluded. It does not upload, clear, migrate or recalculate data; current storage keys and version remain unchanged. See `SYSTEM_BACKUP.md` for the portable file contract and verification evidence.
+
 ## Test isolation
 
 Broad regression fixtures remain in `tests/fixtures/populated-data.ts`. The seven owner-requested test accounts remain in `createTestData()` for automated tests only; the cleanup patch removed the application fixture-loading action. Tests opt in explicitly; onboarding tests remain empty. `tests/e2e/helpers/preview.ts` supplies test/expect, fixture seeding, splash-aware login/navigation and preview data reads. Populated fixtures explicitly seed matching test credential hashes; login helpers submit the real username/password form. Its clock advances the actual post-login welcome timer; no app flag disables the splash.

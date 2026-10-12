@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
-import { Check, ChevronLeft, Clock3, Globe2, LockKeyhole, Moon, RotateCcw, Save, ShieldCheck, Sun, UsersRound, X } from 'lucide-react';
+import { useRef, useState, type FormEvent } from 'react';
+import { Check, ChevronLeft, Clock3, Download, Globe2, LockKeyhole, Moon, RotateCcw, Save, ShieldCheck, Sun, UsersRound, X } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, Field, Input, PageHeader } from '@/components/ui';
 import type { Role } from '@/lib/types';
+import { serializeSystemBackup, systemBackupFilename } from '@/lib/system-backup';
 import styles from './settings.module.css';
 
 type Access = 'yes' | 'no' | 'own' | 'employees';
@@ -23,6 +24,7 @@ const permissions: PermissionRow[] = [
   { label: 'إعادة فتح أشهر الرواتب المؤرشفة', superAdmin: 'yes', admin: 'no', employee: 'no' },
   { label: 'عرض التقارير العامة', superAdmin: 'yes', admin: 'yes', employee: 'no' },
   { label: 'عرض سجل العمليات وإدارة إعدادات النظام', superAdmin: 'yes', admin: 'no', employee: 'no' },
+  { label: 'تحميل نسخة احتياطية كاملة للنظام', superAdmin: 'yes', admin: 'no', employee: 'no' },
   { label: 'عرض الحضور والراتب والتفاصيل المالية السابقة', superAdmin: 'yes', admin: 'yes', employee: 'own' },
 ];
 const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف' };
@@ -34,7 +36,7 @@ function AccessLabel({ access }: { access: Access }) {
 }
 
 export default function SettingsPage() {
-  const { data, session, updateData, resetDemo } = useDemo();
+  const { data, session, updateData, resetDemo, prepareSystemBackup } = useDemo();
   const { theme } = useTheme();
   const toast = useToast();
   const [centerName, setCenterName] = useState(data.settings.centerName);
@@ -42,8 +44,40 @@ export default function SettingsPage() {
   const [errors, setErrors] = useState<{ name?: string; interval?: string }>({});
   const [resetOpen, setResetOpen] = useState(false);
   const [resetWord, setResetWord] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [backupError, setBackupError] = useState('');
+  const exportingRef = useRef(false);
   const dirty = centerName.trim() !== data.settings.centerName || Number(qrInterval) !== data.settings.qrInterval;
   const adminAccounts = data.employees.filter(employee => employee.role !== 'EMPLOYEE');
+
+  async function downloadBackup() {
+    if (exportingRef.current || session?.role !== 'SUPER_ADMIN') return;
+    exportingRef.current = true;
+    setExporting(true);
+    setBackupError('');
+    try {
+      const backup = await prepareSystemBackup(theme);
+      const file = new Blob([serializeSystemBackup(backup)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      try {
+        link.href = url;
+        link.download = systemBackupFilename(backup.payload.exportedAt);
+        document.body.appendChild(link);
+        link.click();
+      } finally {
+        link.remove();
+        // Keep the object URL alive while mobile browsers start the download.
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      }
+      toast('تم تجهيز النسخة الاحتياطية. تأكد من حفظ الملف على جهازك.');
+    } catch (error) {
+      setBackupError(error instanceof Error ? error.message : 'تعذر تجهيز النسخة الاحتياطية. حاول مرة أخرى.');
+    } finally {
+      exportingRef.current = false;
+      setExporting(false);
+    }
+  }
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,6 +109,15 @@ export default function SettingsPage() {
 
   return <div className="page-stack">
     <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
+    <Card title="نسخة احتياطية كاملة">
+      <div className="stack">
+        <p>تنزيل كل البيانات المحفوظة في هذا المتصفح بملف واحد، لنقلها لاحقاً إلى قاعدة البيانات.</p>
+        <p className="muted">يشمل الحسابات وصور الموظفين والأقسام والحضور والرواتب والأرشيف والتقييمات والإعدادات وسجل العمليات.</p>
+        <div className="notice"><LockKeyhole size={18} /><span>ملف JSON خاص بالمركز، يتضمن بيانات تحقق الدخول. احتفظ به في مكان آمن.</span></div>
+        <div className="form-actions"><Button onClick={downloadBackup} loading={exporting} disabled={exporting}><Download size={17} />تحميل نسخة احتياطية كاملة</Button></div>
+        {backupError && <p role="alert" className="text-danger">{backupError}</p>}
+      </div>
+    </Card>
     <div className="grid-2">
       <Card title="إعدادات المركز">
         <form onSubmit={save} className="stack">

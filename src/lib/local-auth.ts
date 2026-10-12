@@ -1,7 +1,13 @@
 export const AUTH_STORAGE_KEY = 'centerpro-local-auth-v1';
-const AUTH_SCHEMA_VERSION = 1;
-const PBKDF2_ITERATIONS = 150_000;
-const HASH_BYTES = 32;
+export const AUTH_SCHEMA_VERSION = 1;
+/** Persist this descriptor with backups so a future server can verify existing hashes. */
+export const AUTH_PASSWORD_KDF = Object.freeze({
+  algorithm: 'PBKDF2', hash: 'SHA-256', iterations: 150_000,
+  saltBytes: 16, derivedKeyBytes: 32, encoding: 'base64',
+  passwordEncoding: 'UTF-8', passwordNormalization: 'none',
+} as const);
+const PBKDF2_ITERATIONS = AUTH_PASSWORD_KDF.iterations;
+const HASH_BYTES = AUTH_PASSWORD_KDF.derivedKeyBytes;
 
 export interface StoredCredential {
   salt: string;
@@ -84,6 +90,42 @@ export function readAuthStore(): AuthStore {
   }
 }
 
+/** Backup reads must fail visibly rather than silently discard unreadable accounts. */
+export function assertAuthStoreForBackup(value: unknown): asserts value is AuthStore {
+  const exactKeys = (record: Record<string, unknown>, keys: string[]) =>
+    Object.keys(record).length === keys.length && keys.every(key => Object.hasOwn(record, key));
+  const credentialKeys = ['salt', 'hash', 'version', 'updatedAt'];
+  const strictCredential = (credential: unknown, system = false) => {
+    if (!isRecord(credential) || !validCredential(credential)
+      || !exactKeys(credential, system ? [...credentialKeys, 'username'] : credentialKeys)) return false;
+    // Generated credentials use canonical base64; accepting another representation
+    // could hide a damaged or partially edited backup.
+    return bytesToBase64(base64ToBytes(credential.salt)) === credential.salt
+      && bytesToBase64(base64ToBytes(credential.hash)) === credential.hash;
+  };
+  if (!isRecord(value) || !exactKeys(value, ['schema', 'system', 'employees'])
+    || value.schema !== AUTH_SCHEMA_VERSION || !isRecord(value.employees)
+    || (value.system !== null && (!strictCredential(value.system, true) || !isRecord(value.system)
+      || typeof value.system.username !== 'string' || !normalizeUsername(value.system.username)))
+    || Object.entries(value.employees).some(([id, credential]) => !id.trim() || !strictCredential(credential))) {
+    throw new Error('تعذر إنشاء نسخة كاملة: بيانات تسجيل الدخول المحفوظة غير صالحة. لم يتم حذف أو تغيير أي بيانات.');
+  }
+}
+
+export function readAuthStoreForBackup(): AuthStore {
+  const storage = authStorage();
+  if (!storage) throw new Error('تعذر قراءة بيانات تسجيل الدخول للنسخة الاحتياطية من هذا المتصفح.');
+  let parsed: unknown;
+  try {
+    const raw = storage.getItem(AUTH_STORAGE_KEY);
+    parsed = raw === null ? emptyStore() : JSON.parse(raw);
+  } catch {
+    throw new Error('تعذر قراءة بيانات تسجيل الدخول للنسخة الاحتياطية. لم يتم تغيير أي بيانات.');
+  }
+  assertAuthStoreForBackup(parsed);
+  return parsed;
+}
+
 // Mutations must distinguish an empty installation from inaccessible or corrupt
 // credentials: a read failure must never silently replace the existing owner.
 function readWritableStore() {
@@ -126,7 +168,7 @@ export async function createCredential(password: string, previousVersion = 0): P
   if (password.length < 6) throw new Error('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.');
   if (!authStorage()) throw new Error('هذا المتصفح لا يدعم تشفير كلمات المرور المطلوب.');
   const version = nextVersion(previousVersion);
-  const salt = window.crypto.getRandomValues(new Uint8Array(16));
+  const salt = window.crypto.getRandomValues(new Uint8Array(AUTH_PASSWORD_KDF.saltBytes));
   const hash = await derivePassword(password, salt);
   return { salt: bytesToBase64(salt), hash: bytesToBase64(hash), version, updatedAt: new Date().toISOString() };
 }
