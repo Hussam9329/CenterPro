@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowRight, LockKeyhole, UnlockKeyhole } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
 import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Badge, Button, Card, EmptyState, PageHeader } from '@/components/ui';
 import { getExamLeaderboard } from '@/lib/evaluations';
@@ -41,6 +42,6 @@ export default function EvaluationExamAdminPage() {
     <Link href={{ pathname:'/evaluations/exams', query:{cycle:exam.cycleId} }} className="button-link"><ArrowRight size={15}/>العودة إلى الامتحانات</Link>
     <PageHeader eyebrow={cycle?.name || 'التدقيق'} title={archivedExam?.name ?? exam.name} actions={<div className="inline"><Badge tone={exam.state === 'OPEN' ? 'success' : 'neutral'}>{exam.state === 'OPEN' ? 'مفتوح للتدقيق' : 'مغلق'}</Badge>{canToggle && <Button loading={pending} variant="secondary" onClick={toggle}>{exam.state === 'OPEN' ? <><LockKeyhole size={16}/>إغلاق التدقيق</> : <><UnlockKeyhole size={16}/>إعادة الفتح</>}</Button>}</div>}/>
     <Card title="Leaderboard الامتحان"><Leaderboard rows={rows}/></Card>
-    <Card title="سجل إدخالات المدققين">{!evaluations.length ? <EmptyState title="لم تُدخل بيانات تدقيق بعد"/> : <div className="stack">{evaluations.map(item => { const employee = data.employees.find(employee => employee.id === item.employeeId); const archivedName = archivedExam?.rows.find(row => row.employeeId === item.employeeId)?.employeeName; return <div className="list-row" key={item.id}><div><strong>{archivedName ?? employee?.name ?? 'موظف'}</strong><p className="muted">{item.papers ?? '—'} ورقة · {item.correctionErrors ?? '—'} خطأ تصحيح · {item.behaviorErrors ?? '—'} خطأ سلوك</p></div><div className="muted">آخر تعديل: {item.updatedBy} · <span dir="ltr">{date(item.updatedAt)}</span></div></div>; })}</div>}</Card>
+    <Card title="سجل إدخالات المدققين">{!evaluations.length ? <EmptyState title="لم تُدخل بيانات تدقيق بعد"/> : <div className="stack">{evaluations.map(item => { const employee = data.employees.find(employee => employee.id === item.employeeId); const archivedName = archivedExam?.rows.find(row => row.employeeId === item.employeeId)?.employeeName; const name = archivedName ?? employee?.name ?? 'موظف'; return <div className="list-row" key={item.id}><div><strong>{name}</strong><p className="muted">{item.papers ?? '—'} ورقة · {item.correctionErrors ?? '—'} خطأ تصحيح · {item.behaviorErrors ?? '—'} خطأ سلوك</p></div><div className="inline"><div className="muted">آخر تعديل: {item.updatedBy} · <span dir="ltr">{date(item.updatedAt)}</span></div><SafeDeleteButton collection="examEvaluations" id={item.id} label={`تقييم ${name}`} compact /></div></div>; })}</div>}</Card>
   </div>;
 }

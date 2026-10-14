@@ -6,6 +6,7 @@ import { canManageEmployeeAccount } from '@/lib/permissions';
 import { getEmployeePayroll, getMonthPayroll, recalculateReopenedPayroll, validateSalaryConfig } from '@/lib/payroll';
 import { captureMonthSource } from '@/components/finance/finance-data';
 import type { MutationRequest } from '@/lib/server-contract';
+import { applyDeletionPlan, authorizeDeletion, getDeletionPlan } from '@/lib/safe-deletion';
 import type { AttendanceRecord, AuditEntry, DemoData, DemoSession, Employee, PayrollMonth, Workday } from '@/lib/types';
 
 const collections = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'evaluationSeasons', 'evaluationCycles', 'evaluationExams', 'examEvaluations'] as const;
@@ -51,7 +52,6 @@ function editableMonth(data: DemoData, actor: DemoSession, value: string) {
   if (state === 'ARCHIVED' || (state === 'REOPENED' && actor.role !== 'SUPER_ADMIN')) fail('الشهر مؤرشف أو لا تملك صلاحية تعديل الشهر المعاد فتحه.');
 }
 function rows(data: DemoData, collection: Collection): RecordValue[] { return data[collection] as unknown as RecordValue[]; }
-function setRows(data: DemoData, collection: Collection, values: RecordValue[]) { (data as unknown as Record<string, unknown>)[collection] = values; }
 function find(data: DemoData, collection: Collection, id: string) { return rows(data, collection).find(item => item.id === id); }
 function put(data: DemoData, collection: Collection, value: RecordValue) {
   const list = rows(data, collection); const index = list.findIndex(item => item.id === value.id);
@@ -136,15 +136,58 @@ function assertSafePayroll(value: ReturnType<typeof getEmployeePayroll>) {
   for (const [key, amount] of Object.entries(value)) if (typeof amount === 'number' && !Number.isSafeInteger(amount)) fail(`قيمة الراتب خارج النطاق المدعوم: ${key}`);
 }
 
+/** Explicit, revision-locked deletion. Independently rebuild every dependent removal
+ * and reject client-side extra changes (including hidden salary or rank edits). */
+function applyDeletionMutation(before: DemoData, actor: DemoSession, request: MutationRequest, now: Date): DemoData {
+  const intent = request.deletion!;
+  if (request.password || request.settings || request.changes.length) fail('نفّذ عملية الحذف وحدها.');
+  if (intent.confirmation !== 'حذف' || intent.reason.trim().length < 3 || intent.reason.trim().length > 1000) fail('اكتب كلمة حذف وسبباً واضحاً للحذف.');
+  authorizeDeletion(before, actor, intent.collection, intent.id);
+  const plan = getDeletionPlan(before, intent.collection, intent.id);
+  if (plan.blockers.length) fail(plan.blockers[0]);
+  const after = structuredClone(before); delete after.serverEvaluation;
+  applyDeletionPlan(after, plan);
+  validateState(after);
+  // The canonical planner covers archived dependency removals deliberately. Ordinary
+  // edits still go through assertEvaluationMutation's strict immutable-archive checks.
+  const salaryMonths = new Set([
+    ...before.workdays.map(item => item.date.slice(0, 7)),
+    ...before.deductions.map(item => item.date.slice(0, 7)),
+    ...before.bonuses.map(item => item.date.slice(0, 7)),
+    ...after.workdays.map(item => item.date.slice(0, 7)),
+    ...after.deductions.map(item => item.date.slice(0, 7)),
+    ...after.bonuses.map(item => item.date.slice(0, 7)),
+    baghdadDate(now).slice(0, 7),
+  ]);
+  for (const period of salaryMonths) getMonthPayroll(after, period).forEach(assertSafePayroll);
+  for (const collection of collections) {
+    const prior = new Map(rows(before, collection).map(item => [item.id, item]));
+    const next = new Map(rows(after, collection).map(item => [item.id, item]));
+    for (const id of new Set([...prior.keys(), ...next.keys()])) {
+      const oldValue = prior.get(id); const newValue = next.get(id);
+      if (same(oldValue, newValue)) continue;
+      audit(after, actor, now, actionFor(collection, oldValue, newValue), collection, id, oldValue ?? {}, { ...(newValue ?? {}), reason: intent.reason.trim(), deletionRoot: { collection: intent.collection, id: intent.id } },
+        String(newValue?.employeeId ?? oldValue?.employeeId ?? (collection === 'employees' ? id : '')) || undefined);
+    }
+  }
+  audit(after, actor, now, 'حذف آمن مؤكد', intent.collection, intent.id, {},
+    { reason: intent.reason.trim(), confirmation: 'حذف', removed: Object.fromEntries(Object.entries(plan.removals).map(([key, ids]) => [key, ids.length])), modifiedWorkdays: plan.affectedOverrides });
+  if (intent.collection === 'deductions' || intent.collection === 'bonuses') {
+    auditPaidPayrollChanges(before, after, actor, now, intent.reason.trim());
+  }
+  return after;
+}
+
 /** Called only with database-canonical data and a freshly authenticated actor,
  * inside the API's revision-checked transaction. Client records express intent;
  * protected calculations, actors, audit and timestamps are reconstructed here. */
 export function applyMutation(before: DemoData, actor: DemoSession, request: MutationRequest, now: Date): DemoData {
   if (actor.role === 'QR_DISPLAY') fail('حساب شاشة الحضور مخصص لعرض رمز QR فقط.');
   assertActor(before, actor);
+  if (request.deletion) return applyDeletionMutation(before, actor, request, now);
   const after = structuredClone(before); delete after.serverEvaluation;
   const stamp = now.toISOString(); const today = baghdadDate(now); const reason = reasonFrom(request);
-  const upserts = new Map<Collection, RecordValue[]>(); const removes = new Map<Collection, string[]>();
+  const upserts = new Map<Collection, RecordValue[]>();
   const used = new Set<Collection>();
   for (const change of request.changes) {
     const collection = change.collection as Collection;
@@ -154,9 +197,8 @@ export function applyMutation(before: DemoData, actor: DemoSession, request: Mut
     if (!Array.isArray(inputs) || !Array.isArray(deleting)) fail();
     const values = inputs.map(input => parseRecord(collection, input, typeof input.id === 'string' ? find(before, collection, input.id) : undefined));
     assertUnique([...values.map(value => value.id), ...deleting], 'لا يمكن تعديل السجل أو حذفه أكثر من مرة في العملية نفسها.');
-    upserts.set(collection, values); removes.set(collection, deleting);
-    if (deleting.length && !['deductions', 'bonuses', 'examEvaluations'].includes(collection)) fail('لا يسمح بحذف السجلات التاريخية.');
-    if (deleting.some(id => !find(before, collection, id))) fail('السجل المطلوب غير موجود.');
+    upserts.set(collection, values);
+    if (deleting.length) fail('استخدم الحذف الآمن مع السبب والتأكيد؛ تُراجع حماية الشهر والسجلات المرتبطة قبل الحذف.');
   }
   const groups: Collection[][] = [['employees'], ['departments'], ['workdays', 'attendance'], ['deductions'], ['bonuses'], ['months'], ['payments'], ['evaluationSeasons'], ['evaluationCycles', 'evaluationExams'], ['evaluationExams'], ['examEvaluations']];
   if (used.size && !groups.some(group => [...used].every(collection => group.includes(collection)))) fail('نفّذ كل إجراء على حدة.');
@@ -265,7 +307,6 @@ export function applyMutation(before: DemoData, actor: DemoSession, request: Mut
       value.createdBy = previous?.createdBy ?? actor.name; value.createdAt = previous?.createdAt ?? stamp;
       put(after, collection, value);
     }
-    for (const id of removes.get(collection) ?? []) { requireAdmin(actor); editableMonth(before, actor, String(find(before, collection, id)!.date).slice(0, 7)); setRows(after, collection, rows(after, collection).filter(item => item.id !== id)); }
   }
   for (const value of upserts.get('payments') ?? []) {
     requireAdmin(actor); if (find(before, 'payments', value.id)) fail('سجل الصرف ثابت. سجّل عملية صرف جديدة.');
@@ -347,15 +388,9 @@ export function applyMutation(before: DemoData, actor: DemoSession, request: Mut
     if (previous) unchanged(previous, item, ['employeeId', 'examId', 'note']);
     else if (item.note) fail('تعديل الملاحظات غير متاح من هذا الإجراء.');
     item.createdAt = previous?.createdAt ?? stamp; item.createdBy = previous?.createdBy ?? actor.name; item.updatedAt = stamp; item.updatedBy = actor.name;
-    if ([item.papers, item.correctionErrors, item.behaviorErrors].every(number => number === null) && !item.note.trim()) setRows(after, 'examEvaluations', rows(after, 'examEvaluations').filter(record => record.id !== item.id));
-    else put(after, 'examEvaluations', value);
-  }
-  for (const id of removes.get('examEvaluations') ?? []) {
-    // Clearing all editable numeric fields is represented as removal by the
-    // current editor. assertEvaluationMutation enforces the actor/target scope.
-    const previous = before.examEvaluations.find(item => item.id === id)!;
-    if (previous.note.trim()) fail('لا يمكن حذف سجل يتضمن ملاحظة محفوظة.');
-    after.examEvaluations = after.examEvaluations.filter(item => item.id !== id);
+    // Clearing a numeric field edits the record; actual removal requires the
+    // explicit, reasoned deletion command, even when all fields become empty.
+    put(after, 'examEvaluations', value);
   }
   validateState(after); assertEvaluationMutation(before, after, actor);
   // Protect financial arithmetic from unsafe integer overflow before commit.
@@ -372,18 +407,22 @@ export function applyMutation(before: DemoData, actor: DemoSession, request: Mut
   }
   if (!same(before.settings, after.settings)) audit(after, actor, now, 'تعديل إعدادات النظام', 'settings', 'center-settings', before.settings, after.settings);
   if (request.password) audit(after, actor, now, 'تغيير كلمة مرور الموظف', 'employee', request.password.employeeId, {}, { passwordChanged: true, sessionsInvalidated: true }, request.password.employeeId);
+  auditPaidPayrollChanges(before, after, actor, now, reason);
+  return after;
+}
+
+function auditPaidPayrollChanges(before: DemoData, after: DemoData, actor: DemoSession, now: Date, reason: string) {
   for (const key of new Set(before.payments.map(payment => JSON.stringify([payment.employeeId, payment.month])))) {
     const [employeeId, payrollMonth] = JSON.parse(key) as [string, string];
     const oldValue = getEmployeePayroll(before, employeeId, payrollMonth); const newValue = getEmployeePayroll(after, employeeId, payrollMonth);
-    if (oldValue.finalSalary !== newValue.finalSalary) audit(after, actor, now, 'تعديل راتب بعد الصرف', 'payroll', payrollMonth, { finalSalary: oldValue.finalSalary, paymentStatus: oldValue.paymentStatus }, { finalSalary: newValue.finalSalary, paymentStatus: newValue.paymentStatus, difference: newValue.difference }, employeeId);
+    if (oldValue.finalSalary !== newValue.finalSalary) audit(after, actor, now, 'تعديل راتب بعد الصرف', 'payroll', payrollMonth, { finalSalary: oldValue.finalSalary, paymentStatus: oldValue.paymentStatus }, { finalSalary: newValue.finalSalary, paymentStatus: newValue.paymentStatus, difference: newValue.difference, ...(reason ? { reason } : {}) }, employeeId);
   }
-  return after;
 }
 
 function actionFor(collection: Collection, previous?: RecordValue, next?: RecordValue): string {
   const labels: Record<Collection, string> = { employees: 'موظف', departments: 'قسم', workdays: 'يوم حضور', attendance: 'سجل حضور', deductions: 'خصم', bonuses: 'مكافأة', months: 'رواتب الشهر', payments: 'صرف راتب', evaluationSeasons: 'موسم تقييم', evaluationCycles: 'دورة تقييم', evaluationExams: 'امتحان', examEvaluations: 'بيانات تدقيق مصحح' };
-  if (collection === 'months') return next?.state === 'ARCHIVED' ? 'أرشفة رواتب الشهر' : previous?.state === 'ARCHIVED' ? 'إعادة فتح شهر مؤرشف' : 'إعادة احتساب صريحة لشهر معاد فتحه';
-  if (collection === 'workdays' && previous?.state !== next?.state) return next?.state === 'CLOSED' ? 'إغلاق يوم حضور' : previous ? 'إعادة فتح يوم حضور' : 'فتح يوم حضور';
+  if (collection === 'months') return !next ? 'حذف أرشيف رواتب الشهر' : next.state === 'ARCHIVED' ? 'أرشفة رواتب الشهر' : previous?.state === 'ARCHIVED' ? 'إعادة فتح شهر مؤرشف' : 'إعادة احتساب صريحة لشهر معاد فتحه';
+  if (collection === 'workdays' && next && previous?.state !== next.state) return next.state === 'CLOSED' ? 'إغلاق يوم حضور' : previous ? 'إعادة فتح يوم حضور' : 'فتح يوم حضور';
   if (collection === 'employees' && previous && next && previous.active !== next.active) return next.active ? 'تفعيل موظف' : 'إيقاف موظف';
   return `${!next ? 'حذف' : previous ? 'تعديل' : 'إضافة'} ${labels[collection]}`;
 }

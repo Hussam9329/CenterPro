@@ -76,7 +76,9 @@ function rowForEmployee(employee: Employee, evaluations: ExamEvaluation[]): Eval
     papers,
     correctionErrors,
     behaviorErrors,
-    examsEvaluated: new Set(evaluations.map(item => item.examId)).size,
+    // Empty retained editor rows have the same statistics as a missing row;
+    // explicit zeroes and notes remain meaningful submitted evaluations.
+    examsEvaluated: new Set(evaluations.filter(item => [item.papers, item.correctionErrors, item.behaviorErrors].some(value => value !== null) || item.note.trim()).map(item => item.examId)).size,
     score: calculateEvaluationScore(papers, correctionErrors, behaviorErrors),
     accuracy: calculateAccuracy(papers, correctionErrors, behaviorErrors),
   };

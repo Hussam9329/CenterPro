@@ -1,4 +1,5 @@
 import type { AuditInput, DemoData, DemoSession, DemoSettings } from './types';
+import type { DeletionIntent } from './safe-deletion';
 
 /** Only record-level commands cross the client/server boundary. Audit rows and
  * derived read models are never writable by a browser. */
@@ -9,7 +10,7 @@ export interface RecordChange {
   upsert?: Array<Record<string, unknown>>;
   remove?: string[];
 }
-export interface MutationOptions { password?: { employeeId: string; value: string } }
+export interface MutationOptions { password?: { employeeId: string; value: string }; deletion?: DeletionIntent }
 export interface MutationRequest extends MutationOptions {
   revision: number;
   changes: RecordChange[];
@@ -37,6 +38,9 @@ export interface RemoteSnapshot {
 /** Diff only the records the caller can see; server validates every operation
  * against its own canonical records inside the revision-locked transaction. */
 export function diffData(before: DemoData, after: DemoData, revision: number, audit?: AuditInput, options?: MutationOptions): MutationRequest {
+  // Explicit deletion is an atomic server-built command. Never transfer or trust
+  // a client-built cascade, even when it involves thousands of dependent records.
+  if (options?.deletion) return { revision, changes: [], deletion: options.deletion, ...(audit ? { audit } : {}) };
   const changes: RecordChange[] = [];
   for (const collection of MUTABLE_COLLECTIONS) {
     const previous = new Map(before[collection].map(record => [record.id, record]));

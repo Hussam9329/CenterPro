@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, us
 import { Check } from 'lucide-react';
 import { createInitialData, DEMO_TODAY, DEMO_MONTH } from '@/lib/mock-data';
 import { diffData, type MutationOptions, type RemoteSnapshot } from '@/lib/server-contract';
+import { applyDeletionPlan, authorizeDeletion, getDeletionPlan } from '@/lib/safe-deletion';
 import { assertSingleOpenWorkday } from '@/lib/attendance';
 import { canManageEmployeeAccount } from '@/lib/permissions';
 import { assertEvaluationMutation, assertEvaluationState } from '@/lib/evaluations';
@@ -269,10 +270,28 @@ function LocalDemoProvider({ children }: { children: ReactNode }) {
   async function updateData(updater: DataUpdater, auditSource?: AuditSource, options?: MutationOptions) {
     const before = snapshot.data;
     const draft = structuredClone(before);
-    updater(draft, snapshot.session);
+    let deletionAudit: AuditInput | undefined;
+    if (options?.deletion) {
+      const intent = options.deletion;
+      if (options.password) throw new Error('نفّذ عملية الحذف وحدها.');
+      authorizeDeletion(before, validSession(before, snapshot.session), intent.collection, intent.id);
+      const plan = getDeletionPlan(before, intent.collection, intent.id);
+      if (plan.blockers.length) throw new Error(plan.blockers[0]);
+      if (intent.confirmation !== 'حذف' || intent.reason.trim().length < 3 || intent.reason.trim().length > 1000) throw new Error('اكتب كلمة حذف وسبباً واضحاً للحذف.');
+      // Match the remote command: derive the cascade from the current store,
+      // rather than applying arbitrary updater changes alongside a deletion.
+      applyDeletionPlan(draft, plan);
+      deletionAudit = { action: 'حذف آمن مؤكد', entity: intent.collection, entityId: intent.id,
+        employeeId: intent.collection === 'employees' ? intent.id : undefined,
+        oldValues: { removedIds: plan.removals },
+        newValues: { reason: intent.reason.trim(), confirmation: 'حذف',
+          removed: Object.fromEntries(Object.entries(plan.removals).map(([key, ids]) => [key, ids.length])), modifiedWorkdays: plan.affectedOverrides } };
+    } else {
+      updater(draft, snapshot.session);
+      assertEvaluationMutation(before, draft, snapshot.session);
+    }
     assertSingleOpenWorkday(draft.workdays);
-    assertEvaluationMutation(before, draft, snapshot.session);
-    const audit = typeof auditSource === 'function' ? auditSource(before, draft) : auditSource;
+    const audit = deletionAudit ?? (typeof auditSource === 'function' ? auditSource(before, draft) : auditSource);
     if (audit && snapshot.session) {
       draft.audit.unshift({ id: crypto.randomUUID(), actor: snapshot.session.name, role: snapshot.session.role, action: audit.action, entity: audit.entity, entityId: audit.entityId, employeeId: audit.employeeId, oldValues: audit.oldValues || {}, newValues: audit.newValues || {}, timestamp: new Date().toISOString(), userAgent: 'CenterPro' });
     }
@@ -286,7 +305,10 @@ function LocalDemoProvider({ children }: { children: ReactNode }) {
         if (!before.employees.some(employee => employee.id === options.password?.employeeId)) removeEmployeeCredential(options.password.employeeId);
         throw error;
       }
-    } else commit();
+    } else {
+      if (options?.deletion?.collection === 'employees') removeEmployeeCredential(options.deletion.id);
+      commit();
+    }
   }
   return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, saveQrDisplayAccount, prepareSystemBackup, logout, refresh: async () => {}, discardDraft: () => {}, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
 }
@@ -404,7 +426,7 @@ function RemoteDemoProvider({ children }: { children: ReactNode }) {
     updater(draft, before.session);
     const audit = typeof auditSource === 'function' ? auditSource(before.data, draft) : auditSource;
     const command = diffData(before.data, draft, before.revision ?? 0, audit, options);
-    if (!command.changes.length && !command.settings && !command.password && !command.audit) return;
+    if (!command.changes.length && !command.settings && !command.password && !command.audit && !command.deletion) return;
     changing.current = true;
     operation.current += 1;
     try {

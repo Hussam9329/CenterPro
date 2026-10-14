@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Minus, Plus, Search, UsersRound } from 'lucide-react';
 import { useDemo } from '@/components/demo-provider';
+import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
 import { Avatar, Badge, Button, EmptyState, Input } from '@/components/ui';
 import { calculateEvaluationScore, getCorrectionEmployees, getExamEvaluation, isAuditEmployee, isCorrectionEmployee } from '@/lib/evaluations';
 import { date, time } from '@/lib/format';
@@ -82,9 +83,9 @@ function EvaluationEditor({ examId, employeeId, disabled }: { examId: string; em
             changed.forEach(field => { target[field] = safeNumber(values[field]!); });
             target.updatedBy = currentSession.name;
             target.updatedAt = now;
-            if (numericFields.every(field => target[field] === null) && !target.note.trim()) {
-              draft.examEvaluations = draft.examEvaluations.filter(item => item.id !== target.id);
-            } else if (!existing) {
+            // Clearing values edits this row; removing it requires the separate
+            // reasoned deletion flow so autosave cannot bypass confirmation.
+            if (!existing) {
               draft.examEvaluations.push(target);
             }
           }, (beforeData, afterData) => {
@@ -182,6 +183,7 @@ function EvaluationEditor({ examId, employeeId, disabled }: { examId: string; em
     <div className={styles.scoreStrip}><div><span className="muted">التقييم الحالي</span><strong dir="ltr">{score} نقطة</strong></div><span className={styles.saveState} data-state={saveState} role="status" aria-live="polite">{saveState === 'saving' ? 'جارٍ الحفظ…' : saveState === 'saved' ? <><Check size={13}/>تم الحفظ</> : saveState === 'error' ? 'لم يُحفظ التعديل' : current ? 'حفظ تلقائي' : 'أدخل القيم للبدء'}</span></div>
     {error && <div className="stack"><p className="text-danger" role="alert">{error}</p><Button variant="secondary" disabled={disabled} onClick={() => { setError(''); setSaveState('saving'); void persist(); }}>إعادة محاولة الحفظ</Button></div>}
     {current && <div className={styles.metaLine}>آخر تحديث بواسطة {current.updatedBy} · <span dir="ltr">{date(current.updatedAt)} — {time(current.updatedAt)}</span></div>}
+    {current && !disabled && <SafeDeleteButton collection="examEvaluations" id={current.id} label={`تقييم ${employee.name}`} compact disabled={saveState === 'saving' || saveState === 'error' || Object.keys(draftValues).length > 0} disabledReason="أكمل حفظ التعديلات المعلقة قبل حذف التقييم." onDeleted={() => { clearTimeout(debounce.current); clearTimeout(statusTimer.current); pending.current = {}; setDraftValues({}); setSaveState('idle'); setError(''); }} />}
   </article>;
 }
 

@@ -63,3 +63,5 @@
   .workdayInfo p,.workdayInfo span { font-size:12px; }
   .rowActions { gap:9px; }
 }
+
+.dayDeleteAction { display: flex; justify-content: flex-end; padding: 0 12px 6px; }

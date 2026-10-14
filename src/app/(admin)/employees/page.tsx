@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyRound, Pencil, Plus, UserCheck, Users, UserX } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
 import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Avatar, Badge, Button, Card, ConfirmDialog, EmptyState, Field, PageHeader, Pagination, SearchInput, Select, StatCard } from '@/components/ui';
 import { EmployeeForm, ResetPasswordDialog } from '@/components/people/employee-form';
@@ -54,7 +55,7 @@ export default function EmployeesPage() {
     toast(toggleEmployee.active ? 'تم إيقاف الموظف مع الاحتفاظ بسجلاته.' : 'تم تفعيل الموظف.');
     setToggleEmployee(null);
   };
-  const actions = (employee: Employee) => <div className={styles.rowActions}><Button variant="ghost" title="تعديل الموظف" aria-label={`تعديل ${employee.name}`} onClick={() => setEditing(employee)} disabled={!isSuper && employee.role !== 'EMPLOYEE'}><Pencil size={16} /></Button><Button variant="ghost" title="تغيير كلمة المرور" aria-label={`تغيير كلمة مرور ${employee.name}`} onClick={() => setPasswordEmployee(employee)} disabled={!isSuper && employee.role !== 'EMPLOYEE'}><KeyRound size={16} /></Button><Button variant="ghost" title={employee.active ? 'إيقاف الموظف' : 'تفعيل الموظف'} aria-label={`${employee.active ? 'إيقاف' : 'تفعيل'} ${employee.name}`} onClick={() => setToggleEmployee(employee)} disabled={!isSuper && employee.role !== 'EMPLOYEE'}>{employee.active ? <UserX size={16} /> : <UserCheck size={16} />}</Button></div>;
+  const actions = (employee: Employee) => <div className={styles.rowActions}><Button variant="ghost" title="تعديل الموظف" aria-label={`تعديل ${employee.name}`} onClick={() => setEditing(employee)} disabled={!isSuper && employee.role !== 'EMPLOYEE'}><Pencil size={16} /></Button><Button variant="ghost" title="تغيير كلمة المرور" aria-label={`تغيير كلمة مرور ${employee.name}`} onClick={() => setPasswordEmployee(employee)} disabled={!isSuper && employee.role !== 'EMPLOYEE'}><KeyRound size={16} /></Button><SafeDeleteButton collection="employees" id={employee.id} label={employee.name} compact /><Button variant="ghost" title={employee.active ? 'إيقاف الموظف' : 'تفعيل الموظف'} aria-label={`${employee.active ? 'إيقاف' : 'تفعيل'} ${employee.name}`} onClick={() => setToggleEmployee(employee)} disabled={!isSuper && employee.role !== 'EMPLOYEE'}>{employee.active ? <UserX size={16} /> : <UserCheck size={16} />}</Button></div>;
   const salaryLabel = (employee: Employee) => employee.fixedOverride || data.departments.find(item => item.id === employee.departmentId)?.salary.mode === 'FIXED' ? 'قطعي' : 'غير قطعي';
 
   return <div className="page-stack">
