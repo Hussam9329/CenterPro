@@ -160,6 +160,33 @@ describe('complete portable system backups', () => {
 });
 
 describe('strict credential reads for backup', () => {
+  it('preserves optional QR credentials exactly and rejects malformed, noncanonical or unexpected credential fields', async () => {
+    const credential = await createCredential('display-password');
+    const auth: AuthStore = { schema: 1, system: null, employees: {}, qrDisplay: { ...credential, username: 'CENTER_QR', active: false } };
+    values.set(AUTH_STORAGE_KEY, JSON.stringify(auth));
+    expect(readAuthStoreForBackup()).toEqual(auth);
+    expect(readAuthStore().qrDisplay).toEqual(auth.qrDisplay);
+    const backup = await createSystemBackup(input({ auth: readAuthStoreForBackup() }));
+    expect((await parseSystemBackup(serializeSystemBackup(backup))).payload.authentication.credentials).toEqual(auth);
+    const malformed = [
+      { ...auth.qrDisplay, hash: 'broken' },
+      { ...auth.qrDisplay, salt: `${credential.salt}\n` },
+      { ...auth.qrDisplay, hash: credential.hash.replace(/=$/, '') },
+      { ...auth.qrDisplay, password: 'must-not-export' },
+      { ...auth.qrDisplay, active: 'true' },
+      { ...auth.qrDisplay, username: '' },
+    ];
+    for (const qrDisplay of malformed) {
+      const raw = JSON.stringify({ ...auth, qrDisplay });
+      values.set(AUTH_STORAGE_KEY, raw);
+      expect(() => readAuthStoreForBackup()).toThrow('غير صالحة');
+      expect(values.get(AUTH_STORAGE_KEY)).toBe(raw);
+    }
+    values.set(AUTH_STORAGE_KEY, JSON.stringify({ ...auth, unknownRoot: 'must-not-drop' }));
+    expect(() => readAuthStoreForBackup()).toThrow('غير صالحة');
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
   it('does not silently drop even one invalid account, unlike the tolerant login read', async () => {
     const valid = await createCredential('password');
     const raw = JSON.stringify({ schema: 1, system: null, employees: { valid, corrupt: { ...valid, hash: 'broken' } } });

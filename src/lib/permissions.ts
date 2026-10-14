@@ -7,12 +7,15 @@ const superAdminOnly = new Set<PreviewPermission>(['MANAGE_DEPARTMENTS', 'MANAGE
 
 export function hasPreviewPermission(role: Role, permission: PreviewPermission): boolean {
   if (role === 'SUPER_ADMIN') return true;
+  if (role === 'QR_DISPLAY') return false;
   return role === 'ADMIN' && !superAdminOnly.has(permission);
 }
 
 export function canViewEmployee(session: DemoSession, employeeId: string): boolean {
-  return session.role !== 'EMPLOYEE' || session.employeeId === employeeId;
+  if (session.role === 'SUPER_ADMIN' || session.role === 'ADMIN') return true;
+  return session.role === 'EMPLOYEE' && session.employeeId === employeeId;
 }
+
 
 export function canManageEmployeeAccount(role: Role, targetRole: Role): boolean {
   return role === 'SUPER_ADMIN' || (role === 'ADMIN' && targetRole === 'EMPLOYEE');

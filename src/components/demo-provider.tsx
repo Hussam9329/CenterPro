@@ -24,13 +24,16 @@ interface Snapshot {
   today: string;
   month: string;
   pendingImport: boolean;
+  qrDisplayConfigured: boolean;
+  qrDisplayUsername: string;
+  qrDisplayActive: boolean;
   serverTime?: string;
   connectionError?: string;
 }
 const collections: Array<keyof DemoData> = ['employees', 'departments', 'workdays', 'attendance', 'deductions', 'bonuses', 'months', 'payments', 'audit', 'evaluationSeasons', 'evaluationCycles', 'evaluationExams', 'examEvaluations'];
 type DataUpdater = (draft: DemoData, currentSession: DemoSession | null) => void;
 type AuditSource = AuditInput | ((before: DemoData, after: DemoData) => AuditInput | undefined);
-const serverSnapshot: Snapshot = { backend: 'local', today: DEMO_TODAY, month: DEMO_MONTH, pendingImport: false, data: createInitialData(), session: null, ready: false, remembered: false, systemConfigured: false, systemUsername: PREVIEW_SYSTEM_USERNAME };
+const serverSnapshot: Snapshot = { backend: 'local', today: DEMO_TODAY, month: DEMO_MONTH, pendingImport: false, qrDisplayConfigured: false, qrDisplayUsername: '', qrDisplayActive: false, data: createInitialData(), session: null, ready: false, remembered: false, systemConfigured: false, systemUsername: PREVIEW_SYSTEM_USERNAME };
 let snapshot = serverSnapshot;
 let initialized = false;
 let durableData = false;
@@ -61,7 +64,7 @@ function emit(next: Snapshot, changeRememberedSession = false) {
 }
 function authMeta() {
   const store = readAuthStore();
-  return { systemConfigured: Boolean(store.system), systemUsername: store.system?.username || PREVIEW_SYSTEM_USERNAME };
+  return { systemConfigured: Boolean(store.system), systemUsername: store.system?.username || PREVIEW_SYSTEM_USERNAME, qrDisplayConfigured: Boolean(store.qrDisplay), qrDisplayUsername: store.qrDisplay?.username || '', qrDisplayActive: store.qrDisplay?.active ?? false };
 }
 function validSession(data: DemoData, candidate: DemoSession | null | undefined): DemoSession | null {
   if (!candidate) return null;
@@ -69,6 +72,10 @@ function validSession(data: DemoData, candidate: DemoSession | null | undefined)
   if (candidate.kind === 'SYSTEM' && candidate.role === 'SUPER_ADMIN') {
     if (!auth.system || candidate.authVersion !== auth.system.version) return null;
     return { ...PREVIEW_SYSTEM_ADMIN, authVersion: auth.system.version };
+  }
+  if (candidate.kind === 'QR_DISPLAY' && candidate.role === 'QR_DISPLAY') {
+    if (!auth.qrDisplay?.active || candidate.authVersion !== auth.qrDisplay.version) return null;
+    return { kind: 'QR_DISPLAY', role: 'QR_DISPLAY', name: 'شاشة الحضور', authVersion: auth.qrDisplay.version };
   }
   if (candidate.kind !== 'EMPLOYEE') return null;
   const account = data.employees.find(item => item.id === candidate.employeeId && item.active && item.role === candidate.role);
@@ -143,12 +150,13 @@ interface DemoContextValue extends Snapshot {
   login: (username: string, password: string, remember?: boolean) => Promise<DemoSession | null>;
   setupSystemAdmin: (username: string, password: string, remember?: boolean) => Promise<DemoSession | null>;
   setEmployeePassword: (employeeId: string, password: string) => Promise<void>;
+  saveQrDisplayAccount: (input: { username: string; password?: string; active: boolean }, draftForm?: HTMLFormElement) => Promise<void>;
   prepareSystemBackup: (theme: 'light' | 'dark') => Promise<SystemBackup>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   discardDraft: (form: HTMLFormElement | null) => void;
   resetDemo: () => void;
-  updateData: (updater: DataUpdater, audit?: AuditSource, options?: MutationOptions) => Promise<void>;
+  updateData: (updater: DataUpdater, audit?: AuditSource, options?: MutationOptions, draftForm?: HTMLFormElement) => Promise<void>;
   notify: (message: string) => void;
 }
 const DemoContext = createContext<DemoContextValue | null>(null);
@@ -175,6 +183,13 @@ function LocalDemoProvider({ children }: { children: ReactNode }) {
       if (!current || current.version !== auth.system.version || current.hash !== auth.system.hash
         || current.salt !== auth.system.salt || normalizeUsername(current.username) !== normalized) return null;
       emit({ ...snapshot, session: { ...PREVIEW_SYSTEM_ADMIN, authVersion: current.version }, remembered: remember, systemConfigured: true, systemUsername: current.username }, true);
+      return snapshot.session;
+    }
+    if (auth.qrDisplay?.active && normalizeUsername(auth.qrDisplay.username) === normalized) {
+      if (!await verifyCredential(password, auth.qrDisplay) || operation !== authOperation) return null;
+      const current = readAuthStore().qrDisplay;
+      if (!current?.active || current.version !== auth.qrDisplay.version || normalizeUsername(current.username) !== normalized) return null;
+      emit({ ...snapshot, session: { kind: 'QR_DISPLAY', role: 'QR_DISPLAY', name: 'شاشة الحضور', authVersion: current.version }, remembered: remember }, true);
       return snapshot.session;
     }
     const employee = snapshot.data.employees.find(item => item.active && normalizeUsername(item.username) === normalized);
@@ -226,6 +241,10 @@ function LocalDemoProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function saveQrDisplayAccount() {
+    throw new Error('إدارة حساب شاشة الحضور متاحة عند الاتصال بقاعدة البيانات.');
+  }
+
   async function prepareSystemBackup(theme: 'light' | 'dark') {
     const actor = validSession(snapshot.data, snapshot.session);
     const operation = authOperation;
@@ -244,7 +263,7 @@ function LocalDemoProvider({ children }: { children: ReactNode }) {
     authOperation += 1;
     clearEmployeeCredentials();
     const auth = readAuthStore();
-    emit({ backend: 'local', today: DEMO_TODAY, month: DEMO_MONTH, pendingImport: false, data: createInitialData(), session: auth.system ? { ...PREVIEW_SYSTEM_ADMIN, authVersion: auth.system.version } : null, ready: true, remembered: false, systemConfigured: Boolean(auth.system), systemUsername: auth.system?.username || PREVIEW_SYSTEM_USERNAME }, true);
+    emit({ backend: 'local', today: DEMO_TODAY, month: DEMO_MONTH, pendingImport: false, data: createInitialData(), session: auth.system ? { ...PREVIEW_SYSTEM_ADMIN, authVersion: auth.system.version } : null, ready: true, remembered: false, ...authMeta() }, true);
     notify('تم تصفير النظام. يمكنك إنشاء الأقسام والموظفين من البداية.');
   }
   async function updateData(updater: DataUpdater, auditSource?: AuditSource, options?: MutationOptions) {
@@ -269,7 +288,7 @@ function LocalDemoProvider({ children }: { children: ReactNode }) {
       }
     } else commit();
   }
-  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, prepareSystemBackup, logout, refresh: async () => {}, discardDraft: () => {}, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
+  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, saveQrDisplayAccount, prepareSystemBackup, logout, refresh: async () => {}, discardDraft: () => {}, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
 }
 class RemoteRequestError extends Error {
   constructor(message: string, readonly status: number) { super(message); }
@@ -374,7 +393,7 @@ function RemoteDemoProvider({ children }: { children: ReactNode }) {
     editedForms.current.delete(form);
     conflictedForms.current.delete(form);
   }
-  async function updateData(updater: DataUpdater, auditSource?: AuditSource, options?: MutationOptions) {
+  async function updateData(updater: DataUpdater, auditSource?: AuditSource, options?: MutationOptions, draftForm?: HTMLFormElement) {
     for (const form of conflictedForms.current) if (!form.isConnected) conflictedForms.current.delete(form);
     if (conflictedForms.current.size) throw new Error(conflictMessage);
     if (changing.current) throw new Error('توجد عملية حفظ قيد التنفيذ. انتظر اكتمالها ثم أعد المحاولة.');
@@ -390,14 +409,16 @@ function RemoteDemoProvider({ children }: { children: ReactNode }) {
     operation.current += 1;
     try {
       const next = await remoteRequest<RemoteSnapshot>('/api/mutations', command);
-      editedForms.current.clear();
+      if (draftForm) editedForms.current.delete(draftForm);
+      else editedForms.current.clear();
       publishRemote(next);
     }
     catch (error) {
       // The failed command never changes the local snapshot. Refresh conflicts
       // and revoked sessions so the next user action starts from server truth.
       if (error instanceof RemoteRequestError && error.status === 409) {
-        for (const form of document.querySelectorAll('form, [role="dialog"]')) conflictedForms.current.add(form);
+        for (const form of editedForms.current) if (form.isConnected) conflictedForms.current.add(form);
+        for (const dialog of document.querySelectorAll('[role="dialog"]')) conflictedForms.current.add(dialog);
       }
       if (error instanceof RemoteRequestError && [401, 403, 409].includes(error.status)) {
         try { publishRemote(await remoteRequest<RemoteSnapshot>('/api/state')); } catch { /* Keep the last confirmed read model. */ }
@@ -409,13 +430,39 @@ function RemoteDemoProvider({ children }: { children: ReactNode }) {
   async function setEmployeePassword(employeeId: string, password: string) {
     await updateData(() => {}, { action: 'تغيير كلمة مرور الموظف', entity: 'employee', entityId: employeeId, employeeId, newValues: { passwordChanged: true, sessionsInvalidated: true } }, { password: { employeeId, value: password } });
   }
+  async function saveQrDisplayAccount(input: { username: string; password?: string; active: boolean }, draftForm?: HTMLFormElement) {
+    for (const form of conflictedForms.current) if (!form.isConnected) conflictedForms.current.delete(form);
+    if (conflictedForms.current.size) throw new Error(conflictMessage);
+    if (changing.current) throw new Error('انتظر اكتمال العملية الحالية.');
+    const before = current.current;
+    if (before.session?.role !== 'SUPER_ADMIN') throw new Error('إدارة حساب شاشة الحضور متاحة للمشرف العام فقط.');
+    if (before.connectionError) throw new Error('تعذر الاتصال بالخادم. حدّث البيانات قبل محاولة الحفظ.');
+    changing.current = true;
+    operation.current += 1;
+    try {
+      const next = await remoteRequest<RemoteSnapshot>('/api/auth/qr-display', { revision: before.revision ?? 0, ...input });
+      if (draftForm) editedForms.current.delete(draftForm);
+      else editedForms.current.clear();
+      publishRemote(next);
+    } catch (error) {
+      if (error instanceof RemoteRequestError && error.status === 409) {
+        for (const form of editedForms.current) if (form.isConnected) conflictedForms.current.add(form);
+      }
+      if (error instanceof RemoteRequestError && [401, 403, 409].includes(error.status)) {
+        try { publishRemote(await remoteRequest<RemoteSnapshot>('/api/state')); } catch { /* Preserve the last confirmed state. */ }
+      }
+      if (error instanceof RemoteRequestError && error.status === 409 && conflictedForms.current.size) throw new Error(conflictMessage);
+      throw error;
+    } finally { changing.current = false; }
+  }
+
   async function prepareSystemBackup(theme: 'light' | 'dark') {
     if (current.current.session?.role !== 'SUPER_ADMIN') throw new Error('تحميل النسخة الاحتياطية متاح للمشرف العام فقط.');
     return remoteRequest<SystemBackup>(`/api/backup?theme=${theme}`);
   }
   const setupSystemAdmin = async (): Promise<DemoSession | null> => { throw new Error('تهيئة الحسابات متوقفة إلى حين استيراد النسخة الاحتياطية إلى قاعدة البيانات.'); };
   const resetDemo = () => { throw new Error('تصفير بيانات قاعدة البيانات غير متاح من الواجهة.'); };
-  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, prepareSystemBackup, logout, refresh, discardDraft, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
+  return <DemoContext.Provider value={{ ...state, login, setupSystemAdmin, setEmployeePassword, saveQrDisplayAccount, prepareSystemBackup, logout, refresh, discardDraft, resetDemo, updateData, notify }}>{children}{toast && <div key={toast.id} className="toast" role="status" aria-live="polite"><Check size={20}/><span>{toast.message}</span></div>}</DemoContext.Provider>;
 }
 
 export function DemoProvider({ children, backend = 'local' }: { children: ReactNode; backend?: 'local' | 'neon' }) {

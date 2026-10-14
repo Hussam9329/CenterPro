@@ -7,10 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPopulatedTestData } from '../fixtures/populated-data';
 import { createInitialData } from '@/lib/mock-data';
 import { AUTH_PASSWORD_KDF, type AuthStore } from '@/lib/local-auth';
-import { createSystemBackup } from '@/lib/system-backup';
+import { createSystemBackup, parseSystemBackup } from '@/lib/system-backup';
 import * as schema from '@/server/db/schema';
 import type { DbExecutor } from '@/server/db/connection';
-import { bumpRevision, loadAuthStore, loadData, lockState, saveData, validateDataReferences } from '@/server/db/repository';
+import { bumpRevision, loadAuthStore, loadData, lockState, saveData, validateAuthReferences, validateDataReferences } from '@/server/db/repository';
 import { importBackup, inspectBackup } from '@/server/db/import-backup';
 import { inlinePhotos } from '@/server/photos';
 
@@ -34,6 +34,7 @@ afterEach(async () => { await Promise.all(clients.splice(0).map(client => client
 async function database() {
   const client = new PGlite(); clients.push(client);
   await client.exec(await readFile(new URL('../../drizzle/0001_centerpro.sql', import.meta.url), 'utf8'));
+  await client.exec(await readFile(new URL('../../drizzle/0002_qr_display_account.sql', import.meta.url), 'utf8'));
   return { client, db: drizzle(client, { schema }) };
 }
 function authFixture(data = createPopulatedTestData()): AuthStore {
@@ -54,6 +55,42 @@ async function backupFixture() {
 }
 
 describe('PostgreSQL migration and full backup import', () => {
+  it('roundtrips the optional display credential, including disabled state, independently from employee credentials', async () => {
+    const first = await database(); const second = await database();
+    const data = createInitialData();
+    const auth = authFixture(data);
+    auth.qrDisplay = { ...auth.system!, username: 'DisplayCasePreserved', active: false };
+    const backup = await createSystemBackup({ data, auth, theme: null, revision: 9, origin: 'https://example.test' });
+    expect(await first.db.transaction(tx => importBackup(tx as unknown as DbExecutor, backup))).toBe('IMPORTED');
+    const persisted = await loadAuthStore(first.db as unknown as DbExecutor);
+    expect(persisted).toEqual(auth);
+    const rows = await first.db.select().from(schema.credentials);
+    expect(rows).toHaveLength(2);
+    expect(rows.find(row => row.accountKey === 'QR_DISPLAY')).toMatchObject({ employeeId: null, credential: auth.qrDisplay });
+    expect((await loadData(first.db as unknown as DbExecutor)).employees).toEqual([]);
+    const exported = await createSystemBackup({ data: await loadData(first.db as unknown as DbExecutor), auth: persisted, theme: null, revision: 9, origin: 'https://example.test' });
+    const inspected = await inspectBackup(JSON.stringify(exported));
+    expect(inspected.backup.payload.authentication.credentials).toEqual(auth);
+    await second.db.transaction(tx => importBackup(tx as unknown as DbExecutor, exported));
+    expect(await loadAuthStore(second.db as unknown as DbExecutor)).toEqual(auth);
+    expect(await loadData(second.db as unknown as DbExecutor)).toEqual(data);
+    expect(await second.db.select().from(schema.sessions)).toEqual([]);
+    expect((await parseSystemBackup(JSON.stringify(exported))).payload.authentication.credentials.qrDisplay?.active).toBe(false);
+  }, 30_000);
+
+  it('rejects display username collisions and reserved employee identifiers before import', async () => {
+    const data = createPopulatedTestData();
+    const auth = authFixture(data);
+    for (const username of [auth.system!.username.toUpperCase(), ` ${data.employees[0].username.toUpperCase()} `]) {
+      auth.qrDisplay = { ...auth.system!, username, active: false };
+      expect(() => validateAuthReferences(data, auth)).toThrow(/UsernameCollision/);
+      const backup = await createSystemBackup({ data, auth, theme: null, revision: 1, origin: 'https://example.test' });
+      await expect(inspectBackup(JSON.stringify(backup))).rejects.toThrow(/UsernameCollision/);
+    }
+    data.employees[0].id = 'QR_DISPLAY';
+    expect(() => validateDataReferences(data)).toThrow('employees.reservedId=1');
+  });
+
   it('starts empty; preserves every collection, extra field, order, snapshot and password verification; re-import is a no-op', async () => {
     const { db } = await database();
     expect(await loadData(db as unknown as DbExecutor)).toEqual(createInitialData());

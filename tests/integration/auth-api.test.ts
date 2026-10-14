@@ -20,6 +20,7 @@ import { GET as getState } from '@/app/api/state/route';
 import { GET as getBackup } from '@/app/api/backup/route';
 import { POST as login } from '@/app/api/auth/login/route';
 import { POST as logout } from '@/app/api/auth/logout/route';
+import { POST as manageQrDisplay } from '@/app/api/auth/qr-display/route';
 import { POST as mutate } from '@/app/api/mutations/route';
 import { GET as getQr } from '@/app/api/qr/route';
 import { POST as checkIn } from '@/app/api/attendance/check-in/route';
@@ -62,6 +63,7 @@ beforeEach(async () => {
   blobStore.values.clear(); blobStore.reads = 0; blobStore.writes = 0; blobStore.failWrites = false;
   client = new PGlite();
   await client.exec(await readFile(new URL('../../drizzle/0001_centerpro.sql', import.meta.url), 'utf8'));
+  await client.exec(await readFile(new URL('../../drizzle/0002_qr_display_account.sql', import.meta.url), 'utf8'));
   database = drizzle(client, { schema }); holder.db = database as unknown as Db;
   const populated = createPopulatedTestData();
   fixture = { ...createInitialData(), departments: populated.departments, employees: populated.employees.slice(0, 3) };
@@ -116,6 +118,128 @@ describe('real PostgreSQL authentication and API boundaries', () => {
     const another = await signIn();
     await database.update(schema.sessions).set({ expiresAt: new Date(Date.now() - 1) });
     expect((await state(another.cookie)).session).toBeNull();
+  }, 30_000);
+
+  it('creates a dedicated QR display account that can only read the open workday and issue QR tokens', async () => {
+    fixture.employees[0].photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aKp0AAAAASUVORK5CYII=';
+    Object.assign(fixture, { privateExtension: 'root-secret' });
+    Object.assign(fixture.workdays[0], { privateNote: 'workday-secret' });
+    fixture.workdays[0].overrides[fixture.employees[0].id] = 'INCLUDE';
+    fixture.workdays.push({ ...fixture.workdays[0], id: 'closed-day', date: '2025-01-01', state: 'CLOSED' });
+    await seed();
+    const owner = await signIn();
+    const revision = owner.state.revision;
+    const configured = await manageQrDisplay(request('/api/auth/qr-display', { revision, username: 'CENTER_QR', password: 'display-password', active: true }, owner.cookie));
+    expect(configured.status, await configured.clone().text()).toBe(200);
+    const ownerAfter = await configured.json() as RemoteSnapshot;
+    expect(ownerAfter).toMatchObject({ qrDisplayConfigured: true, qrDisplayUsername: 'CENTER_QR', qrDisplayActive: true });
+
+    const displayLogin = await login(request('/api/auth/login', { username: 'center_qr', password: 'display-password', remember: true }));
+    expect(displayLogin.status, await displayLogin.clone().text()).toBe(200);
+    const displayCookie = displayLogin.headers.get('set-cookie')!.split(';')[0];
+    const displayState = await displayLogin.json() as RemoteSnapshot;
+    expect(displayState.session).toMatchObject({ role: 'QR_DISPLAY', kind: 'QR_DISPLAY', name: 'شاشة الحضور' });
+    expect(displayState.session).not.toHaveProperty('employeeId');
+    expect(displayState).toMatchObject({ systemUsername: '', qrDisplayConfigured: false, qrDisplayUsername: '', qrDisplayActive: false });
+    expect(displayState.data).toEqual({ ...createInitialData(), settings: fixture.settings, workdays: [{ id: fixture.workdays[0].id, date: fixture.workdays[0].date, startTime: '00:00', state: 'OPEN', departmentIds: [], overrides: {} }] });
+    const qrResponse = await getQr(request('/api/qr', undefined, displayCookie));
+    expect(qrResponse.status).toBe(200);
+    const qr = await qrResponse.json() as { token: string };
+    const stored = await loadData(database as unknown as DbExecutor);
+    const photoHash = stored.employees[0].photo!.split('/').at(-1)!;
+    const blobReads = blobStore.reads;
+    expect((await getPhoto(request(`/api/photos/${photoHash}`, undefined, displayCookie), { params: Promise.resolve({ hash: photoHash }) })).status).toBe(404);
+    expect(blobStore.reads).toBe(blobReads);
+    expect((await getBackup(request('/api/backup', undefined, displayCookie))).status).toBe(403);
+    expect((await checkIn(request('/api/attendance/check-in', { token: qr.token }, displayCookie))).status).toBe(403);
+    expect((await manageQrDisplay(request('/api/auth/qr-display', { revision: displayState.revision, username: 'ESCALATION', password: changedPassword, active: true }, displayCookie))).status).toBe(403);
+
+    const forbidden = await mutate(request('/api/mutations', { revision: displayState.revision, changes: [], settings: { centerName: 'Blocked', qrInterval: 45 } }, displayCookie));
+    expect(forbidden.status).toBe(403);
+    expect((await mutate(request('/api/mutations', { revision: displayState.revision, changes: [], password: { employeeId: fixture.employees[0].id, value: changedPassword } }, displayCookie))).status).toBe(403);
+    expect((await mutate(request('/api/mutations', { revision: displayState.revision, changes: [{ collection: 'employees', upsert: [{ ...fixture.employees[0], role: 'SUPER_ADMIN' }] }] }, displayCookie))).status).toBe(403);
+    expect(await loadData(database as unknown as DbExecutor)).toEqual(stored);
+    expect((await state(owner.cookie)).session?.role).toBe('SUPER_ADMIN');
+
+    const employee = await signIn(fixture.employees[0].username);
+    expect((await checkIn(request('/api/attendance/check-in', { token: qr.token }, employee.cookie))).status).toBe(200);
+    const currentDisplay = await state(displayCookie);
+    expect(currentDisplay.data).toEqual(displayState.data);
+
+    const disabled = await manageQrDisplay(request('/api/auth/qr-display', { revision: currentDisplay.revision, username: 'CENTER_QR', active: false }, owner.cookie));
+    expect(disabled.status, await disabled.clone().text()).toBe(200);
+    expect((await state(displayCookie)).session).toBeNull();
+    expect((await login(request('/api/auth/login', { username: 'CENTER_QR', password: 'display-password', remember: true }))).status).toBe(401);
+    expect((await state(owner.cookie)).session?.role).toBe('SUPER_ADMIN');
+  }, 30_000);
+
+  it('restricts QR account management to the owner role and atomically rejects stale, forged and colliding account updates', async () => {
+    await seed(); const owner = await signIn(); const employee = await signIn(fixture.employees[0].username); const admin = await signIn(fixture.employees[1].username);
+    const command = { revision: owner.state.revision, username: 'CENTER_QR', password: 'display-password', active: true };
+    expect((await manageQrDisplay(request('/api/auth/qr-display', command))).status).toBe(401);
+    for (const cookie of [employee.cookie, admin.cookie]) expect((await manageQrDisplay(request('/api/auth/qr-display', command, cookie))).status).toBe(403);
+    expect((await manageQrDisplay(request('/api/auth/qr-display', command, owner.cookie, { Origin: 'https://foreign.example' }))).status).toBe(403);
+    expect((await manageQrDisplay(request('/api/auth/qr-display', { ...command, role: 'SUPER_ADMIN' }, owner.cookie))).status).toBe(400);
+    expect((await manageQrDisplay(request('/api/auth/qr-display', { ...command, revision: command.revision - 1 }, owner.cookie))).status).toBe(409);
+    for (const username of [' TEST-OWNER ', ` ${fixture.employees[0].username.toUpperCase()} `, fixture.employees[2].username, 'invalid name']) {
+      expect((await manageQrDisplay(request('/api/auth/qr-display', { ...command, username }, owner.cookie))).status).toBe(400);
+    }
+    for (const password of ['', 'short']) expect((await manageQrDisplay(request('/api/auth/qr-display', { ...command, password }, owner.cookie))).status).toBe(400);
+    expect(await loadAuthStore(database as unknown as DbExecutor)).toEqual(auth);
+    expect(await loadData(database as unknown as DbExecutor)).toEqual(fixture);
+    expect((await state(owner.cookie)).revision).toBe(command.revision);
+
+    expect((await manageQrDisplay(request('/api/auth/qr-display', command, owner.cookie))).status).toBe(200);
+    const current = await state(owner.cookie);
+    const collision = { revision: current.revision, changes: [{ collection: 'employees', upsert: [{ ...fixture.employees[0], username: ' center_qr ' }] }] };
+    expect((await mutate(request('/api/mutations', collision, owner.cookie))).status).toBe(400);
+    const reservedRole = { revision: current.revision, changes: [{ collection: 'employees', upsert: [{ ...fixture.employees[0], role: 'QR_DISPLAY' }] }] };
+    expect((await mutate(request('/api/mutations', reservedRole, owner.cookie))).status).toBe(400);
+    expect((await state(owner.cookie)).revision).toBe(current.revision);
+    expect((await loadData(database as unknown as DbExecutor)).employees).toEqual(fixture.employees);
+  }, 30_000);
+
+  it('renames, rotates, disables and re-enables display credentials without touching owner or employee sessions', async () => {
+    await seed(); const owner = await signIn(); const employee = await signIn(fixture.employees[0].username);
+    const update = async (username: string, active: boolean, password?: string) => {
+      const current = await state(owner.cookie);
+      const response = await manageQrDisplay(request('/api/auth/qr-display', { revision: current.revision, username, active, ...(password ? { password } : {}) }, owner.cookie));
+      expect(response.status, await response.clone().text()).toBe(200);
+      const ownerAfter = await response.json() as RemoteSnapshot;
+      expect(ownerAfter.session?.role).toBe('SUPER_ADMIN');
+      expect((await state(employee.cookie)).session?.employeeId).toBe(fixture.employees[0].id);
+      return ownerAfter;
+    };
+    await update('CENTER_QR', true, 'display-password');
+    const first = await signIn('center_qr', true, 'display-password');
+    const second = await signIn('center_qr', false, 'display-password');
+    const original = (await loadAuthStore(database as unknown as DbExecutor)).qrDisplay!;
+    await update('RENAMED_QR', true);
+    for (const cookie of [first.cookie, second.cookie]) expect((await state(cookie)).session).toBeNull();
+    expect((await loadAuthStore(database as unknown as DbExecutor)).qrDisplay).toEqual({ ...original, username: 'RENAMED_QR' });
+    expect((await login(request('/api/auth/login', { username: 'CENTER_QR', password: 'display-password', remember: false }))).status).toBe(401);
+    const renamed = await signIn('renamed_qr', true, 'display-password');
+    await update('RENAMED_QR', true, changedPassword);
+    expect((await state(renamed.cookie)).session).toBeNull();
+    expect((await login(request('/api/auth/login', { username: 'RENAMED_QR', password: 'display-password', remember: false }))).status).toBe(401);
+    const rotated = await signIn('renamed_qr', true, changedPassword);
+    expect((await loadAuthStore(database as unknown as DbExecutor)).qrDisplay?.version).toBe(original.version + 1);
+    await update('RENAMED_QR', false);
+    expect((await state(rotated.cookie)).session).toBeNull();
+    expect((await login(request('/api/auth/login', { username: 'RENAMED_QR', password: changedPassword, remember: false }))).status).toBe(401);
+    await update('RENAMED_QR', true);
+    const restored = await signIn('renamed_qr', true, changedPassword);
+    expect((await state(rotated.cookie)).session).toBeNull();
+    expect((await logout(request('/api/auth/logout', {}, restored.cookie))).status).toBe(200);
+    expect((await getQr(request('/api/qr', undefined, restored.cookie))).status).toBe(401);
+    expect((await state(owner.cookie)).session?.role).toBe('SUPER_ADMIN');
+    expect((await state(employee.cookie)).session?.employeeId).toBe(fixture.employees[0].id);
+    const persisted = await loadAuthStore(database as unknown as DbExecutor);
+    expect(persisted.system).toEqual(auth.system); expect(persisted.employees).toEqual(auth.employees);
+    const backup = await parseSystemBackup(await (await getBackup(request('/api/backup', undefined, owner.cookie))).text());
+    expect(backup.payload.authentication.credentials).toEqual(persisted);
+    const audit = JSON.stringify((await loadData(database as unknown as DbExecutor)).audit);
+    for (const secret of ['display-password', changedPassword, persisted.qrDisplay!.hash, persisted.qrDisplay!.salt]) expect(audit).not.toContain(secret);
   }, 30_000);
 
   it('commits account/IP rate limits across failed logins and gives identical generic errors for wrong, unknown and inactive accounts', async () => {

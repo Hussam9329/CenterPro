@@ -53,7 +53,7 @@ export const examEvaluations = centerpro.table('exam_evaluations', {
 export const credentials = centerpro.table('credentials', {
   accountKey: text('account_key').primaryKey(), employeeId: text('employee_id').references(() => employees.id),
   credential: jsonb('credential').$type<StoredCredential | StoredSystemCredential>().notNull(),
-}, t => [uniqueIndex('credentials_employee_unique').on(t.employeeId), check('credentials_kind', sql`(${t.accountKey} = 'SYSTEM' and ${t.employeeId} is null) or (${t.accountKey} <> 'SYSTEM' and ${t.employeeId} = ${t.accountKey})`)]);
+}, t => [uniqueIndex('credentials_employee_unique').on(t.employeeId), check('credentials_kind', sql`(${t.accountKey} in ('SYSTEM', 'QR_DISPLAY') and ${t.employeeId} is null) or (${t.accountKey} not in ('SYSTEM', 'QR_DISPLAY') and ${t.employeeId} is not null and ${t.employeeId} = ${t.accountKey})`)]);
 export const sessions = centerpro.table('sessions', {
   tokenHash: text('token_hash').primaryKey(), accountKey: text('account_key').notNull().references(() => credentials.accountKey, { onDelete: 'cascade' }),
   authVersion: bigint('auth_version', { mode: 'number' }).notNull(), expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),

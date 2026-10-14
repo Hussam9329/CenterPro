@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     const input: MutationRequest = await readJson(request, schema);
     const snapshot = await withState(request, async context => {
       const identity = requireIdentity(context);
+      if (identity.actor.role === 'QR_DISPLAY') throw new ApiError(403, 'حساب شاشة الحضور مخصص لعرض رمز QR فقط.');
       if (input.revision !== context.revision) throw new ApiError(409, 'تغيّرت البيانات من جهاز آخر. حدّث الصفحة ثم أعد المحاولة.');
       let after;
       try { after = applyMutation(context.data, identity.actor, input, context.now); }

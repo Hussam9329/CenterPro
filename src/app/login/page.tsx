@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!ready || !session || !remembered || loading || new URLSearchParams(window.location.search).get('switch') === '1') return;
-    router.replace(session.role === 'EMPLOYEE' ? '/employee' : '/dashboard');
+    router.replace(session.role === 'QR_DISPLAY' ? '/attendance-display' : session.role === 'EMPLOYEE' ? '/employee' : '/dashboard');
   }, [loading, ready, remembered, router, session]);
 
   async function enter(event: FormEvent) {
@@ -48,8 +48,8 @@ export default function LoginPage() {
         setError(setup ? 'تعذر إنشاء حساب مدير النظام. جرّب اسم مستخدم آخر.' : 'اسم المستخدم أو كلمة المرور غير صحيحة.');
         return;
       }
-      await showWelcome();
-      router.push(account.role === 'EMPLOYEE' ? '/employee' : '/dashboard');
+      if (account.role !== 'QR_DISPLAY') await showWelcome();
+      router.push(account.role === 'QR_DISPLAY' ? '/attendance-display' : account.role === 'EMPLOYEE' ? '/employee' : '/dashboard');
     } catch (failure) {
       setError(backend === 'neon' && failure instanceof Error ? failure.message : 'تعذر تسجيل الدخول. حاول مرة أخرى.');
     } finally {

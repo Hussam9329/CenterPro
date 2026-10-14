@@ -46,7 +46,7 @@ export async function importBackup(db: DbExecutor, backup: SystemBackup): Promis
   const auth = await loadAuthStore(db);
   const currentImports = await db.select({ digest: imports.digest }).from(imports).limit(1);
   const currentSessions = await db.select({ token: sessions.tokenHash }).from(sessions).limit(1);
-  if (revision !== 0 || Object.values(dataCounts(before)).some(count => count > 0) || auth.system || Object.keys(auth.employees).length || currentImports.length || currentSessions.length) {
+  if (revision !== 0 || Object.values(dataCounts(before)).some(count => count > 0) || auth.system || auth.qrDisplay || Object.keys(auth.employees).length || currentImports.length || currentSessions.length) {
     throw new Error('Import refused: this database already contains data or accounts. Nothing was changed. Use a reviewed merge migration; never reset the database.');
   }
   const storedData = await externalizePhotos(backup.payload.data);

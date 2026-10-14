@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRef, useState, type FormEvent } from 'react';
-import { Check, ChevronLeft, Clock3, Download, Globe2, LockKeyhole, Moon, RotateCcw, Save, ShieldCheck, Sun, UsersRound, X } from 'lucide-react';
+import { Check, ChevronLeft, Clock3, Download, Globe2, LockKeyhole, Moon, QrCode, RotateCcw, Save, ShieldCheck, Sun, UsersRound, X } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { useTheme } from '@/components/theme-provider';
 import { Avatar, Badge, Button, Card, Dialog, EmptyState, Field, Input, PageHeader } from '@/components/ui';
@@ -27,7 +27,7 @@ const permissions: PermissionRow[] = [
   { label: 'تحميل نسخة احتياطية كاملة للنظام', superAdmin: 'yes', admin: 'no', employee: 'no' },
   { label: 'عرض الحضور والراتب والتفاصيل المالية السابقة', superAdmin: 'yes', admin: 'yes', employee: 'own' },
 ];
-const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف' };
+const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف', QR_DISPLAY: 'QR Display' };
 
 function AccessLabel({ access }: { access: Access }) {
   if (access === 'own') return <Badge tone="brand">بياناته فقط</Badge>;
@@ -36,7 +36,7 @@ function AccessLabel({ access }: { access: Access }) {
 }
 
 export default function SettingsPage() {
-  const { data, session, updateData, resetDemo, prepareSystemBackup, backend, connectionError, discardDraft } = useDemo();
+  const { data, session, updateData, resetDemo, prepareSystemBackup, saveQrDisplayAccount, qrDisplayConfigured, qrDisplayUsername, qrDisplayActive, backend, connectionError, discardDraft } = useDemo();
   const { theme } = useTheme();
   const toast = useToast();
   const [centerName, setCenterName] = useState(data.settings.centerName);
@@ -49,7 +49,15 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState('');
+  const [qrUsernameDraft, setQrUsername] = useState<string | null>(null);
+  const [qrPassword, setQrPassword] = useState('');
+  const [qrActiveDraft, setQrActive] = useState<boolean | null>(null);
+  const [qrSaving, setQrSaving] = useState(false);
+  const [qrError, setQrError] = useState('');
   const exportingRef = useRef(false);
+  const qrUsername = qrUsernameDraft ?? (qrDisplayUsername || 'CENTER_QR');
+  const qrActive = qrActiveDraft ?? (qrDisplayConfigured ? qrDisplayActive : true);
+  const qrDirty = qrUsernameDraft !== null || qrActiveDraft !== null || qrPassword !== '';
   const dirty = centerName.trim() !== data.settings.centerName || Number(qrInterval) !== data.settings.qrInterval;
   const adminAccounts = data.employees.filter(employee => employee.role !== 'EMPLOYEE');
 
@@ -84,6 +92,7 @@ export default function SettingsPage() {
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const draftForm = event.currentTarget;
     if (savingRef.current || session?.role !== 'SUPER_ADMIN') return;
     const nextErrors: typeof errors = {};
     const interval = Number(qrInterval);
@@ -96,12 +105,31 @@ export default function SettingsPage() {
     setSaving(true);
     setSaveError('');
     try {
-      await updateData(draft => { draft.settings = next; }, { action: 'تعديل إعدادات النظام', entity: 'settings', entityId: 'center-settings', oldValues: { ...data.settings }, newValues: next });
+      await updateData(draft => { draft.settings = next; }, { action: 'تعديل إعدادات النظام', entity: 'settings', entityId: 'center-settings', oldValues: { ...data.settings }, newValues: next }, undefined, draftForm);
       setCenterName(next.centerName);
       setQrInterval(String(next.qrInterval));
       toast('تم حفظ الإعدادات وتسجيل التغيير في سجل العمليات.');
     } catch (error) { setSaveError(error instanceof Error ? error.message : 'تعذر حفظ الإعدادات. حاول مرة أخرى.'); }
     finally { savingRef.current = false; setSaving(false); }
+  }
+
+  async function saveQrAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const draftForm = event.currentTarget;
+    if (qrSaving || session?.role !== 'SUPER_ADMIN') return;
+    const username = qrUsername.trim();
+    if (!username) { setQrError('أدخل اسم مستخدم شاشة الحضور.'); return; }
+    if (/\s/.test(username)) { setQrError('اسم المستخدم لا يقبل المسافات.'); return; }
+    if (!qrDisplayConfigured && qrPassword.length < 6) { setQrError('أدخل كلمة مرور من 6 أحرف أو أرقام على الأقل.'); return; }
+    if (qrPassword && qrPassword.length < 6) { setQrError('كلمة المرور يجب أن تكون 6 أحرف أو أرقام على الأقل.'); return; }
+    setQrSaving(true); setQrError('');
+    try {
+      await saveQrDisplayAccount({ username, active: qrActive, ...(qrPassword ? { password: qrPassword } : {}) }, draftForm);
+      setQrUsername(null); setQrActive(null);
+      setQrPassword('');
+      toast(qrDisplayConfigured ? 'تم تحديث حساب شاشة الحضور.' : 'تم إنشاء حساب شاشة الحضور.');
+    } catch (error) { setQrError(error instanceof Error ? error.message : 'تعذر حفظ حساب شاشة الحضور.'); }
+    finally { setQrSaving(false); }
   }
 
   function reset() {
@@ -149,6 +177,18 @@ export default function SettingsPage() {
     <Card title="الأدوار والصلاحيات">
       <div className="table-wrap" role="region" aria-label="جدول الصلاحيات" tabIndex={0}><table className="data-table"><thead><tr><th scope="col">الصلاحية</th><th scope="col" dir="ltr">Super Admin</th><th scope="col" dir="ltr">Admin / Manager</th><th scope="col">موظف</th></tr></thead><tbody>{permissions.map(permission => <tr key={permission.label}><th scope="row">{permission.label}</th><td><AccessLabel access={permission.superAdmin} /></td><td><AccessLabel access={permission.admin} /></td><td><AccessLabel access={permission.employee} /></td></tr>)}</tbody></table></div>
       <div className="notice">يسجل الموظف حضوره بنفسه من قارئ QR، ويطّلع على بياناته فقط. إدارة حسابات الإدارة والأدوار متاحة لـ Super Admin من ملف الموظف.</div>
+    </Card>
+    <Card title="حساب شاشة الحضور" action={<Badge tone={qrDisplayConfigured && qrDisplayActive ? 'success' : 'neutral'}>{qrDisplayConfigured ? qrDisplayActive ? 'نشط' : 'معطل' : 'غير مُنشأ'}</Badge>}>
+      <form className="stack" onSubmit={saveQrAccount} noValidate>
+        <div className="notice"><QrCode size={20}/><span>حساب مستقل للـ iPad. بعد تسجيل الدخول يفتح شاشة QR فقط ولا يملك صلاحية الموظفين أو الرواتب أو الإعدادات.</span></div>
+        <div className="grid-2">
+          <Field label="اسم المستخدم" required><Input dir="ltr" value={qrUsername} onChange={event => setQrUsername(event.target.value)} autoComplete="username" placeholder="CENTER_QR" /></Field>
+          <Field label={qrDisplayConfigured ? 'كلمة مرور جديدة (اختياري)' : 'كلمة المرور'} required={!qrDisplayConfigured}><Input type="password" dir="ltr" value={qrPassword} onChange={event => setQrPassword(event.target.value)} autoComplete="new-password" placeholder={qrDisplayConfigured ? 'اتركها فارغة للإبقاء على الحالية' : ''} /></Field>
+        </div>
+        <label className="remember-login"><input type="checkbox" checked={qrActive} onChange={event => setQrActive(event.target.checked)} /><span>الحساب نشط</span></label>
+        {qrError && <p className="text-danger" role="alert">{qrError}</p>}
+        <div className="form-actions"><Button type="submit" loading={qrSaving}><Save size={17}/>{qrDisplayConfigured ? 'حفظ حساب شاشة الحضور' : 'إنشاء حساب شاشة الحضور'}</Button>{(qrDirty || qrError) && <Button variant="secondary" disabled={qrSaving} onClick={event => { setQrUsername(null); setQrActive(null); setQrPassword(''); setQrError(''); discardDraft(event.currentTarget.closest('form')); }}>إلغاء تعديلات حساب الشاشة</Button>}<Link className="button-link" href="/attendance-display"><QrCode size={16}/>فتح شاشة الحضور<ChevronLeft size={14}/></Link></div>
+      </form>
     </Card>
     <Card title="حسابات الإدارة" action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>
       <div className="stack">

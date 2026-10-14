@@ -26,7 +26,7 @@ function calculate(left: number, right: number, operation: Operation) {
 }
 
 function returnPath(role: Role) {
-  const fallback = role === 'EMPLOYEE' ? '/employee' : '/dashboard';
+  const fallback = role === 'QR_DISPLAY' ? '/attendance-display' : role === 'EMPLOYEE' ? '/employee' : '/dashboard';
   const requested = new URLSearchParams(window.location.search).get('returnTo');
   if (!requested?.startsWith('/') || requested.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(requested)) return fallback;
   try {
@@ -35,7 +35,8 @@ function returnPath(role: Role) {
     const employeeRoute = /^\/employee(?:\/(?:attendance|audit|evaluation|profile|salary|scan))?\/?$/;
     const adminRoute = /^\/(?:dashboard|employees(?:\/[^/]+)?|attendance(?:\/[^/]+)?|evaluations(?:\/[^/]+)?|payroll|deductions|bonuses|reports|workdays|attendance-display)\/?$/;
     const privilegedRoute = /^\/(?:departments|audit|settings)\/?$/;
-    const allowed = role === 'EMPLOYEE' ? employeeRoute.test(url.pathname)
+    const allowed = role === 'QR_DISPLAY' ? url.pathname === '/attendance-display'
+      : role === 'EMPLOYEE' ? employeeRoute.test(url.pathname)
       : adminRoute.test(url.pathname) || (role === 'SUPER_ADMIN' && privilegedRoute.test(url.pathname));
     return allowed ? `${url.pathname}${url.search}${url.hash}` : fallback;
   } catch {
@@ -55,6 +56,7 @@ export default function CalculatorPage() {
 
   useEffect(() => {
     if (ready && !session) router.replace('/login');
+    else if (ready && session?.role === 'QR_DISPLAY') router.replace('/attendance-display');
   }, [ready, router, session]);
 
   const numericValue = useMemo(() => Number(display === 'خطأ' ? 0 : display), [display]);
@@ -172,7 +174,7 @@ export default function CalculatorPage() {
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  if (!ready || !session) return null;
+  if (!ready || !session || session.role === 'QR_DISPLAY') return null;
 
   const button = (label: string, action: () => void, kind: 'utility' | 'operation' | 'number' = 'number', wide = false, active = false) => (
     <button type="button" className={`${styles.key} ${styles[kind]} ${wide ? styles.wide : ''} ${active ? styles.active : ''}`} onClick={action} aria-label={label}>{label}</button>

@@ -2,9 +2,9 @@
 
 ## Authorization and current status
 
-On October 12, 2026, the owner confirmed that a complete browser backup had been downloaded and explicitly requested connecting the supplied Neon database. The owner will provide the JSON after the connection is ready. The existing approved design and later business-rule amendments remain authoritative.
+On October 12, 2026, the owner confirmed that a complete browser backup had been downloaded and explicitly requested connecting the supplied Neon database. The owner subsequently supplied the JSON and it was imported successfully that day. The existing approved design and later business-rule amendments remain authoritative.
 
-This implementation adds the server boundary and durable storage required for shared accounts/data. **The owner's backup has not been supplied to this repository or imported.** The database must remain empty of invented personnel/accounts. The server login is intentionally locked while awaiting the backup, with an Arabic explanation. There is no public first-visitor owner setup endpoint.
+This implementation adds the server boundary and durable storage required for shared accounts/data. The existing Production installation has its imported accounts and records; the private backup is not stored in this repository. A new empty installation remains locked while awaiting its backup. There is no public first-visitor owner setup endpoint. Subsequent releases must preserve existing data and must not repeat the original import.
 
 Implementation and release verification are separate. The final exact source commit, CI run, deployment ID and Production checks are to be recorded after they finish. Do not use a historical phase-one test count or deployment URL as evidence for this release.
 

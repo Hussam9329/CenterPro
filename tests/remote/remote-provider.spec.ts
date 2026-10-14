@@ -13,7 +13,7 @@ const legacy = {
 };
 const owner: DemoSession = { kind: 'SYSTEM', role: 'SUPER_ADMIN', name: 'مدير النظام', authVersion: 1 };
 function state(session: DemoSession | null = owner, data = createPopulatedTestData()): RemoteSnapshot {
-  return { data, session, revision: 11, ready: true, remembered: false, systemConfigured: true, systemUsername: 'remote-owner', today: '2026-10-12', month: '2026-10', serverTime: '2026-10-12T18:00:00.000Z', backend: 'neon', pendingImport: false };
+  return { data, session, revision: 11, ready: true, remembered: false, systemConfigured: true, systemUsername: 'remote-owner', qrDisplayConfigured: false, qrDisplayUsername: '', qrDisplayActive: false, today: '2026-10-12', month: '2026-10', serverTime: '2026-10-12T18:00:00.000Z', backend: 'neon', pendingImport: false };
 }
 async function preserveLegacy(page: Page) {
   await page.addInitScript(values => {

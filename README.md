@@ -6,9 +6,9 @@ Arabic RTL employee, attendance, evaluation and payroll management for one physi
 
 The owner authorized connecting Neon on October 12, 2026. This revision connects the approved Next.js frontend to server-side authentication, authorization, PostgreSQL persistence and signed QR attendance. Application records are shared between authenticated devices. The existing browser data is not silently uploaded, reset or deleted.
 
-**Migration status:** the new database starts empty and locked pending the owner's downloaded JSON backup. Public visitors cannot create the first administrator. Importing the reviewed backup restores the existing system owner, employee accounts and operational records. Until that import is completed, the login screen clearly reports that the database is awaiting the backup.
+**Migration status:** the owner's downloaded backup was imported into Neon on October 12, 2026, preserving existing accounts and records. Public visitors cannot create an administrator. A fresh installation remains locked until its reviewed backup is imported.
 
-**Release verification is in progress.** This document does not certify a new Production deployment. The preceding browser-only backup release was deployed from `495417fa3e5a4ba368b61d893a3acdc02b813bc2`; its historical verification is in [SYSTEM_BACKUP.md](docs/SYSTEM_BACKUP.md). See [NEON_BACKEND.md](docs/NEON_BACKEND.md) for the current implementation, migration procedure, limits and release evidence checklist.
+The Neon integration was released from `ddbafceb5a011a66624c9bdd69caba0eed549523`. See [NEON_BACKEND.md](docs/NEON_BACKEND.md) for backend details and [QR_DISPLAY.md](docs/QR_DISPLAY.md) for the dedicated iPad account and its additive database upgrade. Historical browser-only backup documentation is retained in [SYSTEM_BACKUP.md](docs/SYSTEM_BACKUP.md).
 
 ## Development
 
@@ -48,14 +48,14 @@ The dry run validates the file without connecting to the database. The real impo
 
 The JSON file includes private personnel records and password-verification hashes. Keep it private and out of Git. Existing password hashes are imported with their original derivation parameters, so the same usernames/passwords can be verified after migration. Browser session objects are never trusted or imported; users sign in again through secure server sessions.
 
-The repository contains no supplied real user backup. Import remains pending until the owner provides it.
+The repository contains no supplied real user backup. Do not re-import or reset the existing Production installation when deploying updates.
 
 ## Implemented workflows
 
 - Employee profiles, usernames, password resets, role restrictions, activation/deactivation, protected salary overrides and employee photos.
 - Department salary rules, required-day payroll, negative balances, deductions, bonuses, immutable payments, archived snapshots and explicit historical recalculation.
 - One open workday system-wide, per-date uniqueness, employee participation overrides, unresolved attendance review and manual corrections.
-- Server-issued rotating QR, signed expiry/workday state, server-authoritative Baghdad timestamps and duplicate prevention. No GPS or Wi-Fi restrictions.
+- Server-issued rotating QR, signed expiry/workday state, server-authoritative Baghdad timestamps and duplicate prevention. A dedicated QR Display account can remain signed in on the center iPad and is server-restricted to the attendance display only. No GPS or Wi-Fi restrictions.
 - Evaluation seasons/cycles/exams, auditor-only count entry, frozen archives, and published-only corrector results and rankings.
 - Append-only server audit events, owner-only complete backup, structured XLSX exports and Arabic print reports.
 - Approved Arabic RTL UI, Latin digits, light/dark selection, responsive layouts, accessible forms, calculator and PWA public offline fallback.
@@ -86,7 +86,7 @@ Next.js App Router · React · TypeScript strict · Drizzle ORM · Neon PostgreS
 - `src/server/projection.ts`: role-scoped response data and safe evaluation aggregates.
 - `src/server/auth.ts` / `auth-crypto.ts`: sessions, password verification, login throttling and signed QR.
 - `src/server/db`: Drizzle schema, repository and transactional import.
-- `drizzle/0001_centerpro.sql`: versioned database migration.
+- `drizzle/0001_centerpro.sql` + `drizzle/0002_qr_display_account.sql`: versioned database migrations.
 - `src/app/api`: authenticated API handlers.
 
 Each business collection has its own table. Indexed relational columns enforce identity, foreign keys and uniqueness; JSONB records retain the approved application's fields and frozen historical snapshots. This is a compatibility-preserving relational/JSONB schema, not a claim that every salary tier or nested archive has an individual normalized table.

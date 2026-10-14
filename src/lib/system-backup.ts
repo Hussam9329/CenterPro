@@ -38,7 +38,8 @@ const str = z.string();
 const num = z.number().finite();
 const bool = z.boolean();
 const strings = z.array(str);
-const role = z.enum(['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE']);
+const employeeRole = z.enum(['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE']);
+const auditRole = z.enum(['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'QR_DISPLAY']);
 const salaryMode = z.enum(['TIERED', 'FIXED']);
 const object = z.looseObject;
 const salary = object({ mode: salaryMode, dailyRate: num, unexcusedRate: num, maximum: num,
@@ -49,7 +50,7 @@ const department = object({ id: str, name: str, active: bool, description: str, 
 const employee = object({ id: str, code: str, name: str, photo: str.optional(), address: str, phone: str,
   guardianPhone: str, departmentId: str, startDate: str, endDate: str.optional(), active: bool,
   gender: z.enum(['MALE', 'FEMALE']), birthDate: str, notes: str, qualification: str, telegram: str,
-  username: str, role, fixedOverride: bool, fixedSalary: num, dailyRateOverride: num.nullable(),
+  username: str, role: employeeRole, fixedOverride: bool, fixedSalary: num, dailyRateOverride: num.nullable(),
   createdAt: str, updatedAt: str,
 });
 const workday = object({ id: str, date: str, startTime: str, departmentIds: strings,
@@ -80,7 +81,7 @@ const month = object({ id: str, month: str, state: z.enum(['OPEN', 'ARCHIVED', '
 const payment = object({ id: str, employeeId: str, month: str, salaryAtPayment: num, amount: num,
   date: str, paidBy: str, createdAt: str,
 });
-const audit = object({ id: str, actor: str, role, action: str, entity: str, entityId: str,
+const audit = object({ id: str, actor: str, role: auditRole, action: str, entity: str, entityId: str,
   employeeId: str.optional(), oldValues: z.record(str, z.unknown()), newValues: z.record(str, z.unknown()),
   timestamp: str, ip: str.optional(), userAgent: str.optional(),
 });

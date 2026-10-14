@@ -38,11 +38,12 @@ export function AppShell({ children, employee = false }: { children: ReactNode; 
   useEffect(() => {
     if (!ready) return;
     if (!session) router.replace('/login');
+    else if (session.role === 'QR_DISPLAY') router.replace('/attendance-display');
     else if (employee !== (session.role === 'EMPLOYEE')) router.replace(session.role === 'EMPLOYEE' ? '/employee' : '/dashboard');
     else if (session.role === 'ADMIN' && ['/departments','/audit','/settings'].some(path => pathname.startsWith(path))) router.replace('/dashboard');
   }, [ready, session, employee, router, pathname]);
   if (!ready && connectionError) return <main className="app-loading" id="main-content"><Brand/><p role="alert">{connectionError}</p><button className="btn btn-primary" onClick={() => { void refresh().catch(() => {}); }}>إعادة الاتصال</button></main>;
-  if (!ready || !session || employee !== (session.role === 'EMPLOYEE')) return <AppSkeleton/>;
+  if (!ready || !session || session.role === 'QR_DISPLAY' || employee !== (session.role === 'EMPLOYEE')) return <AppSkeleton/>;
   if (session.role === 'ADMIN' && ['/departments','/audit','/settings'].some(path => pathname.startsWith(path))) return <AppSkeleton/>;
   const employeeRecord = session.employeeId ? stateEmployee(data, session.employeeId) : undefined;
   const employeeNav = employee ? [

@@ -55,6 +55,14 @@ export function projectData(data: DemoData, actor: DemoSession): DemoData {
   // Input is repository data, never a previously projected response. Discard a
   // coincidentally imported extension with this reserved name defensively.
   data = { ...data }; delete data.serverEvaluation;
+  if (actor.role === 'QR_DISPLAY') {
+    return {
+      employees: [], departments: [], attendance: [], deductions: [], bonuses: [], months: [], payments: [], audit: [],
+      evaluationSeasons: [], evaluationCycles: [], evaluationExams: [], examEvaluations: [],
+      workdays: data.workdays.filter(day => day.state === 'OPEN').map(day => ({ id: day.id, date: day.date, startTime: day.startTime, state: day.state, departmentIds: [], overrides: {} })),
+      settings: { centerName: data.settings.centerName, qrInterval: data.settings.qrInterval },
+    };
+  }
   if (actor.role === 'SUPER_ADMIN' || actor.role === 'ADMIN') {
     const result = structuredClone(data); delete result.serverEvaluation;
     // Managers have operational data, but the owner-only audit log must not be

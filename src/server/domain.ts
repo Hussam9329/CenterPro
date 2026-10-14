@@ -140,6 +140,7 @@ function assertSafePayroll(value: ReturnType<typeof getEmployeePayroll>) {
  * inside the API's revision-checked transaction. Client records express intent;
  * protected calculations, actors, audit and timestamps are reconstructed here. */
 export function applyMutation(before: DemoData, actor: DemoSession, request: MutationRequest, now: Date): DemoData {
+  if (actor.role === 'QR_DISPLAY') fail('حساب شاشة الحضور مخصص لعرض رمز QR فقط.');
   assertActor(before, actor);
   const after = structuredClone(before); delete after.serverEvaluation;
   const stamp = now.toISOString(); const today = baghdadDate(now); const reason = reasonFrom(request);

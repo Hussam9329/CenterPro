@@ -1,4 +1,4 @@
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE' | 'QR_DISPLAY';
 export type AttendanceStatus = 'PRESENT' | 'UNRESOLVED' | 'EXCUSED' | 'UNEXCUSED' | 'EXEMPT';
 export type SalaryMode = 'TIERED' | 'FIXED';
 export interface SalaryTier { id: string; fromDays: number; toDays: number; type: 'PER_DAY' | 'FIXED'; amount: number }
@@ -113,5 +113,5 @@ export interface DemoData {
   examEvaluations: ExamEvaluation[];
   settings: DemoSettings;
 }
-export interface DemoSession { role: Role; employeeId?: string; name: string; kind?: 'SYSTEM' | 'EMPLOYEE'; authVersion?: number }
+export interface DemoSession { role: Role; employeeId?: string; name: string; kind?: 'SYSTEM' | 'EMPLOYEE' | 'QR_DISPLAY'; authVersion?: number }
 export type AuditInput = Pick<AuditEntry, 'action' | 'entity' | 'entityId'> & Partial<Pick<AuditEntry, 'employeeId' | 'oldValues' | 'newValues'>>;

@@ -1,5 +1,5 @@
 import { asc, eq, sql, type SQL } from 'drizzle-orm';
-import { AUTH_SCHEMA_VERSION, assertAuthStoreForBackup, normalizeUsername, type AuthStore, type StoredSystemCredential } from '@/lib/local-auth';
+import { AUTH_SCHEMA_VERSION, assertAuthStoreForBackup, normalizeUsername, type AuthStore, type StoredQrDisplayCredential, type StoredSystemCredential } from '@/lib/local-auth';
 import type { DemoData } from '@/lib/types';
 import { assertPhotosExternalized } from '@/server/photos';
 import type { DbExecutor } from './connection';
@@ -94,6 +94,7 @@ export async function loadAuthStore(db: DbExecutor): Promise<AuthStore> {
   const auth: AuthStore = { schema: AUTH_SCHEMA_VERSION, system: null, employees: {} };
   for (const row of rows) {
     if (row.accountKey === 'SYSTEM') auth.system = row.credential as StoredSystemCredential;
+    else if (row.accountKey === 'QR_DISPLAY') auth.qrDisplay = row.credential as StoredQrDisplayCredential;
     else auth.employees[row.accountKey] = row.credential;
   }
   assertAuthStoreForBackup(auth);
@@ -105,6 +106,7 @@ export async function saveAuthStore(db: DbExecutor, auth: AuthStore): Promise<vo
   const data = await loadData(db);
   validateAuthReferences(data, auth, false);
   const desired = [ ...(auth.system ? [{ accountKey: 'SYSTEM', employeeId: null, credential: auth.system }] : []),
+    ...(auth.qrDisplay ? [{ accountKey: 'QR_DISPLAY', employeeId: null, credential: auth.qrDisplay }] : []),
     ...Object.entries(auth.employees).map(([id, credential]) => ({ accountKey: id, employeeId: id, credential })) ];
   const existing = await db.select().from(schema.credentials);
   const old = new Map(existing.map(row => [row.accountKey, row.credential]));
@@ -155,7 +157,7 @@ export function validateDataReferences(data: DemoData): void {
   unique('attendance.employeeWorkday', data.attendance.map(row => JSON.stringify([row.employeeId, row.workdayId])));
   unique('examEvaluations.examEmployee', data.examEvaluations.map(row => JSON.stringify([row.examId, row.employeeId])));
   add('workdays.multipleOpen', Math.max(0, data.workdays.filter(row => row.state === 'OPEN').length - 1));
-  for (const row of data.employees) { if (!departmentIds.has(row.departmentId)) add('employees.departmentMissing'); if (row.id === 'SYSTEM') add('employees.reservedId'); }
+  for (const row of data.employees) { if (!departmentIds.has(row.departmentId)) add('employees.departmentMissing'); if (['SYSTEM', 'QR_DISPLAY'].includes(row.id)) add('employees.reservedId'); }
   for (const row of data.workdays) {
     add('workdays.duplicateDepartment', row.departmentIds.length - new Set(row.departmentIds).size);
     for (const id of row.departmentIds) if (!departmentIds.has(id)) add('workdays.departmentMissing');
@@ -179,5 +181,10 @@ export function validateAuthReferences(data: DemoData, auth: AuthStore, requireO
   if (orphans) issues['credentials.employeeMissing'] = orphans;
   if (requireOwner && !auth.system) issues['credentials.systemOwnerMissing'] = 1;
   if (auth.system && data.employees.some(row => normalizeUsername(row.username) === normalizeUsername(auth.system!.username))) issues['credentials.ownerUsernameCollision'] = 1;
+  if (auth.qrDisplay) {
+    const qrName = normalizeUsername(auth.qrDisplay.username);
+    if (auth.system && qrName === normalizeUsername(auth.system.username)) issues['credentials.qrDisplayOwnerUsernameCollision'] = 1;
+    if (data.employees.some(row => qrName === normalizeUsername(row.username))) issues['credentials.qrDisplayEmployeeUsernameCollision'] = 1;
+  }
   if (Object.keys(issues).length) throw new DataReferenceError(issues);
 }

@@ -41,6 +41,9 @@ export function resolveAccount(data: DemoData, auth: AuthStore, accountKey: stri
   if (accountKey === 'SYSTEM') {
     return auth.system?.version === version ? { role: 'SUPER_ADMIN', kind: 'SYSTEM', name: 'مدير النظام', authVersion: version } : null;
   }
+  if (accountKey === 'QR_DISPLAY') {
+    return auth.qrDisplay?.active && auth.qrDisplay.version === version ? { role: 'QR_DISPLAY', kind: 'QR_DISPLAY', name: 'شاشة الحضور', authVersion: version } : null;
+  }
   const employee = data.employees.find(row => row.id === accountKey && row.active);
   const credential = Object.hasOwn(auth.employees, accountKey) ? auth.employees[accountKey] : null;
   return employee && credential?.version === version ? { role: employee.role, kind: 'EMPLOYEE', employeeId: employee.id, name: employee.name, authVersion: version } : null;
@@ -73,6 +76,9 @@ export function makeSnapshot(context: Pick<StateContext, 'data' | 'auth' | 'revi
     systemConfigured: !!context.auth.system,
     // Public status must never disclose the owner's chosen username.
     systemUsername: context.identity?.actor.role === 'SUPER_ADMIN' ? context.auth.system?.username ?? '' : '',
+    qrDisplayConfigured: context.identity?.actor.role === 'SUPER_ADMIN' ? !!context.auth.qrDisplay : false,
+    qrDisplayUsername: context.identity?.actor.role === 'SUPER_ADMIN' ? context.auth.qrDisplay?.username ?? '' : '',
+    qrDisplayActive: context.identity?.actor.role === 'SUPER_ADMIN' ? context.auth.qrDisplay?.active ?? false : false,
     today, month: today.slice(0, 7), serverTime: context.now.toISOString(), backend: 'neon', pendingImport: !context.auth.system,
   };
 }
@@ -139,6 +145,7 @@ export async function login(request: Request, input: { username: string; passwor
     let accountKey: string | null = null;
     let credential: StoredCredential | null = null;
     if (auth.system && normalizeUsername(auth.system.username) === username) { accountKey = 'SYSTEM'; credential = auth.system; }
+    else if (auth.qrDisplay?.active && normalizeUsername(auth.qrDisplay.username) === username) { accountKey = 'QR_DISPLAY'; credential = auth.qrDisplay; }
     else {
       const employee = data.employees.find(row => normalizeUsername(row.username) === username);
       if (employee) { accountKey = employee.id; credential = Object.hasOwn(auth.employees, employee.id) ? auth.employees[employee.id] : null; }

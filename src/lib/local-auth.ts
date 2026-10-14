@@ -20,9 +20,14 @@ export interface StoredSystemCredential extends StoredCredential {
   username: string;
 }
 
+export interface StoredQrDisplayCredential extends StoredSystemCredential {
+  active: boolean;
+}
+
 export interface AuthStore {
   schema: number;
   system: StoredSystemCredential | null;
+  qrDisplay?: StoredQrDisplayCredential | null;
   employees: Record<string, StoredCredential>;
 }
 
@@ -67,6 +72,12 @@ function validCredential(value: unknown): value is StoredCredential {
   }
 }
 
+function validQrDisplayCredential(value: unknown): value is StoredQrDisplayCredential {
+  return isRecord(value) && validCredential(value)
+    && typeof value.username === 'string' && Boolean(normalizeUsername(value.username))
+    && typeof value.active === 'boolean';
+}
+
 function parseAuthStore(raw: string | null): AuthStore {
   if (!raw) return emptyStore();
   const parsed: unknown = JSON.parse(raw);
@@ -75,9 +86,14 @@ function parseAuthStore(raw: string | null): AuthStore {
       || typeof parsed.system.username !== 'string' || !normalizeUsername(parsed.system.username)))) {
     throw new Error('تعذر قراءة بيانات تسجيل الدخول المحفوظة.');
   }
+  const qrDisplay = Object.hasOwn(parsed, 'qrDisplay') ? parsed.qrDisplay : null;
+  if (qrDisplay !== null && !validQrDisplayCredential(qrDisplay)) {
+    throw new Error('تعذر قراءة بيانات حساب شاشة الحضور.');
+  }
   return {
     schema: AUTH_SCHEMA_VERSION,
     system: parsed.system as StoredSystemCredential | null,
+    ...(qrDisplay ? { qrDisplay } : {}),
     employees: Object.fromEntries(Object.entries(parsed.employees).filter(([, credential]) => validCredential(credential))) as Record<string, StoredCredential>,
   };
 }
@@ -95,18 +111,20 @@ export function assertAuthStoreForBackup(value: unknown): asserts value is AuthS
   const exactKeys = (record: Record<string, unknown>, keys: string[]) =>
     Object.keys(record).length === keys.length && keys.every(key => Object.hasOwn(record, key));
   const credentialKeys = ['salt', 'hash', 'version', 'updatedAt'];
-  const strictCredential = (credential: unknown, system = false) => {
+  const strictCredential = (credential: unknown, extraKeys: string[] = []) => {
     if (!isRecord(credential) || !validCredential(credential)
-      || !exactKeys(credential, system ? [...credentialKeys, 'username'] : credentialKeys)) return false;
+      || !exactKeys(credential, [...credentialKeys, ...extraKeys])) return false;
     // Generated credentials use canonical base64; accepting another representation
     // could hide a damaged or partially edited backup.
     return bytesToBase64(base64ToBytes(credential.salt)) === credential.salt
       && bytesToBase64(base64ToBytes(credential.hash)) === credential.hash;
   };
-  if (!isRecord(value) || !exactKeys(value, ['schema', 'system', 'employees'])
+  if (!isRecord(value) || !(exactKeys(value, ['schema', 'system', 'employees']) || exactKeys(value, ['schema', 'system', 'qrDisplay', 'employees']))
     || value.schema !== AUTH_SCHEMA_VERSION || !isRecord(value.employees)
-    || (value.system !== null && (!strictCredential(value.system, true) || !isRecord(value.system)
+    || (value.system !== null && (!strictCredential(value.system, ['username']) || !isRecord(value.system)
       || typeof value.system.username !== 'string' || !normalizeUsername(value.system.username)))
+    || (Object.hasOwn(value, 'qrDisplay') && value.qrDisplay !== null && (!isRecord(value.qrDisplay) || !strictCredential(value.qrDisplay, ['username', 'active'])
+      || typeof value.qrDisplay.username !== 'string' || !normalizeUsername(value.qrDisplay.username) || typeof value.qrDisplay.active !== 'boolean'))
     || Object.entries(value.employees).some(([id, credential]) => !id.trim() || !strictCredential(credential))) {
     throw new Error('تعذر إنشاء نسخة كاملة: بيانات تسجيل الدخول المحفوظة غير صالحة. لم يتم حذف أو تغيير أي بيانات.');
   }

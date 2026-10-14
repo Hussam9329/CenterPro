@@ -29,6 +29,9 @@ export interface RemoteSnapshot {
   serverTime: string;
   backend: 'neon';
   pendingImport: boolean;
+  qrDisplayConfigured: boolean;
+  qrDisplayUsername: string;
+  qrDisplayActive: boolean;
 }
 
 /** Diff only the records the caller can see; server validates every operation
