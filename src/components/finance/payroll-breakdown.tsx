@@ -5,9 +5,10 @@ import { Badge, Card, EmptyState } from '@/components/ui';
 import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
 import { date, duration, money, monthLabel } from '@/lib/format';
 import { CircleAlert, CircleCheck } from 'lucide-react';
+import { paymentLabels } from '@/lib/finance/payment-status';
 import styles from './finance.module.css';
 
-export const paymentLabels = { UNPAID: 'غير مصروف', PAID: 'تم الصرف', REVIEW: 'يحتاج مراجعة' } as const;
+export { paymentLabels } from '@/lib/finance/payment-status';
 export function PaymentBadge({ status }: { status: PayrollResult['paymentStatus'] }) {
   return <Badge tone={status === 'PAID' ? 'success' : status === 'REVIEW' ? 'warning' : 'neutral'}>{paymentLabels[status]}</Badge>;
 }

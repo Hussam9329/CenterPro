@@ -1,0 +1,43 @@
+/* Navigation and application frame */
+.app-shell { min-height: 100dvh; }
+.sidebar { position: fixed; inset-block: 0; right: 0; width: 232px; z-index: 40; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 27px 17px 20px; overflow-y: auto; }
+.sidebar-brand { display: flex; align-items: center; justify-content: center; margin: 5px 0 25px; min-height: 50px; }
+.sidebar-brand .brand img { width: 169px; }
+.workspace-label { display: flex; align-items: center; gap: 8px; color: #555a63; border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; font-size: 11px; margin-bottom: 28px; background: #fcfcfd; }
+.workspace-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+.workspace-version { margin-inline-start: auto; color: #92969d; font-size: 10px; }
+.nav-caption { margin: 0 13px 10px; font-size: 10px; font-weight: 500; color: #969aa3; }
+.sidebar nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-link { position: relative; width: 100%; display: flex; gap: 12px; align-items: center; min-height: 43px; padding: 9px 13px; border: 0; border-radius: 7px; background: transparent; color: #646973; text-align: start; font-size: 12px; font-weight: 500; }
+.nav-link svg { color: #888d96; stroke-width: 1.6; }
+.nav-link:hover { color: var(--brand); background: #faf5f6; }
+.nav-link.active { color: var(--brand); background: #fbf0f2; font-weight: 650; }
+.nav-link.active svg { color: var(--brand); stroke-width: 1.9; }
+.nav-active-mark { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); margin-inline-start: auto; }
+.sidebar-qr { display: flex; align-items: center; gap: 10px; padding: 15px 10px; margin-top: 27px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--brand); font-size: 12px; font-weight: 600; }
+.sidebar-qr > div { flex: 1; }
+.sidebar-qr span { display: block; color: #8a8d96; font-size: 9px; font-weight: 400; margin-top: 4px; }
+.sidebar-footer { display: flex; gap: 8px; align-items: center; color: #9296a0; font-size: 9px; padding: 30px 9px 0; margin-top: auto; }
+.app-main { margin-right: 232px; min-height: 100dvh; display: flex; flex-direction: column; min-width: 0; }
+.preview-strip { min-height: 28px; padding: 4px 32px; display: flex; gap: 8px; align-items: center; background: #fbf0f2; border-bottom: 1px solid #f2dfe3; color: #873f4b; font-size: 9px; }
+.preview-dot { width: 5px; height: 5px; background: var(--brand); border-radius: 50%; }
+.preview-strip-detail { color: #a47881; margin-inline-start: 5px; }
+.preview-strip a { display: inline-flex; gap: 4px; align-items: center; margin-inline-start: auto; font-weight: 600; }
+.topbar { height: 76px; background: #fff; border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.breadcrumb { display: flex; gap: 11px; align-items: center; font-size: 11px; color: #9397a0; }
+.breadcrumb > span { font-size: 12px; color: #9b9da5; }
+.breadcrumb > svg { width: 12px; }
+.breadcrumb strong { color: #555963; font-weight: 550; }
+.topbar-end { display: flex; align-items: center; gap: 18px; }
+.topbar-date { display: flex; gap: 8px; align-items: center; color: #7a7f89; font-size: 11px; }
+.topbar-date svg { color: #9196a0; }
+.topbar-divider { width: 1px; height: 27px; background: var(--border); }
+.user-menu { display: flex; align-items: center; gap: 10px; }
+.user-menu > div { display: grid; gap: 2px; }
+.user-menu strong { font-size: 11px; font-weight: 600; }
+.user-menu span:not(.avatar) { display: block; font-size: 9px; color: #969aa3; }
+.user-menu > svg { color: #999da5; }
+.main-content { width: 100%; max-width: 1640px; margin-inline: auto; padding: 32px; flex: 1; min-width: 0; }
+.app-footer { display: flex; justify-content: space-between; gap: 20px; color: #9a9da6; font-size: 9px; padding: 5px 32px 23px; max-width: 1640px; width: 100%; margin-inline: auto; }
+.mobile-menu, .mobile-bottom-nav { display: none; }
+.mobile-nav-links { display: grid; gap: 5px; }

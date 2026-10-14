@@ -1,0 +1,116 @@
+/* Keep secondary copy readable at compact UI sizes. */
+:root { --muted: #6b707b; }
+.workspace-version, .nav-caption, .sidebar-qr span, .sidebar-footer,
+.preview-strip-detail, .breadcrumb, .breadcrumb > span,
+.topbar-date, .user-menu span:not(.avatar), .app-footer,
+.eyebrow, .page-header p, .card-heading p, .stat-top,
+.stat-hint, .detail-item dt, .field-hint, .tabs button,
+.data-table th, .pagination, .empty-state p,
+.dialog-header p, .legend-item, .big-metric span,
+.quick-note, .quick-action span, .department-bar-top,
+.department-bar-top span:last-child, .activity-row p,
+.activity-row > time, .activity-row > span:last-child,
+.employee-hero-scan p, .login-heading p,
+.login-role p, .login-role span:not(.login-role-icon), .login-footer {
+  color: #6b707b;
+}
+.input::placeholder { color: #737782; }
+.input:disabled, .input[readonly] { color: #6b707b; }
+.badge-neutral { color: #626a75; }
+.badge-warning { color: #805b20; }
+.notice { color: #626a79; }
+.notice-warning { color: #805c2e; }
+.login-preview-note { color: #8c5463; }
+.stat-accent .stat-top, .stat-accent .stat-hint, .stat-accent .stat-icon,
+.employee-hero-main p, .employee-salary span, .employee-salary span:last-child,
+.login-story-kicker, .login-story-copy, .login-story > p,
+.login-story-inner > p, .login-story-footer { color: #f0ced4; }
+.mobile-bottom-nav > a, .mobile-bottom-nav > button { color: #6b707b; }
+.mobile-bottom-nav .active { color: var(--brand); }
+
+/* Shell and dashboard details mapped to their semantic markup. */
+.skip-link { position: fixed; top: 10px; right: 15px; z-index: 300; padding: 11px 18px; border-radius: 7px; color: #fff; background: var(--brand); box-shadow: 0 4px 20px #22122220; transform: translateY(-180%); font-size: 12px; }
+.skip-link:focus-visible { transform: translateY(0); outline: 3px solid #e8b6c0; }
+.welcome-line { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #6b707b; margin-bottom: 8px; }
+.welcome-line .line { display: inline-block; width: 21px; height: 2px; background: #bc6676; }
+.big-metric { font-size: 39px; line-height: 1.3; font-weight: 650; letter-spacing: -1px; color: #242933; }
+.big-metric small { font-size: 19px; color: #727987; font-weight: 400; letter-spacing: 0; }
+.progress-track .pending { background: #e8d6ba; }
+.attendance-legend { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+.legend-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.legend-item > span:first-child { display: inline-flex; align-items: center; gap: 7px; width: auto; height: auto; background: transparent; border-radius: 0; white-space: nowrap; }
+.legend-item > span > i { display: inline-block; width: 6px; height: 6px; border-radius: 2px; background: var(--brand); flex-shrink: 0; }
+.legend-item:nth-child(2) > span > i { background: #dfc7a2; }
+.legend-item:nth-child(3) > span > i { background: #c997a3; }
+.legend-item strong { margin: 0; font-size: 12px; }
+.card-bottom > span { font-size: 10px; color: #6b707b; }
+.quick-action > span { display: block; margin-top: 0; font-size: 11px; color: #5e6673; }
+.quick-note { display: flex; align-items: flex-start; gap: 8px; line-height: 1.95; }
+.quick-note svg { color: #9097a2; width: 15px; height: 15px; margin-top: 3px; }
+.employee-cell { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
+.employee-cell > div { display: flex; flex-direction: column; gap: 4px; }
+.employee-cell strong { color: #404854; font-size: 12px; font-weight: 600; }
+.employee-cell:hover strong { color: var(--brand); }
+.subtext { display: block; color: #6b707b; font-size: 10px; line-height: 1.6; }
+.employee-cell .subtext { text-align: right; }
+.activity-row { align-items: flex-start; }
+.activity-dot { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: #faf1f4; color: #b26475; margin-top: 1px; }
+.activity-row > div { min-width: 0; flex: 1; }
+.activity-row p { margin: 0; font-size: 11px; font-weight: 550; color: #5f6673; }
+.activity-row small { display: block; font-size: 10px; color: #6b707b; margin-top: 4px; }
+.activity-row time { margin-top: 4px; }
+.login-mobile-brand { display: none; }
+.login-role-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.login-role { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 11px; min-height: 89px; padding: 14px 8px 12px; text-align: center; }
+.login-role .login-role-icon { width: 21px; height: 21px; background: transparent; border-radius: 0; color: #818a97; stroke-width: 1.7; }
+.login-role.active .login-role-icon { background: transparent; color: var(--brand); }
+.login-role span:not(.login-role-icon) { margin: 0; font-size: 10px; color: #636c79; }
+.login-role.active span { color: var(--brand); font-weight: 600; }
+.login-preview-note { display: block; }
+.login-preview-note strong { display: block; margin-bottom: 4px; color: #8c5463; font-size: 11px; }
+.login-preview-note p { font-size: 10px; color: #8c5463; line-height: 2; }
+@media (max-width: 767px) {
+  .big-metric { font-size: 35px; }
+  .big-metric small { font-size: 17px; }
+  .attendance-legend { gap: 13px; }
+  .legend-item { font-size: 10px; gap: 5px; }
+  .legend-item > span:first-child { gap: 5px; }
+  .card-bottom { flex-wrap: wrap; row-gap: 7px; }
+  .activity-row { gap: 10px; }
+  .activity-row time { font-size: 8px; }
+  .login-story { display: none; }
+  .login-form-side { min-height: 100dvh; padding-block: 38px; }
+  .login-mobile-brand { display: flex; justify-content: flex-start; margin-bottom: 37px; }
+  .login-mobile-brand .brand img { width: 169px; }
+  .login-role-grid { gap: 8px; }
+  .login-role { min-height: 85px; padding-inline: 6px; }
+  .login-role span:not(.login-role-icon) { font-size: 10px; }
+}
+@media (max-width: 390px) {
+  .attendance-legend { gap: 10px; }
+  .legend-item { font-size: 9px; }
+  .legend-item strong { font-size: 11px; }
+  .quick-action > span { font-size: 10px; }
+}
+
+/* Guided first-run setup retains the CenterPro card hierarchy. */
+.setup-guide { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; list-style:none; padding:0; margin:0; }
+.setup-step { min-width:0; padding:22px; border:1px solid var(--border); border-radius:14px; background:var(--surface-soft, #fafafb); }
+.setup-step-top { display:flex; align-items:center; justify-content:space-between; color:var(--brand, #a51c30); margin-bottom:18px; }
+.setup-step-number { display:grid; place-items:center; width:34px; height:34px; background:#fff; border:1px solid var(--border); border-radius:10px; font:600 13px 'Inter Variable', sans-serif; }
+.setup-step h3 { font-size:14px; margin:0 0 8px; }
+.setup-step p { font-size:11px; line-height:1.9; color:#6b707b; margin:0 0 18px; }
+.setup-step .muted { font-size:10px; }
+.setup-step.completed { background:#fff; }
+.login-role:disabled { cursor:not-allowed; opacity:.55; }
+@media(max-width:600px) { .setup-guide { grid-template-columns:1fr; gap:10px; } .setup-step { padding:18px; } .setup-step-top { margin-bottom:10px; } }
+
+/* Numeric inputs: CenterPro uses explicit values, never browser stepper chrome. */
+.input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+.input[type="number"]::-webkit-outer-spin-button,
+.input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.login-test-data { margin-top: 12px; border: 1px solid #e7e7eb; border-radius: 9px; padding: 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 11px; align-items: center; background: #fff; color: #656b76; }
+.login-test-data > svg { color: var(--brand); }
+.login-test-data strong { display:block; color:#4a505b; font-size:11px; }
+.login-test-data p { color:#999da6; font-size:9px; line-height:1.9; }
+@media (max-width: 767px) { .login-test-data { grid-template-columns:auto 1fr; } .login-test-data .btn { grid-column:1 / -1; width:100%; } }

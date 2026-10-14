@@ -1,68 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
 import { Archive, Plus, Trophy } from 'lucide-react';
-import { useDemo, useToast } from '@/components/demo-provider';
 import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
-import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Badge, Button, Card, ConfirmDialog, EmptyState, PageHeader, Select } from '@/components/ui';
-import { buildEvaluationCycleSnapshot, getCycleLeaderboard, getOpenEvaluationCycle, getOpenEvaluationSeason } from '@/lib/evaluations';
 import { date } from '@/lib/format';
 import { Leaderboard } from '@/components/evaluations/leaderboard';
+import { useCycleManagement } from '@/components/evaluations/use-cycle-management';
 import styles from '@/components/evaluations/evaluations.module.css';
 
 export default function EvaluationCyclesPage() {
-  const { data, session, updateData } = useDemo();
-  const params = useSearchParams();
-  const router = useRouter();
-  const toast = useToast();
-  const { mutate, pending } = useAsyncMutation(toast);
-  const season = getOpenEvaluationSeason(data);
-  const cycle = getOpenEvaluationCycle(data);
-  const [closeOpen, setCloseOpen] = useState(false);
-  const requestedSeason = params.get('season') ?? '';
-  const seasonFilter = requestedSeason === '__legacy__' || data.evaluationSeasons.some(item => item.id === requestedSeason) ? requestedSeason : '';
-  const matchesSeason = (seasonId?: string) => !seasonFilter || (seasonFilter === '__legacy__' ? !seasonId : seasonId === seasonFilter);
-  const visibleCycle = cycle && matchesSeason(cycle.seasonId) ? cycle : undefined;
-  const canOpen = !cycle && Boolean(season && matchesSeason(season.id));
-  const archived = [...data.evaluationCycles].filter(item => item.state === 'ARCHIVED' && matchesSeason(item.seasonId)).sort((a,b) => (b.closedAt || '').localeCompare(a.closedAt || ''));
-  const leaderboard = cycle ? getCycleLeaderboard(data, cycle.id) : [];
-
-  async function openCycle() {
-    if (!session || cycle) return;
-    if (!season) { toast('افتح موسماً أولاً.'); return; }
-    const id = crypto.randomUUID(); const count = data.evaluationCycles.filter(item => item.seasonId === season.id).length + 1; const now = new Date().toISOString(); const name = `دورة التقييم ${count}`;
-    try {
-      if (!await mutate(() => updateData(draft => { draft.evaluationCycles.push({ id, seasonId:season.id, name, state:'OPEN', openedAt:now, openedBy:session.name }); }, { action:'فتح دورة تقييم جديدة', entity:'evaluation-cycle', entityId:id, newValues:{ name, seasonId:season.id } }))) return;
-    } catch (failure) {
-      toast(failure instanceof Error ? failure.message : 'تعذر فتح دورة التقييم.');
-      return;
-    }
-    toast('تم فتح دورة تقييم جديدة.');
-  }
-
-  async function closeCycle() {
-    if (!session || !cycle) return;
-    const now = new Date().toISOString();
-    try {
-      if (!await mutate(() => updateData(draft => {
-        const current = draft.evaluationCycles.find(item => item.id === cycle.id); if (!current) throw new Error('دورة التقييم غير موجودة.');
-        const snapshot = buildEvaluationCycleSnapshot(draft, cycle.id);
-        current.state='ARCHIVED'; current.closedAt=now; current.closedBy=session.name; current.snapshot=snapshot;
-        draft.evaluationExams.filter(item => item.cycleId === cycle.id).forEach(exam => { if (exam.state === 'OPEN') { exam.state='CLOSED'; exam.closedAt=now; exam.closedBy=session.name; } });
-      }, (_before, after) => {
-        const snapshot = after.evaluationCycles.find(item => item.id === cycle.id)?.snapshot;
-        return { action:'إغلاق وأرشفة دورة التقييم', entity:'evaluation-cycle', entityId:cycle.id, oldValues:{state:'OPEN'}, newValues:{state:'ARCHIVED', rows:snapshot?.rows.length ?? 0, exams:snapshot?.exams.length ?? 0} };
-      }))) return;
-      setCloseOpen(false); toast('تم إغلاق وأرشفة دورة التقييم.');
-    } catch (failure) { toast(failure instanceof Error ? failure.message : 'تعذرت أرشفة الدورة.'); }
-  }
+  const { data, season, cycle, visibleCycle, canOpen, archived, leaderboard, seasonFilter, selectSeason, closeOpen, setCloseOpen, openCycle, closeCycle, pending } = useCycleManagement();
 
   return <div className="page-stack">
     <PageHeader title="دورات التقييم" actions={<div className="inline"><Link href="/evaluations" className="button-link">التدقيق</Link>{!cycle && <Button loading={pending} onClick={openCycle} disabled={!canOpen}><Plus size={17}/>فتح دورة</Button>}{visibleCycle && <Button variant="secondary" onClick={() => setCloseOpen(true)}><Archive size={17}/>إغلاق الدورة</Button>}</div>} />
-    {(data.evaluationSeasons.length > 0 || data.evaluationCycles.some(item => !item.seasonId)) && <Select aria-label="اختيار الموسم" value={seasonFilter} onChange={event => router.replace(event.target.value ? `/evaluations/cycles?season=${encodeURIComponent(event.target.value)}` : '/evaluations/cycles')}><option value="">كل المواسم</option>{data.evaluationSeasons.map(item => <option key={item.id} value={item.id}>{item.name}{item.state === 'ARCHIVED' ? ' — مؤرشف' : ' — الحالي'}</option>)}{data.evaluationCycles.some(item => !item.seasonId) && <option value="__legacy__">دورات سابقة بلا موسم</option>}</Select>}
+    {(data.evaluationSeasons.length > 0 || data.evaluationCycles.some(item => !item.seasonId)) && <Select aria-label="اختيار الموسم" value={seasonFilter} onChange={event => selectSeason(event.target.value)}><option value="">كل المواسم</option>{data.evaluationSeasons.map(item => <option key={item.id} value={item.id}>{item.name}{item.state === 'ARCHIVED' ? ' — مؤرشف' : ' — الحالي'}</option>)}{data.evaluationCycles.some(item => !item.seasonId) && <option value="__legacy__">دورات سابقة بلا موسم</option>}</Select>}
     {visibleCycle ? <>
       <div className={styles.adminSectionBar}><div><span>{visibleCycle.seasonId ? 'الدورة الحالية' : 'دورة سابقة بلا موسم'}</span><strong>{visibleCycle.name}</strong></div><Badge tone="brand">مفتوحة</Badge></div>
       <div className="inline"><SafeDeleteButton collection="evaluationCycles" id={visibleCycle.id} label={visibleCycle.name} /></div><Card title="Leaderboard الدورة"><Leaderboard rows={leaderboard}/></Card>

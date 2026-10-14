@@ -1,5 +1,5 @@
 import { isExpected } from '@/lib/attendance';
-import type { AttendanceRecord, DemoData, DemoSession, Employee, Workday } from '@/lib/types';
+import type { AttendanceRecord, AttendanceStatus, DemoData, DemoSession, Employee, Workday } from '@/lib/types';
 
 export type AttendanceRow = { employee: Employee; day: Workday; record: AttendanceRecord };
 
@@ -21,3 +21,6 @@ export function canEditDay(data: DemoData, session: DemoSession | null, day: Wor
   const state = data.months.find(item => item.month === day.date.slice(0, 7))?.state;
   return Boolean(session && session.role !== 'EMPLOYEE' && state !== 'ARCHIVED' && (state !== 'REOPENED' || session.role === 'SUPER_ADMIN'));
 }
+
+export const attendanceStatuses: AttendanceStatus[] = ['PRESENT', 'UNRESOLVED', 'EXCUSED', 'UNEXCUSED', 'EXEMPT'];
+export const statusTone = (status: AttendanceStatus) => status === 'PRESENT' ? 'success' : status === 'UNRESOLVED' || status === 'EXCUSED' ? 'warning' : status === 'UNEXCUSED' ? 'danger' : 'neutral';

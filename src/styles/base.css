@@ -1,0 +1,57 @@
+:root {
+  color-scheme: light;
+  --brand: #a51c30;
+  --brand-dark: #861627;
+  --brand-light: #fbf0f2;
+  --brand-text: #a51c30;
+  --focus: #a51c30;
+  --ink: #111318;
+  --text: #23252b;
+  --muted: #747881;
+  --border: #e9e9ed;
+  --canvas: #f8f9fb;
+  --background: #f8f9fb;
+  --foreground: #23252b;
+  --surface: #fff;
+  --surface-soft: #fafafb;
+  --success: #34735a;
+  --warning: #946925;
+  --radius: 12px;
+  --font-sans: "Inter Variable", "Noto Sans Arabic Variable", sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --shadow: 0 3px 15px #16111a04;
+}
+@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --font-sans: "Inter Variable", "Noto Sans Arabic Variable", sans-serif; }
+* { box-sizing: border-box; }
+html { min-height: 100%; background: var(--canvas); scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100vh; min-width: 320px; background: var(--canvas); color: var(--text); font-family: var(--font-sans); font-size: 13px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
+button, summary { touch-action: manipulation; }
+button, a { transition: color .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+img, svg { flex-shrink: 0; }
+img { max-width: 100%; }
+input, select, textarea { color-scheme: light; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+::selection { background: #efd0d6; color: var(--ink); }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { line-height: 1.6; color: var(--ink); }
+h2 { font-size: 18px; font-weight: 650; }
+h3 { font-size: 15px; font-weight: 650; }
+p + p { margin-top: 8px; }
+strong { font-weight: 650; }
+small { font-size: 11px; }
+fieldset { min-width: 0; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.brand { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+.brand img { width: 175px; height: auto; }

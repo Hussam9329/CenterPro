@@ -1,0 +1,155 @@
+/* Width-specific layouts */
+@media (min-width: 1700px) { .main-content { padding: 40px 45px; } .topbar { padding-inline: 45px; } .preview-strip { padding-inline: 45px; } .page-stack { gap: 28px; } .card { padding: 27px; } }
+@media (max-width: 1230px) {
+  .main-content { padding: 27px 24px; }
+  .topbar { padding-inline: 24px; }
+  .preview-strip { padding-inline: 24px; }
+  .stat-card { padding: 18px; }
+  .stat-value { font-size: 24px; }
+  .dashboard-split { grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); }
+  .quick-actions { gap: 8px; }
+  .quick-action { padding: 13px 10px; gap: 8px; }
+  .card { padding: 21px; }
+}
+@media (max-width: 1023px) {
+  .sidebar { display: none; }
+  .app-main { margin-right: 0; padding-bottom: calc(68px + env(safe-area-inset-bottom,0px)); }
+  .mobile-menu { display: inline-flex; }
+  .mobile-bottom-nav { position: fixed; inset-inline: 0; bottom: 0; z-index: 45; display: flex; align-items: stretch; justify-content: space-around; height: calc(65px + env(safe-area-inset-bottom,0px)); padding-bottom: env(safe-area-inset-bottom,0px); background: #fffffff7; border-top: 1px solid #ecebf0; box-shadow: 0 -4px 18px #2b1b2303; }
+  .mobile-bottom-nav > a, .mobile-bottom-nav > button { min-width: 0; flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; background: transparent; border: 0; color: #a2a5ad; font-size: 9px; padding: 9px 5px 7px; }
+  .mobile-bottom-nav svg { stroke-width: 1.6; }
+  .mobile-bottom-nav .active { color: var(--brand); background: #fdf7f8; }
+  .mobile-bottom-nav .active svg { stroke-width: 2; }
+  .topbar { height: 70px; }
+  .main-content { padding: 27px 25px; }
+  .toast { bottom: calc(82px + env(safe-area-inset-bottom,0px)); }
+  .employee-shell .main-content { max-width: 1100px; }
+  .login-page { grid-template-columns: 42% 58%; }
+  .login-story { padding: 40px 29px; }
+  .login-form-side { padding: 40px 35px; }
+  .login-story-title, .login-story h1 { font-size: 29px; }
+}
+@media (max-width: 767px) {
+  body { font-size: 12px; }
+  .preview-strip { padding-inline: 17px; min-height: 30px; font-size: 9px; }
+  .preview-strip-detail { display: none; }
+  .topbar { height: 66px; padding-inline: 13px; }
+  .topbar-date, .topbar-divider, .desktop-logout { display: none; }
+  .topbar-end { gap: 8px; }
+  .user-menu { gap: 7px; }
+  .user-menu > div { display: none; }
+  .user-menu > svg { width: 14px; }
+  .user-menu .avatar { width: 32px; height: 32px; border-radius: 8px; font-size: 10px; }
+  .breadcrumb { gap: 7px; font-size: 10px; }
+  .breadcrumb > span { font-size: 11px; }
+  .main-content { padding: 24px 17px; }
+  .app-footer { padding: 5px 17px 18px; font-size: 8px; }
+  .page-stack { gap: 21px; }
+  .page-header { flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+  .page-header h1 { font-size: 24px; }
+  .page-header p { font-size: 11px; }
+  .page-header .eyebrow { font-size: 9px; }
+  .page-actions { max-width: 100%; flex-wrap: wrap; gap: 7px; }
+  .page-actions .btn, .page-actions .button-link { min-height: 39px; font-size: 11px; padding-inline: 12px; }
+  .card { padding: 19px 17px; border-radius: 10px; }
+  .card-heading { margin-bottom: 19px; }
+  .card-heading h2 { font-size: 14px; }
+  .card-heading p { font-size: 10px; }
+  .card-heading .button-link { font-size: 10px; padding: 6px 8px; min-height: 33px; }
+  .stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+  .stat-card { padding: 16px 15px; border-radius: 9px; }
+  .stat-top { font-size: 10px; gap: 4px; }
+  .stat-icon { width: 23px; height: 23px; }
+  .stat-icon svg { width: 18px; height: 18px; }
+  .stat-value { font-size: 24px; margin-top: 10px; }
+  .stat-hint { font-size: 9px; margin-top: 5px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 18px; }
+  .form-grid { grid-template-columns: 1fr; gap: 17px; }
+  .field-span-2 { grid-column: auto; }
+  .field-label { font-size: 12px; }
+  .input { font-size: 13px; min-height: 45px; padding-block: 11px; }
+  .input[type="date"], .input[type="month"], .input[type="time"] { min-height: 45px; }
+  .btn, .button-link { min-height: 44px; font-size: 12px; }
+  .form-actions { gap: 9px; margin-top: 24px; padding-top: 19px; }
+  .form-actions > .btn { flex: 1; }
+  .toolbar { gap: 12px; align-items: stretch; }
+  .toolbar > .inline { flex-wrap: wrap; }
+  .filter-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .filter-row > .search-input { grid-column: 1 / -1; min-width: 0; }
+  .filter-row > .input { min-width: 0; width: 100%; }
+  .desktop-table { display: none; }
+  .mobile-cards { display: flex; flex-direction: column; gap: 13px; }
+  .mobile-cards > .card { padding: 17px 14px; box-shadow: none; }
+  .pagination { font-size: 10px; }
+  .pagination .btn { width: 37px; min-height: 37px; }
+  .tabs { gap: 0; }
+  .tabs button { font-size: 11px; padding: 11px 12px 13px; min-height: 43px; }
+  .notice { font-size: 10px; padding: 13px 14px; gap: 9px; }
+  .notice > svg { width: 17px; height: 17px; }
+  .detail-grid { gap: 23px 16px; }
+  .detail-item dd { font-size: 12px; }
+  .badge { font-size: 9px; min-height: 25px; padding-inline: 8px; }
+  .dialog-content, .dialog-wide { width: calc(100vw - 24px); max-height: 92dvh; border-radius: 12px; }
+  .dialog-header { padding: 19px 18px 17px; gap: 12px; }
+  .dialog-header h2 { font-size: 17px; }
+  .dialog-header p { font-size: 10px; }
+  .dialog-body { padding: 21px 18px 22px; }
+  .toast { font-size: 11px; padding: 12px 13px; gap: 8px; }
+  .empty-state { padding: 32px 10px; }
+  .dashboard-split, .dashboard-lower { grid-template-columns: 1fr; gap: 19px; }
+  .today-summary { margin-bottom: 20px; }
+  .attendance-legend { gap: 17px; }
+  .big-metric strong { font-size: 35px; }
+  .quick-action { min-height: 65px; padding: 17px 14px; font-size: 11px; }
+  .department-bars { gap: 20px; }
+  .employee-hero { grid-template-columns: 1fr; }
+  .employee-hero-main { padding: 24px; }
+  .employee-salary { margin-top: 25px; }
+  .employee-salary strong { font-size: 31px; }
+  .employee-hero-scan { padding: 24px; gap: 12px; }
+  .employee-hero-scan h2 { font-size: 17px; }
+  .employee-scan-icon { padding: 12px; }
+  .employee-scan-icon svg { width: 31px; height: 31px; }
+  .employee-hero-scan .btn { width: 100%; }
+  .employee-shell .grid-3 { grid-template-columns: 1fr; gap: 12px; }
+  .employee-shell .grid-3 .stat-card { padding: 18px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 13px; }
+  .employee-shell .grid-3 .stat-top { grid-column: 1; }
+  .employee-shell .grid-3 .stat-value { grid-column: 2; grid-row: 1 / 3; font-size: 21px; margin: 0; }
+  .employee-shell .grid-3 .stat-hint { grid-column: 1; font-size: 8px; }
+  .login-page { display: flex; flex-direction: column; }
+  .login-story { min-height: auto; padding: 27px 25px; }
+  .login-story .brand { align-self: flex-start; }
+  .login-story .brand img { width: 146px; }
+  .login-story-inner { padding-block: 22px 4px; }
+  .login-story-kicker { display: none; }
+  .login-story-title, .login-story h1 { font-size: 24px; line-height: 1.75; margin-bottom: 8px; max-width: none; }
+  .login-story-copy, .login-story > p, .login-story-inner > p { font-size: 11px; max-width: none; }
+  .login-story-points, .login-story-footer { display: none; }
+  .login-form-side { padding: 33px 24px 40px; }
+  .login-heading { margin-bottom: 25px; }
+  .login-heading h1, .login-heading h2 { font-size: 24px; }
+  .login-role { padding: 15px; min-height: 74px; }
+  .login-role-grid { gap: 10px; }
+  .login-preview-note { margin-top: 19px; font-size: 10px; }
+  .login-footer { margin-top: 26px; }
+}
+@media (max-width: 390px) {
+  .main-content { padding: 21px 14px; }
+  .stat-card { padding: 14px 12px; }
+  .stat-value { font-size: 21px; letter-spacing: -.5px; }
+  .stat-top { font-size: 9px; }
+  .stat-hint { font-size: 8px; }
+  .card { padding: 17px 14px; }
+  .page-header h1 { font-size: 22px; }
+  .attendance-legend { gap: 11px; }
+  .legend-item { font-size: 9px; }
+  .btn, .button-link { padding-inline: 12px; }
+  .dialog-header { padding-inline: 15px; }
+  .dialog-body { padding-inline: 15px; }
+  .employee-hero-main { padding: 22px; }
+  .employee-salary strong { font-size: 27px; }
+  .employee-shell .grid-3 .stat-value { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
