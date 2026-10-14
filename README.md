@@ -80,6 +80,8 @@ See `.github/workflows/quality.yml` and [NEON_BACKEND.md](docs/NEON_BACKEND.md).
 
 Next.js App Router · React · TypeScript strict · Drizzle ORM · Neon PostgreSQL · private Vercel Blob · Zod · Vitest · Playwright · ExcelJS.
 
+See [REFACTOR.md](docs/REFACTOR.md) for the module boundaries and behavior-preservation requirements. The current refactor is prepared locally; publishing it requires the owner's separate approval after validation.
+
 - `src/components/demo-provider.tsx`: compatible client adapter, asynchronous saves and refreshed server snapshots; retains the isolated local regression adapter.
 - `src/lib/server-contract.ts`: record-level change protocol; no whole-database PUT and no client-writable audit log.
 - `src/server/domain.ts`: canonical server validation, authorization, attendance/financial transitions and audit derivation.
