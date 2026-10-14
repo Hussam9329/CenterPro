@@ -263,7 +263,9 @@ export function applyMutation(before: DemoData, actor: DemoSession, request: Mut
       else if (expectedOverrides[employeeId] === 'EXCLUDE') expectedOverrides[employeeId] = 'INCLUDE';
     }
     const manualOverrideOnly = previous && same({ ...item, overrides: previous.overrides }, previous) && same(item.overrides, expectedOverrides) && attendanceChanges.length > 0;
-    if ((previous && !manualOverrideOnly && (item.state === previous.state || item.state === 'OPEN')) || (!previous && (item.date < today || before.months.some(month => month.month === item.date.slice(0, 7) && month.state === 'REOPENED')))) requireReason(reason);
+    // A new workday is a creation, not a historical edit. Preserve the reason
+    // requirement for edits to already-saved workdays and for reopening days.
+    if (previous && !manualOverrideOnly && (item.state === previous.state || item.state === 'OPEN')) requireReason(reason);
     if (previous && item.state !== previous.state) unchanged(previous, item, ['startTime', 'departmentIds', 'overrides']);
     if (!item.departmentIds.length && !Object.values(item.overrides).includes('INCLUDE')) fail('اختر قسماً مشاركاً أو أدرج موظفاً واحداً على الأقل.');
     if (!previous && !after.employees.some(employee => isExpected(employee, item))) fail('لا يوجد موظفون مؤهلون ضمن الاختيارات.');

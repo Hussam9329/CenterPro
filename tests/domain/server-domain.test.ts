@@ -6,6 +6,7 @@ import { createInitialData } from '../../src/lib/mock-data';
 import { getEmployeePayroll, getMonthPayroll, recalculateReopenedPayroll } from '../../src/lib/payroll';
 import { buildEvaluationCycleSnapshot, buildEvaluationSeasonSnapshot, getSeasonLeaderboard } from '../../src/lib/evaluations';
 import { captureMonthSource } from '../../src/components/finance/finance-data';
+import { QUICK_PRESENT_NOTE } from '../../src/lib/attendance-quick-review';
 import { createPopulatedTestData } from '../fixtures/populated-data';
 import type { AuditInput, DemoData, DemoSession, ExamEvaluation, Workday } from '../../src/lib/types';
 
@@ -114,6 +115,37 @@ describe('server workday and attendance invariants', () => {
     expect(() => change(state, next => { next.workdays.push(day('duplicate')); })).toThrow();
     expect(() => change(data(), next => { next.workdays.push({ ...day(), departmentIds: ['missing'] }); })).toThrow();
   });
+  it('does not require a modification reason for the first creation of a workday on an earlier date', () => {
+    const state = data();
+    const first = change(state, next => {
+      next.workdays.push({ ...day('historic'), date: '2026-10-11', startTime: '15:00:00' });
+    });
+    expect(first.workdays[0]).toMatchObject({ date: '2026-10-11', startTime: '15:00:00' });
+    expect(first.audit.some(entry => entry.action === 'فتح يوم حضور')).toBe(true);
+    expect(first.audit.some(entry => entry.newValues.reason)).toBe(false);
+    expect(() => change(first, next => { next.workdays[0].startTime = '16:00:00'; })).toThrow(/سبب/);
+    expect(change(first, next => { next.workdays[0].startTime = '16:00:00'; }, owner, reason).workdays[0].startTime).toBe('16:00:00');
+  });
+  it('keeps archived months protected even though creating new days requires no reason', () => {
+    const state = data();
+    state.months.push({ id: 'archive', month: '2026-10', state: 'ARCHIVED', snapshots: {} });
+    expect(() => change(state, next => { next.workdays.push(day('new')); })).toThrow(/الشهر/);
+  });
+  it('allows first creation without a reason in a reopened month only for the owner and preserves earlier days and salary snapshots', () => {
+    const closed = change(resolveDay(), next => { next.workdays[0].state = 'CLOSED'; });
+    const state = change(archived(closed), next => { next.months[0].state = 'REOPENED'; });
+    const original = structuredClone(state);
+    const add = (next: DemoData) => { next.workdays.push({ ...day('earlier'), date: '2026-10-11', startTime: '15:00:00' }); };
+    expect(() => change(state, add, actor(state, 'manager'))).toThrow(/الشهر/);
+    const created = change(state, add);
+    expect(created.workdays[0]).toEqual(state.workdays[0]);
+    expect(created.workdays[1]).toMatchObject({ date: '2026-10-11', startTime: '15:00:00', createdBy: owner.name });
+    expect(created.attendance.filter(record => record.workdayId === 'earlier').every(record => record.status === 'UNRESOLVED')).toBe(true);
+    expect(created.months).toEqual(state.months);
+    expect(created.audit.find(entry => entry.entityId === 'earlier')?.newValues).not.toHaveProperty('reason');
+    expect(() => change(created, next => { next.workdays[1].startTime = '15:30:00'; })).toThrow(/سبب/);
+    expect(state).toEqual(original);
+  });
   it('blocks closing unresolved records and permits resolved close/reopen with reason', () => {
     expect(() => change(openDay(), next => { next.workdays[0].state = 'CLOSED'; })).toThrow(/احسم/);
     const closed = change(resolveDay(), next => { next.workdays[0].state = 'CLOSED'; });
@@ -129,6 +161,42 @@ describe('server workday and attendance invariants', () => {
     expect(exempt.workdays[0].overrides[first.employeeId]).toBe('EXCLUDE');
     expect(() => change(state, next => { Object.assign(next.attendance[0], { status: 'PRESENT', checkIn: '2026-10-11T11:17:43Z' }); })).toThrow(/يوم الدوام/);
     expect(() => change(state, next => { next.attendance[0].status = 'PRESENT'; }, actor(state))).toThrow();
+  });
+  it('persists a quick presence at the configured start through canonical manual attendance and audit validation', () => {
+    const state = change(data(), next => { next.workdays.push({ ...day(), startTime: '15:00:00' }); });
+    const manager = actor(state, 'manager');
+    const saved = change(state, next => {
+      Object.assign(next.attendance[0], { status: 'PRESENT', checkIn: '2026-10-12T15:00:00+03:00', source: 'QR', latenessSeconds: 999, reason: QUICK_PRESENT_NOTE });
+    }, manager, { ...reason, newValues: { reason: QUICK_PRESENT_NOTE } });
+    const record = saved.attendance[0];
+    expect(record).toMatchObject({ status: 'PRESENT', checkIn: '2026-10-12T12:00:00.000Z', source: 'MANUAL', latenessSeconds: 0, reason: QUICK_PRESENT_NOTE });
+    expect(saved.audit.find(entry => entry.entityId === record.id)).toMatchObject({ actor: manager.name, role: 'ADMIN', action: 'تعديل سجل حضور', oldValues: { status: 'UNRESOLVED', checkIn: null }, newValues: { status: 'PRESENT', source: 'MANUAL', checkIn: record.checkIn, reason: QUICK_PRESENT_NOTE } });
+    const removed = change(saved, next => { next.attendance[0].status = 'UNRESOLVED'; }, manager);
+    expect(removed.attendance[0]).toMatchObject({ status: 'UNRESOLVED', checkIn: null, source: null, latenessSeconds: 0 });
+    expect(removed.audit.find(entry => entry.entityId === record.id)).toMatchObject({ oldValues: { status: 'PRESENT', checkIn: record.checkIn }, newValues: { status: 'UNRESOLVED', checkIn: null } });
+  });
+  it('retains archive locks, reopened snapshot eligibility and owner permissions for quick attendance', () => {
+    const state = archived();
+    const present = (next: DemoData) => { Object.assign(next.attendance[0], { status: 'PRESENT', checkIn: '2026-10-12T14:00:00+03:00', reason: QUICK_PRESENT_NOTE }); };
+    expect(() => change(state, present)).toThrow(/الشهر/);
+    const reopened = change(state, next => { next.months[0].state = 'REOPENED'; });
+    expect(() => change(reopened, present, actor(reopened, 'manager'))).toThrow(/الشهر/);
+    const saved = change(reopened, present);
+    expect(saved.attendance[0]).toMatchObject({ status: 'PRESENT', source: 'MANUAL', latenessSeconds: 0 });
+    expect(saved.months).toEqual(reopened.months);
+    expect(() => change(saved, next => { next.months[0].state = 'ARCHIVED'; })).toThrow(/إعادة الاحتساب/);
+    const missingSnapshot = structuredClone(reopened);
+    delete missingSnapshot.months[0].snapshots[missingSnapshot.attendance[0].employeeId];
+    expect(() => change(missingSnapshot, present)).toThrow(/نسخة راتب مؤرشفة/);
+  });
+  it('keeps paid amounts immutable and marks payroll for review when quick presence replaces a paid absence', () => {
+    const state = resolveDay(); const employeeId = state.attendance[0].employeeId;
+    const payroll = getEmployeePayroll(state, employeeId, '2026-10');
+    const paid = change(state, next => { next.payments.push({ id: 'attendance-payment', employeeId, month: '2026-10', salaryAtPayment: payroll.finalSalary, amount: payroll.finalSalary, date: '2026-10-12', paidBy: owner.name, createdAt: now.toISOString() }); });
+    const saved = change(paid, next => { Object.assign(next.attendance[0], { status: 'PRESENT', checkIn: '2026-10-12T14:00:00+03:00', reason: QUICK_PRESENT_NOTE }); });
+    expect(saved.payments).toEqual(paid.payments);
+    expect(getEmployeePayroll(saved, employeeId, '2026-10')).toMatchObject({ paymentStatus: 'REVIEW', paidAmount: payroll.finalSalary, finalSalary: payroll.finalSalary + payroll.dailyRate, difference: payroll.dailyRate });
+    expect(saved.audit.find(entry => entry.action === 'تعديل راتب بعد الصرف')).toMatchObject({ employeeId, oldValues: { finalSalary: payroll.finalSalary, paymentStatus: 'PAID' }, newValues: { finalSalary: payroll.finalSalary + payroll.dailyRate, paymentStatus: 'REVIEW', difference: payroll.dailyRate } });
   });
   it('requires a workday configuration reason and updates associated lateness itself', () => {
     const present = change(openDay(), next => { Object.assign(next.attendance[0], { status: 'PRESENT', checkIn: now.toISOString() }); });

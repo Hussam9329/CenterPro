@@ -12,7 +12,9 @@ import type { Workday } from '@/lib/types';
 import { canEditDay, getDaySummary } from './day-helpers';
 import styles from './attendance.module.css';
 
-const emptyForm = (today: string): Workday => ({ id: '', date: today, startTime: '14:00:00', departmentIds: [], overrides: {}, state: 'OPEN' });
+const normalizedTime = (value: string) => value.length === 5 ? `${value}:00` : value;
+
+const emptyForm = (today: string): Workday => ({ id: '', date: today, startTime: '15:00:00', departmentIds: [], overrides: {}, state: 'OPEN' });
 
 export function OpenDayBlock({ day, reopening = false, onClose }: { day: Workday; reopening?: boolean; onClose: () => void }) {
   return <div className={styles.openDayBlock}><CalendarClock size={30} /><h3>يوجد يوم حضور مفتوح حالياً.</h3><p>{reopening ? 'أغلق اليوم المفتوح قبل إعادة فتح يوم آخر.' : 'يجب إغلاقه قبل فتح يوم حضور جديد.'}</p><Badge tone="success">{date(day.date)}</Badge><Link className="button-link" href={`/attendance/${day.id}`} onClick={onClose}>الذهاب إلى اليوم المفتوح</Link></div>;
@@ -31,11 +33,20 @@ export function WorkdayEditor({ day, onClose, onSaved }: { day?: Workday; onClos
   const employees = data.employees.filter(employee => (employee.active || Boolean(day && data.attendance.some(record => record.employeeId === employee.id && record.workdayId === day.id))) && employee.startDate <= form.date && (!employee.endDate || employee.endDate >= form.date));
   const needsDepartment = !day && !activeDepartments.length;
   const needsEmployee = !day && !data.employees.some(employee => employee.active);
-  const needsReason = Boolean(day || form.date < today || monthState === 'REOPENED');
+  // Draft changes on first creation never count as an edit. An already-saved
+  // day only requires an explanation when its configuration actually changes.
+  const dayChanged = Boolean(day && (
+    normalizedTime(form.startTime) !== normalizedTime(day.startTime)
+    || form.date !== day.date
+    || JSON.stringify([...form.departmentIds].sort()) !== JSON.stringify([...day.departmentIds].sort())
+    || JSON.stringify(Object.entries(form.overrides).sort()) !== JSON.stringify(Object.entries(day.overrides).sort())
+  ));
+  const needsReason = dayChanged;
 
   async function save() {
     setError('');
     try {
+      if (day && !dayChanged) return;
       if (!day) assertCanOpenWorkday(data.workdays);
       if (!form.date || !form.startTime) throw new Error('حدد تاريخ يوم الحضور ووقت بدء الدوام.');
       if (data.workdays.some(item => item.date === form.date && item.id !== form.id)) throw new Error('يوجد يوم حضور بهذا التاريخ. افتحه من سجل الحضور لتعديله.');
@@ -77,9 +88,9 @@ export function WorkdayEditor({ day, onClose, onSaved }: { day?: Workday; onClos
       <fieldset className={styles.fieldset}><legend>الأقسام المشاركة</legend><div className={styles.departmentChoices}>{activeDepartments.map(dep => <label key={dep.id} className={styles.checkChoice}><input type="checkbox" checked={form.departmentIds.includes(dep.id)} onChange={event => setForm({ ...form, departmentIds: event.target.checked ? [...form.departmentIds, dep.id] : form.departmentIds.filter(id => id !== dep.id) })} /><span>{dep.name}</span></label>)}</div></fieldset>
       <details className={styles.overrides}><summary>تخصيص مشاركة الموظفين <span className="muted">({Object.keys(form.overrides).length} تخصيص)</span></summary><p className="muted">اختيار الموظف يتقدم على اختيار القسم. المستثنى لا يحتسب غائباً.</p><div className={styles.overrideList}>{employees.map(employee => <div className={styles.overrideRow} key={employee.id}><div><strong>{employee.name}</strong><small className="muted">{data.departments.find(dep => dep.id === employee.departmentId)?.name}</small></div><Select aria-label={`مشاركة ${employee.name}`} value={form.overrides[employee.id] ?? ''} onChange={event => { const overrides = { ...form.overrides }; if (event.target.value) overrides[employee.id] = event.target.value as 'INCLUDE' | 'EXCLUDE'; else delete overrides[employee.id]; setForm({ ...form, overrides }); }}><option value="">حسب القسم</option><option value="INCLUDE">إدراج في الدوام</option><option value="EXCLUDE">مستثنى / لا يوجد دوام</option></Select></div>)}</div></details>
       {day && <div className="notice notice-warning">تغيير المشاركين يحدث حالات الحضور المرتبطة. تغيير وقت البدء يعيد احتساب التأخير، وتحفظ العملية وسببها في سجل العمليات.</div>}
-      {needsReason && <Field label="سبب التعديل" required><Textarea required value={reason} onChange={event => setReason(event.target.value)} placeholder="وضح سبب تعديل اليوم أو فتح تاريخ سابق" /></Field>}
+      {needsReason && <Field label="سبب التعديل" required><Textarea required value={reason} onChange={event => setReason(event.target.value)} placeholder="وضح سبب تعديل يوم الحضور المحفوظ" /></Field>}
       {monthState === 'REOPENED' && <div className="notice notice-warning">هذا الشهر مؤرشف سابقاً. يحفظ التعديل على السجلات، وتبقى الرواتب والتقارير على نسختها السابقة حتى إعادة الاحتساب الصريحة من صفحة الرواتب بالقواعد المؤرشفة.</div>}
-      {error && <p role="alert" className="text-danger">{error}</p>}<div className="form-actions"><Button loading={pending} type="submit" disabled={!day && !employees.length}>{day ? 'حفظ التعديل' : 'فتح يوم الحضور'}</Button><Button disabled={pending} variant="secondary" onClick={onClose}>إلغاء</Button></div>
+      {error && <p role="alert" className="text-danger">{error}</p>}<div className="form-actions"><Button loading={pending} type="submit" disabled={Boolean(day && !dayChanged) || (!day && !employees.length)}>{day ? 'حفظ التعديل' : 'فتح يوم الحضور'}</Button><Button disabled={pending} variant="secondary" onClick={onClose}>إلغاء</Button></div>
     </form>}
   </Dialog>;
 }
