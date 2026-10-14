@@ -76,7 +76,7 @@ export function AttendanceDayDetail({ dayId }: { dayId: string }) {
   const summary = getDaySummary(data, day);
   const openedBy = day.createdBy || data.audit.find(entry => entry.entityId === day.id && entry.action === 'فتح يوم حضور')?.actor;
   const namesFor = (mode: 'INCLUDE' | 'EXCLUDE') => Object.entries(day.overrides).filter(([, value]) => value === mode).map(([id]) => data.employees.find(employee => employee.id === id)?.name).filter(Boolean).join('، ') || 'لا يوجد';
-  return <div className="page-stack">
+  return <div className={`page-stack ${styles.dayDetail}`}>
     <PageHeader title={`حضور ${date(day.date)}`} actions={<><Link className="button-link" href="/attendance">الحضور</Link>{day.state === 'OPEN' && <Link className="button-link" href="/attendance-display"><QrCode size={17} />شاشة الحضور</Link>}<SafeDeleteButton collection="workdays" id={day.id} label={`يوم ${date(day.date)}`} onDeleted={() => router.replace('/attendance')} /><Button variant="secondary" disabled={locked} onClick={() => setEditDay(true)}><Settings2 size={17} />تعديل اليوم</Button><Button disabled={locked} onClick={() => setTransition(true)}>{day.state === 'OPEN' ? 'إغلاق اليوم' : 'إعادة فتح اليوم'}</Button></>} />
     {monthRecord?.state === 'ARCHIVED' && <div className="notice notice-warning">هذا الشهر مؤرشف وسجلاته للقراءة فقط. إعادة الفتح متاحة للمدير الأعلى من الرواتب.</div>}
     {monthRecord?.state === 'REOPENED' && <div className="notice notice-warning">هذا الشهر مؤرشف سابقاً وتمت إعادة فتحه للتعديل. تحفظ تغييرات الحضور للمراجعة، وتبقى الرواتب والتقارير على النسخة السابقة حتى إعادة الاحتساب الصريحة من صفحة الرواتب.</div>}

@@ -65,3 +65,8 @@
 }
 
 .dayDeleteAction { display: flex; justify-content: flex-end; padding: 0 12px 6px; }
+
+/* Keep the full set of day actions reachable when a tablet or sidebar leaves
+   insufficient space beside the title. The controls wrap onto their own row. */
+.dayDetail :global(.page-header) { flex-wrap: wrap; }
+.dayDetail :global(.page-actions) { max-width: 100%; }
