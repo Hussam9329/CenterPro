@@ -7,6 +7,8 @@ Working branch: `refactor/centerpro-maintainability`.
 
 The owner requested a complete local refactor, with approval **after implementation and validation and before any upload**. This work must not be pushed to GitHub or deployed to Vercel until that approval. Previous release instructions do not authorize publishing this refactor. Production continues running the existing release while this branch is prepared.
 
+Approval was subsequently received on October 15, 2026 at 03:24 Asia/Baghdad, after the owner reviewed the implementation and validation report: “تمام ارفع”. The approved release is to `main` and Vercel Production. This authorization does not add database migrations, imports or other feature changes; publication remains gated on successful exact-commit CI and deployment verification.
+
 This is a structural refactor of the current application. The approved UI, business rules, routes, API payloads, storage formats and SQL schema remain unchanged. There are no dependency upgrades, migrations, new environment variables, data imports or production data operations.
 
 ## Module boundaries
