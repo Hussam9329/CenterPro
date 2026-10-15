@@ -250,18 +250,33 @@ describe('evaluation mutation permissions and locks', () => {
     expect(() => assertEvaluationMutation(updated, data, auditor)).not.toThrow();
   });
 
-  it.each([admin, { ...admin, role: 'ADMIN' as const }, corrector, null])('rejects evaluation edits by unauthorized actor %s', session => {
+  it.each([{ ...admin, role: 'ADMIN' as const }, corrector, null])('rejects evaluation edits by unauthorized actor %s', session => {
     const data = openData();
     const next = structuredClone(data);
     next.examEvaluations[0].papers = 999;
     expect(() => assertEvaluationMutation(data, next, session)).toThrow();
   });
 
-  it.each(['inactive auditor', 'moved auditor', 'promoted auditor', 'inactive corrector', 'moved corrector'] as const)('uses the current directory when an editor becomes stale: %s', change => {
+  it('allows the super admin to edit auditing entries directly', () => {
+    const data = openData();
+    const next = structuredClone(data);
+    next.examEvaluations[0].papers = 999;
+    expect(() => assertEvaluationMutation(data, next, admin)).not.toThrow();
+  });
+
+  it('keeps audit access when the employee moves to another department because access is account-based', () => {
+    const data = openData();
+    data.employees.find(item => item.id === auditor.employeeId)!.departmentId = 'department-correction-test';
+    const next = structuredClone(data);
+    next.examEvaluations[0].papers = 999;
+    expect(() => assertEvaluationMutation(data, next, auditor)).not.toThrow();
+  });
+
+  it.each(['inactive auditor', 'revoked auditor', 'promoted auditor', 'inactive corrector', 'moved corrector'] as const)('uses the current directory when an editor becomes stale: %s', change => {
     const data = openData();
     const employee = data.employees.find(item => item.id === (change.endsWith('auditor') ? auditor.employeeId : corrector.employeeId))!;
     if (change.startsWith('inactive')) employee.active = false;
-    if (change === 'moved auditor') employee.departmentId = 'department-correction-test';
+    if (change === 'revoked auditor') employee.permissions = { ...(employee.permissions ?? {}), AUDIT_REVIEW: { view: false, create: false, edit: false, delete: false } };
     if (change === 'moved corrector') employee.departmentId = 'department-audit-test';
     if (change === 'promoted auditor') employee.role = 'ADMIN';
     const next = structuredClone(data);

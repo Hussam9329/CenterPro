@@ -33,9 +33,13 @@ export function applyEvaluationChanges(context: MutationContext) {
   for (const value of upserts.get('evaluationExams') ?? []) {
     requireAdmin(actor); const item = value as unknown as DemoData['evaluationExams'][number]; const previous = before.evaluationExams.find(exam => exam.id === item.id);
     if (previous) {
-      unchanged(previous, item, ['cycleId', 'name', 'date', 'note', 'createdAt', 'createdBy']);
+      unchanged(previous, item, ['cycleId', 'createdAt', 'createdBy']);
       if (before.evaluationCycles.find(cycle => cycle.id === previous.cycleId)?.state !== 'OPEN') fail('الدورة مؤرشفة.');
-      if (item.state === previous.state && !archivedCycleIds.has(item.cycleId)) fail();
+      const metadataChanged = previous.name !== item.name || previous.date !== item.date || previous.note !== item.note;
+      const stateChanged = item.state !== previous.state || archivedCycleIds.has(item.cycleId);
+      if (metadataChanged && archivedCycleIds.has(item.cycleId)) fail('احفظ تفاصيل الامتحان قبل أرشفة الدورة.');
+      if (metadataChanged && actor.role !== 'SUPER_ADMIN') fail('تعديل تفاصيل الامتحان متاح للمشرف العام فقط.');
+      if (!metadataChanged && !stateChanged) fail();
     } else {
       if (archivedCycleIds.has(item.cycleId) || item.state !== 'OPEN' || after.evaluationCycles.find(cycle => cycle.id === item.cycleId)?.state !== 'OPEN') fail('أضف الامتحان ضمن دورة مفتوحة.');
       item.createdAt = stamp; item.createdBy = actor.name;

@@ -20,7 +20,9 @@ Implementation and release verification are separate. The final exact source com
 
 No credential belongs in a client bundle, Git history, test artifact, screenshot or log. `.env.example` contains names and instructions only. Shell/CI secrets must be injected through the environment. Build and lint do not perform live database migrations or seeds.
 
-For this rollout, the release operator configured the Production environment variables and a private Blob store. This is configuration readiness, not a claim that the owner's backup has been imported or that an unverified deployment is active. The private store's application object prefix is `centerpro/photos/`; its objects contain the exact original photo data URL, keyed by SHA-256 and served only through the authenticated photo route. No store token or private object URL is recorded here.
+The Production environment variables and private Blob store were configured for the October 12 rollout; the backup import status is recorded above. Each later deployment still requires its own verification. The private store's application object prefix is `centerpro/photos/`; its objects contain the exact original photo data URL, keyed by SHA-256 and served only through the authenticated photo route. No store token or private object URL is recorded here.
+
+The October 15 account-permissions patch stores optional grants in the existing employee JSONB records. It adds no environment variables or SQL migration and must not trigger a backup re-import, account reset or automatic permission grant. See [ACCOUNT_PERMISSIONS_PATCH.md](ACCOUNT_PERMISSIONS_PATCH.md).
 
 Vercel selects server mode even when configuration is absent. Missing configuration fails closed rather than making each visitor an independent browser administrator. Local development without `DATABASE_URL` retains a separate adapter for frontend regression tests. Supplying `DATABASE_URL` selects the real server adapter.
 
@@ -32,7 +34,7 @@ Records use JSONB to preserve the current application contract, imported extensi
 
 Every mutation locks the singleton revision inside one database transaction, compares the client revision with the current revision and validates against canonical server data. Stale clients receive a conflict instead of replacing someone else's saved work. A mutation is expressed as collection-level record upserts/removals, never as replacement of the whole database. The server only accepts supported operation groups and fields.
 
-The server independently computes workday attendance synchronization, lateness, archived/recalculated payroll, cycle/season snapshots, payment-time salary values and audit metadata. Snapshot fields are omitted from routine archive request payloads so embedded historical photos cannot expand those requests. Employee codes remain unique and monotonically generated inside the serialized write boundary; employees are never hard-deleted by normal application commands.
+The server independently computes workday attendance synchronization, lateness, archived/recalculated payroll, cycle/season snapshots, payment-time salary values and audit metadata. Snapshot fields are omitted from routine archive request payloads so embedded historical photos cannot expand those requests. Employee codes remain unique and monotonically generated inside the serialized write boundary. Record removal uses the explicit, reasoned safe-deletion flow with server permission, relationship and archive checks.
 
 Database constraints enforce unique workday dates, one open workday and unique employee/workday attendance. Evaluation-state guards enforce one open cycle/season and immutable archives. Client validation is only a usability aid.
 
@@ -44,12 +46,17 @@ The compatibility adapter currently reads complete authorized collection snapsho
 - Passwords are salted PBKDF2-SHA-256 records compatible with the existing portable backup: 150,000 iterations, 16-byte salt, 32-byte derived key. No plaintext is persisted or recoverable. Password values never enter domain records, logs or audit payloads.
 - Server sessions use cryptographically random 32-byte opaque tokens; only their SHA-256 hashes are stored in PostgreSQL. Production cookies use the `__Host-` prefix, HttpOnly, Secure, SameSite=Strict and `/` path.
 - A normal session expires after 8 hours. Remembered sessions expire after 30 days. Logout removes the server session. Password reset increments credential version and invalidates that account's sessions; inactive or role-changed accounts fail current permission checks.
+- Changing an employee's per-account permissions revokes that account's sessions in the same transaction as the permission update. The employee signs in again with the existing password; changing permissions does not reset it.
 - Login attempts use shared database counters and server-secret HMAC keys. Account and trusted-edge-IP limits operate across serverless instances. Unknown usernames still execute the password KDF. Error responses do not identify which credential was wrong.
 - Mutating API requests require same-origin JSON and enforce body size/schema limits. Authenticated responses are private/no-store and are not cached by the PWA worker.
 
-ADMIN may manage employee operations and open payroll, but cannot edit administrator accounts, roles, protected salary configuration, departments, owner settings/audit or reopen historical payroll. SUPER_ADMIN has the protected permissions. EMPLOYEE receives only their own private and financial records, with the specifically authorized evaluation rankings/auditor workspace.
+ADMIN may manage employee operations and open payroll, but cannot edit administrator accounts, roles, protected salary configuration, departments, owner settings/audit or reopen historical payroll. SUPER_ADMIN has the protected permissions and exclusively manages employee account permissions, including through employee-profile edits. ADMIN cannot add, change or remove those grants.
 
-Correctors never receive OPEN-exam counts, errors, scores or an indirect unpublished cycle/season total. Other correctors' descriptors contain name/code/department only, with private profile fields blank. Season totals are computed on the server so the browser does not need colleagues' attendance dates. Nested payroll source snapshots and imported extension fields are filtered as well; hiding a UI element is not the authorization boundary.
+An active EMPLOYEE account may receive explicit `DEDUCTIONS`, `BONUSES` and `AUDIT_REVIEW` permissions, each with separate `view`, `create`, `edit` and `delete` actions. Actions require `view`; omitted permissions are denied. Department membership never grants audit access, and moving departments does not remove an explicit grant. Administrative accounts retain their role permissions rather than receiving employee grants.
+
+Without delegated grants, an employee receives their own private and financial records and any applicable published corrector rankings. A deductions or bonuses view grant exposes the selected collection's records plus minimal employee descriptors needed by that screen; it does not grant colleagues' private profiles, attendance, payments, payroll snapshots or the other financial collection. Mutations are authorized separately for the requested action and retain month/archive locks.
+
+Correctors without audit-review access never receive OPEN-exam counts, errors, scores or an indirect unpublished cycle/season total. An explicit audit-review view grant permits the live auditor workspace even when the account is also a corrector. Other employees' descriptors contain name/code/department only, with private profile fields blank. Season totals are computed on the server so the browser does not need colleagues' attendance dates. Nested payroll source snapshots and imported extension fields are filtered as well; hiding a UI element is not the authorization boundary.
 
 ## Attendance and QR
 
@@ -59,13 +66,19 @@ The check-in handler verifies signature, expiry and current workday before calli
 
 No GPS, network-name or IP-matching condition is added. Camera permission and a secure HTTPS browser remain necessary. Closed/historical workdays remain editable through the authorized administrative flow with the existing month locks and audit rules. No automatic absence assignment, grace period or lateness deduction is introduced.
 
+Administrative attendance dates display the Arabic weekday with a Latin-digit date and English month, for example `الخميس — 15 October 2026`. Month headings use English month names. This is presentation only: stored dates, timestamps and the `Asia/Baghdad` business clock are unchanged.
+
 ## Payroll and evaluations
 
 Preserve the later approved required-day rule: PRESENT, EXCUSED, UNEXCUSED and UNRESOLVED required days determine non-fixed salary laws; EXEMPT does not count. Partial first/final fixed months use required days multiplied by the effective daily rate, capped at fixed salary. Deductions and bonuses then apply; final salary may be negative. All money values must remain safe integers.
 
 Open months use current salary configuration. Archiving requires actual payroll rows and no unresolved attendance and creates server-calculated snapshots. SUPER_ADMIN may reopen, but monetary snapshots remain frozen until explicit recalculation using archived salary/employee/department context. Re-archiving is blocked while operational edits remain unapplied. Payments are append-only; historical payment information stays intact when a recalculated salary requires review.
 
-Only active EMPLOYEE accounts in التدقيق may enter counts for active التصحيح employees on open exams in the open cycle/season. Admin roles manage exam/cycle/season lifecycle but do not gain an undocumented score-entry permission. Cycle archive freezes its complete exam/leaderboard snapshots and closes exams atomically. Season archive requires no open cycle and uses the server Baghdad closing date. The approved score, accuracy, tie-breaking and seasonal rank rules stay unchanged.
+The correction roster recognizes the normalized exact department names `التصحيح` and `قسم التصحيح`; this identifies eligible correction employees only. Audit-review access is an explicit account grant, with no department-name fallback. An active EMPLOYEE with `AUDIT_REVIEW.view` may open the auditor workspace. Creating a missing evaluation requires `create`, updating an existing evaluation requires `edit`, and reasoned deletion requires `delete`; those actions are independent.
+
+SUPER_ADMIN may enter or edit numeric evaluations directly. Employee and owner numeric editing is limited to OPEN exams in an OPEN cycle and, when linked, an OPEN season. CLOSED exam counts remain locked. SUPER_ADMIN may edit an OPEN or CLOSED exam's name, date and note while its cycle is OPEN. ADMIN retains exam/cycle/season lifecycle management without gaining direct count entry or exam-metadata editing. Existing explicit safe-deletion rules remain separate from numeric editing.
+
+Archived cycle/season locks apply to all roles and delegated actions. Cycle archive freezes its complete exam/leaderboard snapshots and closes exams atomically. Season archive requires no open cycle and uses the server Baghdad closing date. The approved score, accuracy, tie-breaking and seasonal rank rules stay unchanged.
 
 ## Employee photos
 
@@ -118,7 +131,7 @@ Release evidence remains pending in this document until the root release process
 - Passing lint, typecheck, unit/integration tests, browser suites and optimized build.
 - CI URL tied to that commit.
 - Production deployment ID, source commit and canonical aliases.
-- No-secret checks of unauthenticated health/session responses and pending-import behavior against the real Neon connection.
-- Owner backup import status (currently **not supplied / not imported**).
+- No-secret checks of unauthenticated health/session responses and the existing installation's readiness against the real Neon connection.
+- Owner backup import status: completed October 12, 2026; subsequent releases preserve that installation and do not repeat the import.
 
-No release note may imply that the owner's accounts were migrated before their JSON is received and successfully imported.
+This document's historical import status does not certify a later release. Record that release's exact source, tests and deployment verification separately.

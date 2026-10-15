@@ -2,13 +2,20 @@ import { getEmployeePayroll, getMonthPayroll, recalculateReopenedPayroll } from 
 import { captureMonthSource } from '@/lib/finance/month-source';
 import type { PayrollMonth } from '@/lib/types';
 import { assertSafePayroll, editableMonth, fail, find, put, requireAdmin, requireSuper, same, unchanged, type MutationContext, type RecordValue } from './shared';
+import { hasEmployeePermission } from '@/lib/permissions';
 
 /** Preserve adjustments, immutable payment entries and explicit archive transitions. */
 export function applyPayrollChanges(context: MutationContext) {
   const { before, after, actor, request, upserts, stamp } = context;
   for (const collection of ['deductions', 'bonuses'] as const) {
     for (const value of upserts.get(collection) ?? []) {
-      requireAdmin(actor); const previous = find(before, collection, value.id);
+      const previous = find(before, collection, value.id);
+      if (actor.role === 'EMPLOYEE') {
+        const employee = before.employees.find(item => item.id === actor.employeeId);
+        const feature = collection === 'deductions' ? 'DEDUCTIONS' : 'BONUSES';
+        const action = previous ? 'edit' : 'create';
+        if (!hasEmployeePermission(employee, feature, action)) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
+      } else requireAdmin(actor);
       editableMonth(before, actor, String(value.date).slice(0, 7)); if (previous) editableMonth(before, actor, String(previous.date).slice(0, 7));
       if (collection === 'deductions' && value.type === 'أخرى' && !String(value.customType).trim()) fail('حدد نوع الخصم.');
       value.createdBy = previous?.createdBy ?? actor.name; value.createdAt = previous?.createdAt ?? stamp;

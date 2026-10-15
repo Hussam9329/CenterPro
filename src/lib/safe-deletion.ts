@@ -1,6 +1,7 @@
 /** Shared preview/server deletion planner. No browser-provided cascade or totals are trusted.
  * An explicit delete may remove dependent live records, never the audit trail. */
 import { isAuditEmployee } from './evaluations';
+import { hasEmployeePermission } from './permissions';
 import type { DemoData, DemoSession } from './types';
 import type { MutableCollection } from './server-contract';
 
@@ -49,15 +50,24 @@ export function authorizeDeletion(data: DemoData, session: DemoSession | null, c
     }
     return;
   }
+  const employee = data.employees.find(item => item.id === session.employeeId && item.active && item.role === 'EMPLOYEE');
+  if (collection === 'deductions' || collection === 'bonuses') {
+    const feature = collection === 'deductions' ? 'DEDUCTIONS' : 'BONUSES';
+    if (!hasEmployeePermission(employee, feature, 'delete')) throw new Error('ليس لديك صلاحية حذف هذا السجل.');
+    const row = data[collection].find(item => item.id === id);
+    if (!row) throw new Error('السجل غير موجود.');
+    const state = data.months.find(item => item.month === row.date.slice(0, 7))?.state;
+    if (state !== undefined && state !== 'OPEN') throw new Error('لا يمكن حذف سجل مالي من شهر مؤرشف أو معاد فتحه من حساب موظف.');
+    return;
+  }
   if (collection !== 'examEvaluations') throw new Error('هذا الحذف متاح للإدارة فقط.');
-  const auditor = data.employees.find(item => item.id === session.employeeId && item.active && item.role === 'EMPLOYEE');
-  if (!auditor || !isAuditEmployee(data, auditor)) throw new Error('حذف تقييمات المصححين متاح للمدققين فقط.');
+  if (!employee || !isAuditEmployee(data, employee) || !hasEmployeePermission(employee, 'AUDIT_REVIEW', 'delete')) throw new Error('لا يملك الحساب صلاحية حذف بيانات التدقيق.');
   const entry = data.examEvaluations.find(item => item.id === id);
   const exam = data.evaluationExams.find(item => item.id === entry?.examId);
   const cycle = data.evaluationCycles.find(item => item.id === exam?.cycleId);
   if (!entry || exam?.state !== 'OPEN' || cycle?.state !== 'OPEN' ||
     (cycle.seasonId && data.evaluationSeasons.find(item => item.id === cycle.seasonId)?.state !== 'OPEN')) {
-    throw new Error('الحذف متاح للمدقق فقط ضمن امتحان ودورة مفتوحين.');
+    throw new Error('الحذف متاح ضمن امتحان ودورة مفتوحين فقط.');
   }
 }
 

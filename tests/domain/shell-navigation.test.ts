@@ -22,7 +22,7 @@ describe('shell access before rendering protected content', () => {
     expect(getShellRedirect(session('ADMIN'), false, '/employees/person')).toBeNull();
   });
 
-  it.each(['/departments', '/audit', '/settings'])('preserves the ADMIN prefix guard for %s while allowing the owner', path => {
+  it.each(['/permissions', '/departments', '/audit', '/settings'])('preserves the ADMIN prefix guard for %s while allowing the owner', path => {
     for (const pathname of [path, `${path}/details`, `${path}-legacy`]) {
       expect(getShellRedirect(session('ADMIN'), false, pathname)).toBe('/dashboard');
       expect(getShellRedirect(session('SUPER_ADMIN'), false, pathname)).toBeNull();
@@ -35,7 +35,7 @@ describe('navigation for the current account', () => {
     const data = createPopulatedTestData();
     const owner = hrefs(getShellNavigation(data, session('SUPER_ADMIN'), false));
     const admin = hrefs(getShellNavigation(data, session('ADMIN'), false));
-    for (const path of ['/departments', '/audit', '/settings']) {
+    for (const path of ['/permissions', '/departments', '/audit', '/settings']) {
       expect(owner).toContain(path);
       expect(admin).not.toContain(path);
     }
@@ -43,7 +43,7 @@ describe('navigation for the current account', () => {
     expect(admin).toContain('/calculator');
   });
 
-  it('shows only the evaluation destination appropriate to an active employee department', () => {
+  it('uses explicit account permission for auditing while correction evaluation remains department-based', () => {
     const data = createPopulatedTestData();
     const correction = data.employees.find(employee => employee.departmentId === 'dept-correction' && employee.active)!;
     const audit = data.employees.find(employee => employee.departmentId === 'dept-review' && employee.active)!;
@@ -53,6 +53,10 @@ describe('navigation for the current account', () => {
     expect(correctionPaths).not.toContain('/employee/audit');
     expect(auditPaths).toContain('/employee/audit');
     expect(auditPaths).not.toContain('/employee/evaluation');
+    audit.departmentId = 'dept-followup';
+    expect(hrefs(getShellNavigation(data, session('EMPLOYEE', audit.id), true))).toContain('/employee/audit');
+    audit.permissions = { ...(audit.permissions ?? {}), AUDIT_REVIEW: { view: false, create: false, edit: false, delete: false } };
+    expect(hrefs(getShellNavigation(data, session('EMPLOYEE', audit.id), true))).not.toContain('/employee/audit');
     correction.active = false;
     for (const id of [correction.id, 'missing-employee', undefined]) {
       const paths = hrefs(getShellNavigation(data, session('EMPLOYEE', id), true));

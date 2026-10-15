@@ -56,11 +56,14 @@ The repository contains no supplied real user backup. Do not re-import or reset 
 - Department salary rules, required-day payroll, negative balances, deductions, bonuses, immutable payments, archived snapshots and explicit historical recalculation.
 - One open workday system-wide, per-date uniqueness, employee participation overrides, unresolved attendance review and manual corrections.
 - Server-issued rotating QR, signed expiry/workday state, server-authoritative Baghdad timestamps and duplicate prevention. A dedicated QR Display account can remain signed in on the center iPad and is server-restricted to the attendance display only. No GPS or Wi-Fi restrictions.
-- Evaluation seasons/cycles/exams, auditor-only count entry, frozen archives, and published-only corrector results and rankings.
+- Owner-managed per-account permissions for deductions, bonuses and audit review, with separate view/create/edit/delete grants and no department-based audit access.
+- Evaluation seasons/cycles/exams, owner or explicitly delegated count entry on open exams, owner exam-detail editing, frozen archives, and published-only results for correctors without audit-review access.
 - Append-only server audit events, owner-only complete backup, structured XLSX exports and Arabic print reports.
 - Approved Arabic RTL UI, Latin digits, light/dark selection, responsive layouts, accessible forms, calculator and PWA public offline fallback.
 
-Authentication uses username/password and opaque database-backed sessions. Cookies are HttpOnly, SameSite=Strict and Secure in Production. Password changes revoke existing sessions. Server permissions and read projections protect other employees' private data and unpublished evaluation results before any response reaches the browser.
+Authentication uses username/password and opaque database-backed sessions. Cookies are HttpOnly, SameSite=Strict and Secure in Production. Password changes and per-account permission changes revoke the affected account's existing sessions. Server permissions and read projections protect other employees' private data and unpublished evaluation results before any response reaches the browser.
+
+See [ACCOUNT_PERMISSIONS_PATCH.md](docs/ACCOUNT_PERMISSIONS_PATCH.md) for assigning employee access and the evaluation editing limits. Existing accounts receive no automatic grants. This patch uses the existing employee JSONB records and requires no new environment variables, SQL migration or backup import.
 
 ## Quality gates
 

@@ -17,7 +17,7 @@ export default function AuditorPage() {
   const exams = useMemo(() => cycle ? data.evaluationExams.filter(item => item.cycleId === cycle.id).sort((a,b) => b.date.localeCompare(a.date)) : [], [cycle, data.evaluationExams]);
   const [examId, setExamId] = useState('');
 
-  if (!employee || !isAuditEmployee(data, employee)) return <EmptyState title="واجهة التدقيق مخصصة لموظفي قسم التدقيق"/>;
+  if (!employee || !isAuditEmployee(data, employee)) return <EmptyState title="لا تملك صلاحية عرض قائمة التدقيق"/>;
   if (!cycle) return <div className="page-stack"><PageHeader eyebrow="الجودة" title="التدقيق"/><EmptyState title="لا توجد دورة تقييم مفتوحة"/></div>;
   if (!exams.length) return <div className="page-stack"><PageHeader eyebrow={cycle.name} title="التدقيق"/><EmptyState title="لا توجد امتحانات في الدورة الحالية"/></div>;
 

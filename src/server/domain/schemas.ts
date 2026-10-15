@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { hasEmployeePermission } from '@/lib/permissions';
 import type { MutationRequest } from '@/lib/server-contract';
 import type { DemoData, DemoSession } from '@/lib/types';
 import { assertUnique, collections, fail, find, same, type Collection, type RecordValue } from './shared';
@@ -25,6 +26,8 @@ const salary = z.strictObject({
     type: z.enum(['FIXED', 'PER_DAY']), amount: int,
   })).max(500),
 });
+const accountPermission = z.strictObject({ view: z.boolean(), create: z.boolean(), edit: z.boolean(), delete: z.boolean() });
+const accountPermissions = z.object({ DEDUCTIONS: accountPermission.optional(), BONUSES: accountPermission.optional(), AUDIT_REVIEW: accountPermission.optional() }).optional();
 const profile = {
   id: identifier,
   code: z.string(),
@@ -44,6 +47,7 @@ const profile = {
   telegram: z.string().regex(/^[A-Za-z0-9_]*$/).max(200),
   username: z.string().trim().min(1).max(100).refine(value => !/\s/.test(value)),
   role: z.enum(['EMPLOYEE', 'ADMIN', 'SUPER_ADMIN']),
+  permissions: accountPermissions,
   fixedOverride: z.boolean(),
   fixedSalary: int,
   dailyRateOverride: int.nullable(),
@@ -133,7 +137,19 @@ export function parseMutationChanges(before: DemoData, actor: DemoSession, reque
   if (used.size && !groups.some(group => [...used].every(collection => group.includes(collection)))) fail('نفّذ كل إجراء على حدة.');
   if (request.settings && (used.size || request.password)) fail();
   if (request.password && [...used].some(collection => collection !== 'employees')) fail();
-  if (actor.role === 'EMPLOYEE' && ([...used].some(collection => collection !== 'examEvaluations') || request.settings || request.password)) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
+  if (actor.role === 'EMPLOYEE') {
+    if (request.settings || request.password) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
+    const employee = before.employees.find(item => item.id === actor.employeeId && item.active && item.role === 'EMPLOYEE');
+    if (!employee) fail('انتهت صلاحية الحساب. سجّل الدخول مجدداً.');
+    for (const collection of used) {
+      const feature = collection === 'deductions' ? 'DEDUCTIONS' : collection === 'bonuses' ? 'BONUSES' : collection === 'examEvaluations' ? 'AUDIT_REVIEW' : null;
+      if (!feature) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
+      for (const value of upserts.get(collection) ?? []) {
+        const action = find(before, collection, value.id) ? 'edit' : 'create';
+        if (!hasEmployeePermission(employee, feature, action)) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
+      }
+    }
+  }
 
   return { upserts, used };
 }

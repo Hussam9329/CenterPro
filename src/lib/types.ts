@@ -1,10 +1,14 @@
 export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE' | 'QR_DISPLAY';
+export type AccountPermissionFeature = 'DEDUCTIONS' | 'BONUSES' | 'AUDIT_REVIEW';
+export type AccountPermissionAction = 'view' | 'create' | 'edit' | 'delete';
+export interface AccountPermission { view: boolean; create: boolean; edit: boolean; delete: boolean }
+export type AccountPermissions = Partial<Record<AccountPermissionFeature, AccountPermission>>;
 export type AttendanceStatus = 'PRESENT' | 'UNRESOLVED' | 'EXCUSED' | 'UNEXCUSED' | 'EXEMPT';
 export type SalaryMode = 'TIERED' | 'FIXED';
 export interface SalaryTier { id: string; fromDays: number; toDays: number; type: 'PER_DAY' | 'FIXED'; amount: number }
 export interface SalaryConfig { mode: SalaryMode; dailyRate: number; unexcusedRate: number; maximum: number; fixedSalary: number; extraDaysStart: number; tiers: SalaryTier[] }
 export interface Department { id: string; name: string; active: boolean; description: string; salary: SalaryConfig }
-export interface Employee { id: string; code: string; name: string; photo?: string; address: string; phone: string; guardianPhone: string; departmentId: string; startDate: string; endDate?: string; active: boolean; gender: 'MALE' | 'FEMALE'; birthDate: string; notes: string; qualification: string; telegram: string; username: string; role: Role; fixedOverride: boolean; fixedSalary: number; dailyRateOverride: number | null; createdAt: string; updatedAt: string }
+export interface Employee { id: string; code: string; name: string; photo?: string; address: string; phone: string; guardianPhone: string; departmentId: string; startDate: string; endDate?: string; active: boolean; gender: 'MALE' | 'FEMALE'; birthDate: string; notes: string; qualification: string; telegram: string; username: string; role: Role; permissions?: AccountPermissions; fixedOverride: boolean; fixedSalary: number; dailyRateOverride: number | null; createdAt: string; updatedAt: string }
 export interface Workday { id: string; date: string; startTime: string; departmentIds: string[]; overrides: Record<string, 'INCLUDE' | 'EXCLUDE'>; state: 'OPEN' | 'CLOSED'; createdBy?: string; createdAt?: string }
 export interface AttendanceRecord { id: string; employeeId: string; workdayId: string; status: AttendanceStatus; checkIn: string | null; latenessSeconds: number; source: 'QR' | 'MANUAL' | null; reason: string; updatedAt: string }
 export interface Deduction { id: string; employeeId: string; amount: number; date: string; type: 'اعتراض' | 'خصم إداري' | 'أخرى'; customType: string; reason: string; createdBy: string; createdAt: string }

@@ -1,14 +1,16 @@
-# Shared frontend contract — revised Phase 1
+# Shared frontend contract
 
 ## Current server integration
 
-The owner's October 12, 2026 instruction to connect the supplied Neon database authorizes the backend integration described in [NEON_BACKEND.md](NEON_BACKEND.md). It supersedes the earlier backend deferral below. The approved design and later salary, attendance and evaluation rules remain unchanged. Vercel now uses server sessions, authorized database operations and signed QR; the local adapter remains only for isolated local development/regression tests. Browser-local setup/reset instructions in this historical frontend contract do not apply to the server deployment. The database awaits the owner's JSON import; it must not expose public owner bootstrap or invent accounts. Existing browser storage remains untouched.
+The owner's October 12, 2026 instruction to connect the supplied Neon database authorizes the backend integration described in [NEON_BACKEND.md](NEON_BACKEND.md). It supersedes the earlier backend deferral below. The approved design and later salary, attendance and evaluation rules remain authoritative. Vercel uses server sessions, authorized database operations and signed QR; the local adapter remains only for isolated local development/regression tests. Browser-local setup/reset instructions below do not apply to the server deployment. The owner's backup was imported on October 12; updates must preserve the installation without repeating that import, exposing public owner bootstrap or inventing accounts. Existing browser storage remains untouched.
+
+The October 15 account-permissions patch supersedes department-based auditor access and adds owner evaluation editing and attendance date formatting as described below. [ACCOUNT_PERMISSIONS_PATCH.md](ACCOUNT_PERMISSIONS_PATCH.md) records the current setup and limits. No automatic grants, new environment variables or SQL migration are required.
 
 ## Authoritative revision
 
 `MASTER_SPECIFICATION.txt` remains the unchanged original specification. `PHASE1_REVISION_REQUEST.md` is the later owner-approved addendum and takes precedence for startup data, preview administrator, salary terminology, attendance architecture and the single-open-day rule. The later owner-supplied `patches/required-days_employee-form_attendance.patch` overrides salary-basis, employee-form and attendance-note requirements as described below. The October 3 `patches/audit-evaluation-testdata.patch` adds evaluation workflows, explicit preview test data and name-based preview login. `SEASON_RANK_UI_REVISION.md` overrides older welcome, theme, test-account-count and evaluation-publication presentation rules. The subsequent `patches/rank-assets-audit-hub-ui-cleanup.patch` replaces rank assets, splits audit administration pages and updates profile/login presentation. The October 5 `patches/native-ranks-ui-clarity.patch` supersedes its displayed rank assets and typography as described below. The October 7 `patches/ui-clarity-rank-assets.patch` supersedes the October 5 rank renderer and further simplifies the shared UI. The October 11 `patches/final-ui-calculator-rank-fix.patch` replaces the rank images, adds the standalone calculator for every role, strengthens crimson accents and fixes the welcome logo. The later October 11 `patches/rank-edge-final-fix.patch` clips rank artwork and shine to aligned vector silhouettes and overlays a thin tier-colored vector edge; its four SVG dependencies are supplied alongside the implementation. The later `patches/production-cleanup-dark-welcome.patch` supersedes legacy-store migration and fixture-loading behavior: start a clean version-4 store, remove the fixture loader and preview strip, render the frontend in all deployment environments, and use a white welcome with the colored logo in both themes. The latest owner-supplied `patches/username-password-login.patch` supersedes name-based account selection and simulated password operations with browser-local username/password verification and administrator setup. It does not add Neon or centralized/server authentication.
 
-The owner's October 11 instruction to deploy `main` to Vercel Production supersedes the earlier Preview-only hosting restriction. It authorizes Production hosting of this frontend; it does not authorize Phase 2 database, centralized authentication or server-side business logic integration. The subsequent login patch authorizes only the local credential behavior described here.
+The owner's October 11 instruction selected `main` and Vercel Production instead of Preview-only hosting. Its frontend-only scope and the local login patch were subsequently superseded by the October 12 server-integration authorization above. The following preview-state and local-login sections describe the isolated local adapter, not Production authentication or storage.
 
 ## Preview state and identity
 
@@ -47,15 +49,19 @@ Credential setup and updates must fail if local storage or Web Crypto is unavail
 
 ## Evaluation and test fixtures
 
-The independent system administrator is the only account that can be configured in a clean installation; the owner creates employee accounts through the UI. The seven-account factory remains available to automated tests only. No application control or provider method loads test employees.
+In the local test adapter, the independent system administrator is the only account that can be configured in a clean installation; the owner creates employee accounts through the UI. A fresh server installation instead remains locked pending its reviewed import. The seven-account factory remains available to automated tests only. No application control or provider method loads test employees.
 
 Evaluation cycles are independent from payroll months. Admin and Super Admin may create one open cycle, create/reopen/close exams, and archive the cycle. Archiving freezes cycle and exam leaderboards and closes its exams atomically. A new cycle starts at zero. Archived counts, names, scores and exam metadata do not follow later employee or record changes.
 
-Employees in `التدقيق` can edit active `التصحيح` employees on open exams in the open cycle. The corrector multiselect and exam selector appear in one toolbar. Error steppers place minus on the left and plus on the right; buttons save immediately, typed values save after a short debounce or on blur/navigation. Saves retain the exam, employee and actor identity, reject closed/archived targets and record actual before/after values in the audit log. There is no save button.
+Auditor access requires an active EMPLOYEE account with explicit `AUDIT_REVIEW.view`; department membership grants no access. The correction roster accepts normalized exact names `التصحيح` and `قسم التصحيح`. Creating a missing evaluation requires `create`, editing an existing one requires `edit`, and deletion requires its independent `delete` grant plus the reasoned confirmation flow. A view-and-delete account can delete an eligible row while its numeric inputs remain disabled.
+
+SUPER_ADMIN can enter or edit numeric evaluations directly on exam details. Numeric editing requires an OPEN exam in an OPEN cycle and, when present, an OPEN season; CLOSED numeric values remain locked. SUPER_ADMIN can edit an OPEN or CLOSED exam's name, date and note within an OPEN cycle. ADMIN retains lifecycle controls without gaining direct numeric entry or exam-metadata editing. Archived cycle/season locks and existing safe-deletion restrictions remain in force for every role.
+
+The corrector multiselect and exam selector appear in one toolbar. Error steppers place minus on the left and plus on the right; buttons save immediately, typed values save after a short debounce or on blur/navigation. Numeric saves retain the exam, employee and actor identity, reject closed/archived targets and record actual before/after values in the audit log. Numeric inputs have no save button; the exam-metadata dialog has its own save action.
 
 Score is `papers − correctionErrors × 5 − behaviorErrors × 3`. Negative scores are allowed. Accuracy is `100 − (correctionErrors + behaviorErrors) / papers × 100`, clamped to 0–100 and shown as unavailable when papers are zero. Exam count is informational and never multiplies the score. Active correctors with no entries remain visible at zero. Ranking uses score descending, then papers descending, then Arabic name.
 
-Correctors can view their own breakdown and full read-only cycle/exam leaderboards. While an exam is `OPEN`, its errors, score and leaderboard are private to Admin/auditors; correctors see only `قيد التدقيق`. Corrector-visible cycle/season totals include only `CLOSED` exams so an open result cannot leak indirectly. Other employee departments cannot open the auditor or corrector views. Required salary-number inputs start blank for new forms; explicit zero is valid and blank required values are rejected. Optional inherited daily rates remain optional.
+Correctors can view their own breakdown and full read-only cycle/exam leaderboards. Without an explicit audit-review grant, correctors see only `قيد التدقيق` for OPEN exams and receive cycle/season totals from CLOSED exams only. An employee from any department can open the auditor workspace when explicitly granted access; personal corrector views still require correction-roster eligibility. Required salary-number inputs start blank for new forms; explicit zero is valid and blank required values are rejected. Optional inherited daily rates remain optional.
 
 Evaluation seasons sit above cycles and are independent from payroll months. Only one season may be open. Admin opens a season, opens/archives cycles inside it, then archives the season only when no cycle remains open. The season snapshot freezes its final rows and cycle IDs. Admin/auditor totals are live; corrector-visible totals publish closed exams only. Seasonal attendance is the count of `PRESENT` dates within the season; average papers/day is season papers divided by those days (or unavailable at zero days). Both are informational only.
 
@@ -63,7 +69,7 @@ Season rank is based only on seasonal score: Bronze 1/2/3 at 0/500/1000; Silver 
 
 The same October 5 patch enlarges typography, controls and spacing across administration and employee workspaces, with explicit light/dark colors. Avoid duplicated rank labels in profile/home summaries and remove the seasonal motivational phrase. Hide redundant helper descriptions while preserving entered department descriptions, validation/operational warnings and functional controls. Screen typography must not override compact report print styles. The October 7 patch removes shared page/card header descriptions and redundant dashboard/employee/attendance hints. Notifications have no close button and automatically dismiss after 3200ms; each new notification restarts its full lifecycle, including repeated messages. Preserve mobile navigation offsets when overriding desktop dimensions.
 
-Admin corrector profiles show live seasonal rank, progress, totals and a link to the current or specific archived season. Corrector home totals remain limited to published exams. Auditors do not receive corrector rank cards, and a person absent from an archived snapshot must not receive an invented zero-point rank. The login slogan is **CenterPro معك بكل خطوة.** and login/app copyright is **Kal-EL VISIONS © 2026**.
+Admin corrector profiles show live seasonal rank, progress, totals and a link to the current or specific archived season. Corrector home totals remain limited to published exams. Audit-review permission does not itself confer or remove correction-roster eligibility or rank cards; a person absent from an archived snapshot must not receive an invented zero-point rank. The login slogan is **CenterPro معك بكل خطوة.** and login/app copyright is **Kal-EL VISIONS © 2026**.
 
 ## Welcome lifecycle
 
@@ -73,7 +79,7 @@ There is no splash before login. Only an explicit successful login awaits `showW
 
 ## Standalone calculator
 
-The October 11 patch adds `/calculator` for all signed-in preview roles, including both administrator roles and employees. It is linked from each role's navigation. The page shows only the calculator and a return control, inherits the selected theme and keeps the numeric keypad left-to-right within the Arabic application.
+The October 11 patch adds `/calculator` for signed-in administrators and employees. It is linked from their navigation; the later dedicated QR Display account remains restricted to the attendance screen. The page shows only the calculator and a return control, inherits the selected theme and keeps the numeric keypad left-to-right within the Arabic application.
 
 Support the supplied immediate-execution arithmetic, decimals, sign toggle, percentage as division by 100, entry/all clear and keyboard input. Division by zero displays `خطأ` and permits recovery. The calculator has no effect on payroll, attendance or evaluation data. Returning from a menu visit stays inside the app; direct entry falls back to the role's home. Maintain usable touch controls, keyboard navigation and visible long results on phone, tablet and desktop.
 
@@ -113,7 +119,7 @@ Every zero-data screen provides a useful explanation and next step. No departmen
 
 ## Dates and domain services
 
-`lib/format`: `money(number)`, `number(number)`, `date(string)`, `time(string)`, `monthLabel(string)`, `duration(seconds)`. Operational display timezone is `Asia/Baghdad`. `DEMO_TODAY='2026-09-28'` and `DEMO_MONTH='2026-09'` remain preview constants, not fixture records or a production clock.
+`lib/format`: `money(number)`, `number(number)`, `date(string)`, `time(string)`, `monthLabel(string)`, `duration(seconds)`, `attendanceDateLabel(string)` and `englishMonthName(string)`. Administrative attendance dates show the Arabic weekday and English month, for example `الخميس — 15 October 2026`; attendance month headings use English month names. This changes display only, not stored dates or attendance rules. Operational display timezone is `Asia/Baghdad`. `DEMO_TODAY='2026-09-28'` and `DEMO_MONTH='2026-09'` remain preview constants, not fixture records or a production clock.
 
 `lib/payroll`: `getEmployeePayroll`, `getMonthPayroll`, `calculateTieredSalary`, `calculateFixedSalary`, `recalculateReopenedPayroll`. Keep financial calculations in the domain layer. Archived snapshots remain frozen; explicit Super Admin recalculation uses historical salary configuration and preserves historical employee/department context.
 
@@ -123,21 +129,23 @@ At most one `OPEN` attendance day may exist system-wide, including across dates/
 
 ## Routes and navigation
 
-Admin routes: `/dashboard`, `/employees`, `/employees/[id]`, `/departments`, `/attendance`, `/attendance/[id]`, `/payroll`, `/deductions`, `/bonuses`, `/reports`, `/audit`, `/settings`, `/evaluations`, `/evaluations/seasons`, `/evaluations/cycles`, `/evaluations/exams`, `/evaluations/[id]`.
+Admin routes: `/dashboard`, `/employees`, `/employees/[id]`, `/departments`, `/attendance`, `/attendance/[id]`, `/payroll`, `/deductions`, `/bonuses`, `/reports`, `/audit`, `/settings`, `/permissions`, `/evaluations`, `/evaluations/seasons`, `/evaluations/cycles`, `/evaluations/exams`, `/evaluations/[id]`. `/permissions` is SUPER_ADMIN-only.
 
 `/evaluations` is the three-card administration hub. Seasons, cycles and exams have dedicated management pages. Historical season → cycle → exam navigation retains its context through query parameters; archived lists use frozen snapshots. Legacy seasonless cycles remain visible, reviewable and closable without inventing a season. Season closure sets its Baghdad end date before calculating the frozen snapshot.
 
 There is one attendance navigation concept, **الحضور**. `/attendance` is the days hub; `/attendance?open=new` opens the creation flow or the current-open-day explanation. `/attendance/[id]` handles all settings and review for one day. `/workdays` redirects to `/attendance`; its legacy create query forwards safely. It is not a second management UI or navigation item.
 
-`/attendance-display` is standalone and uses the single currently open day. It returns to **الحضور** when none exists. QR remains unsigned preview data.
+`/attendance-display` is standalone and uses the single currently open day. Administrative navigation returns to **الحضور** when none exists; the dedicated QR Display account remains on its restricted display. Production QR tokens are signed by the server. Unsigned QR data exists only in the isolated local adapter.
 
-Employee routes: `/employee`, `/employee/attendance`, `/employee/salary`, `/employee/profile`, `/employee/scan`, `/employee/audit`, `/employee/evaluation`. Personal records derive identity from the session; evaluation leaderboards show the shared correction rankings as requested.
+Employee routes: `/employee`, `/employee/attendance`, `/employee/salary`, `/employee/profile`, `/employee/scan`, `/employee/audit`, `/employee/evaluation`, `/employee/deductions`, `/employee/bonuses`. Audit, deductions and bonuses navigation requires that feature's explicit view permission. Personal records derive identity from the session; evaluation leaderboards show the shared correction rankings as requested.
 
 Use Next.js `useSearchParams()` under Suspense for query-driven actions. Do not read `window.location` in initializers to drive links such as `?add=1`; it can be stale during client navigation.
 
 ## Permissions and confirmations
 
-Employees cannot enter admin pages or edit their own profile, credentials, attendance or financial records. Admin cannot change protected salary/role settings, manage Admin accounts, view audit/settings or reopen archived payroll. All permission checks are preview UX, not production security.
+Employees cannot enter admin pages or edit their own profile, credentials or attendance through generic record mutations. SUPER_ADMIN may grant active EMPLOYEE accounts separate view/create/edit/delete permissions for deductions, bonuses and audit review, through **الصلاحيات** or the employee account editor. Missing grants deny access; there are no defaults based on role history or department. Each action requires view, and disabling view clears the action grants. ADMIN cannot manage these permissions, change protected salary/role settings, manage Admin accounts, view audit/settings or reopen archived payroll.
+
+Delegated financial screens expose only the granted collection and minimal employee descriptors; they do not grant colleagues' private profiles, attendance, payments or payroll snapshots. Existing personal salary access remains available without delegated grants. Each create/edit/delete action is separately authorized and retains month/archive locks. The permission editor preserves unsaved drafts, provides explicit save/cancel controls and reports conflicts rather than silently overwriting newer grants. Saved permission changes revoke the affected account's server sessions without changing its password. Production checks use canonical server data and filtered responses; hidden controls alone are not authorization.
 
 Mutations update linked views, show clear feedback and preserve audit behavior. Strong confirmation is required for deactivation, removing attendance, deleting adjustments, salary setting changes and archive/reopen. Employee password reset remains a simple form without unnecessary confirmation; save a salted password hash and sanitized audit event, never the plaintext password.
 

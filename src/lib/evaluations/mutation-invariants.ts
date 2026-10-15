@@ -1,6 +1,7 @@
 import type { DemoData, DemoSession } from '../types';
 import { changedRecords, sameValue } from './comparison';
-import { isAuditEmployee, isCorrectionEmployee } from './roles';
+import { isCorrectionEmployee } from './roles';
+import { hasEmployeePermission } from '../permissions';
 import { buildEvaluationCycleSnapshot, buildEvaluationSeasonSnapshot } from './snapshots';
 import { assertEvaluationState } from './state-invariants';
 
@@ -61,9 +62,15 @@ export function assertEvaluationMutation(before: DemoData, after: DemoData, sess
   if (evaluationsChanged) {
     const actor = before.employees.find(item => item.id === session.employeeId);
     const nextActor = after.employees.find(item => item.id === session.employeeId);
-    if (session.role !== 'EMPLOYEE' || !actor || !nextActor || actor.role !== 'EMPLOYEE' || nextActor.role !== 'EMPLOYEE'
-      || !isAuditEmployee(before, actor) || !isAuditEmployee(after, nextActor)) throw new Error('إدخال التقييمات متاح لموظفي قسم التدقيق النشطين فقط.');
+    const superAdmin = session.role === 'SUPER_ADMIN';
+    if (!superAdmin && (session.role !== 'EMPLOYEE' || !actor || !nextActor || actor.role !== 'EMPLOYEE' || nextActor.role !== 'EMPLOYEE')) {
+      throw new Error('إدخال بيانات التدقيق متاح للمشرف العام أو للحسابات المفوضة فقط.');
+    }
     for (const evaluation of changedRecords(before.examEvaluations, after.examEvaluations)) {
+      const existed = before.examEvaluations.some(item => item.id === evaluation.id);
+      if (!superAdmin && (!hasEmployeePermission(actor, 'AUDIT_REVIEW', existed ? 'edit' : 'create') || !hasEmployeePermission(nextActor, 'AUDIT_REVIEW', existed ? 'edit' : 'create'))) {
+        throw new Error('لا يملك الحساب صلاحية إضافة أو تعديل بيانات التدقيق.');
+      }
       for (const data of [before, after]) {
         const exam = data.evaluationExams.find(item => item.id === evaluation.examId);
         const cycle = data.evaluationCycles.find(item => item.id === exam?.cycleId);

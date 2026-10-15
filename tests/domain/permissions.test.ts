@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { canManageEmployeeAccount, canViewEmployee, hasPreviewPermission } from '../../src/lib/permissions';
+import { canManageEmployeeAccount, canViewEmployee, hasEmployeePermission, hasPreviewPermission } from '../../src/lib/permissions';
 import type { PreviewPermission } from '../../src/lib/permissions';
+import type { Employee } from '../../src/lib/types';
 
 describe('preview role boundaries (server enforcement belongs to phase 2)', () => {
   const permissions: PreviewPermission[] = ['MANAGE_EMPLOYEES', 'EDIT_ATTENDANCE', 'EDIT_PAYROLL', 'MANAGE_ADJUSTMENTS', 'REPORTS', 'MANAGE_DEPARTMENTS', 'MANAGE_ROLES', 'MANAGE_ADMINS', 'SALARY_CONFIG', 'REOPEN_PAYROLL', 'AUDIT', 'SETTINGS'];
@@ -23,5 +24,14 @@ describe('preview role boundaries (server enforcement belongs to phase 2)', () =
     const session = { role: 'EMPLOYEE' as const, employeeId: 'CP-0001', name: 'علي' };
     expect(canViewEmployee(session, 'CP-0001')).toBe(true);
     expect(canViewEmployee(session, 'CP-0002')).toBe(false);
+  });
+
+  it('grants delegated menus per individual account and defaults missing permissions to denied', () => {
+    const employee = { active: true, role: 'EMPLOYEE', permissions: { AUDIT_REVIEW: { view: true, create: false, edit: true, delete: false } } } as Employee;
+    expect(hasEmployeePermission(employee, 'AUDIT_REVIEW', 'view')).toBe(true);
+    expect(hasEmployeePermission(employee, 'AUDIT_REVIEW', 'edit')).toBe(true);
+    expect(hasEmployeePermission(employee, 'AUDIT_REVIEW', 'create')).toBe(false);
+    expect(hasEmployeePermission(employee, 'DEDUCTIONS', 'view')).toBe(false);
+    expect(hasEmployeePermission({ ...employee, active: false }, 'AUDIT_REVIEW', 'view')).toBe(false);
   });
 });

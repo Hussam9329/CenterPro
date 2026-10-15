@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDemo } from '@/components/demo-provider';
-import { calculateEvaluationScore, getExamEvaluation, isAuditEmployee, isCorrectionEmployee } from '@/lib/evaluations';
+import { calculateEvaluationScore, getExamEvaluation, isCorrectionEmployee } from '@/lib/evaluations';
+import { hasSessionAccountPermission } from '@/lib/permissions';
 import { actorKey, numericFields, safeNumber, valueText, type NumericField, type PendingValues, type SaveState } from './editor-values';
 
 /** Owns the identity-bound queue; rendering never handles timers or retries. */
@@ -39,8 +40,10 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
             // Timers and unmount cleanup check the live store instead of the
             // account or exam state captured when typing began.
             if (!currentSession || actorKey(currentSession) !== owner) throw new Error('لم تُحفظ التغييرات لأن حساب الدخول تغيّر.');
-            const auditor = draft.employees.find(item => item.id === currentSession.employeeId);
-            if (!auditor || !isAuditEmployee(draft, auditor)) throw new Error('لم تُحفظ التغييرات لأن الحساب لا يملك صلاحية التدقيق.');
+            const existing = getExamEvaluation(draft, examId, employeeId);
+            const action = existing ? 'edit' : 'create';
+            const auditAllowed = currentSession.role === 'SUPER_ADMIN' || (currentSession.role === 'EMPLOYEE' && hasSessionAccountPermission(draft, currentSession, 'AUDIT_REVIEW', action));
+            if (!auditAllowed) throw new Error('لم تُحفظ التغييرات لأن الحساب لا يملك صلاحية إضافة أو تعديل التدقيق.');
             const exam = draft.evaluationExams.find(item => item.id === examId);
             const cycle = draft.evaluationCycles.find(item => item.id === exam?.cycleId);
             if (!exam || exam.state !== 'OPEN' || cycle?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الامتحان مغلق أو الدورة مؤرشفة.');
@@ -48,7 +51,6 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
             const targetEmployee = draft.employees.find(item => item.id === employeeId);
             if (!targetEmployee || !isCorrectionEmployee(draft, targetEmployee)) throw new Error('لم تُحفظ التغييرات لأن الموظف لم يعد ضمن المصححين الفعالين.');
 
-            const existing = getExamEvaluation(draft, examId, employeeId);
             const changed = fields.filter(field => (existing?.[field] ?? null) !== safeNumber(values[field]!));
             if (!changed.length) return;
             const now = new Date().toISOString();

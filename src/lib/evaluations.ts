@@ -1,5 +1,5 @@
 /** Public evaluation API. Keep callers independent of the domain module layout. */
-export { isCorrectionDepartmentName, isAuditDepartmentName, isCorrectionEmployee, isAuditEmployee, getCorrectionEmployees } from './evaluations/roles';
+export { isCorrectionDepartmentName, isCorrectionEmployee, isAuditEmployee, getCorrectionEmployees } from './evaluations/roles';
 export { getOpenEvaluationCycle, getOpenEvaluationSeason, getLatestEvaluationSeason, getExamEvaluation } from './evaluations/selectors';
 export { calculateEvaluationScore, calculateAccuracy, formatAccuracy, formatAveragePapers } from './evaluations/scoring';
 export { getExamLeaderboard, getCycleLeaderboard, getSeasonLeaderboard } from './evaluations/leaderboards';

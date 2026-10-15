@@ -1,4 +1,5 @@
 import { getSeasonLeaderboard, isAuditEmployee, isCorrectionEmployee } from '@/lib/evaluations';
+import { hasEmployeePermission } from '@/lib/permissions';
 import { isExpected } from '@/lib/attendance';
 import type { DemoData, DemoSession, Department, Employee, EvaluationCycleSnapshot, EvaluationLeaderboardRow, EvaluationSeasonSnapshot, PayrollMonth, PayrollResult, SalaryConfig, SeasonLeaderboardRow, Workday } from '@/lib/types';
 
@@ -7,7 +8,7 @@ function pick<T extends object, K extends keyof T>(value: T, keys: readonly K[])
 function salaryView(value: SalaryConfig): SalaryConfig {
   return { ...pick(value, ['mode', 'dailyRate', 'unexcusedRate', 'maximum', 'fixedSalary', 'extraDaysStart']), tiers: value.tiers.map(tier => pick(tier, ['id', 'fromDays', 'toDays', 'type', 'amount'])) };
 }
-function privateEmployee(value: Employee): Employee { return pick(value, ['id', 'code', 'name', 'photo', 'address', 'phone', 'guardianPhone', 'departmentId', 'startDate', 'endDate', 'active', 'gender', 'birthDate', 'notes', 'qualification', 'telegram', 'username', 'role', 'fixedOverride', 'fixedSalary', 'dailyRateOverride', 'createdAt', 'updatedAt']); }
+function privateEmployee(value: Employee): Employee { return pick(value, ['id', 'code', 'name', 'photo', 'address', 'phone', 'guardianPhone', 'departmentId', 'startDate', 'endDate', 'active', 'gender', 'birthDate', 'notes', 'qualification', 'telegram', 'username', 'role', 'permissions', 'fixedOverride', 'fixedSalary', 'dailyRateOverride', 'createdAt', 'updatedAt']); }
 function privateDepartment(value: Department): Department { return { ...pick(value, ['id', 'name', 'active', 'description']), salary: salaryView(value.salary) }; }
 function privateAttendance(value: DemoData['attendance'][number]) { return pick(value, ['id', 'employeeId', 'workdayId', 'status', 'checkIn', 'latenessSeconds', 'source', 'reason', 'updatedAt']); }
 function privateDeduction(value: DemoData['deductions'][number]) { return pick(value, ['id', 'employeeId', 'amount', 'date', 'type', 'customType', 'reason', 'createdBy', 'createdAt']); }
@@ -75,7 +76,13 @@ export function projectData(data: DemoData, actor: DemoSession): DemoData {
   const auditor = isAuditEmployee(data, employee);
   const corrector = isCorrectionEmployee(data, employee);
   const evaluationAllowed = auditor || corrector;
-  const others = evaluationAllowed ? data.employees.filter(item => item.id !== employee.id && isCorrectionEmployee(data, item)).map(descriptor) : [];
+  const delegatedDeductions = hasEmployeePermission(employee, 'DEDUCTIONS', 'view');
+  const delegatedBonuses = hasEmployeePermission(employee, 'BONUSES', 'view');
+  const delegatedFinance = delegatedDeductions || delegatedBonuses;
+  const peerEmployees = delegatedFinance
+    ? data.employees.filter(item => item.id !== employee.id)
+    : evaluationAllowed ? data.employees.filter(item => item.id !== employee.id && isCorrectionEmployee(data, item)) : [];
+  const others = peerEmployees.map(descriptor);
   const departmentIds = new Set([employee.departmentId, ...others.map(item => item.departmentId)]);
   const attendance = data.attendance.filter(item => item.employeeId === employee.id);
   const workdayIds = new Set(attendance.map(item => item.workdayId));
@@ -88,10 +95,10 @@ export function projectData(data: DemoData, actor: DemoSession): DemoData {
     departments: data.departments.filter(item => departmentIds.has(item.id)).map(item => item.id === employee.departmentId ? privateDepartment(item) : { id: item.id, name: item.name, active: item.active, description: '', salary: structuredClone(emptySalary) }),
     workdays: data.workdays.filter(day => day.state === 'OPEN' || workdayIds.has(day.id) || isExpected(employee, day)).map(day => ownDay(day, employee.id, employee.departmentId)),
     attendance: attendance.map(privateAttendance),
-    deductions: data.deductions.filter(item => item.employeeId === employee.id).map(privateDeduction),
-    bonuses: data.bonuses.filter(item => item.employeeId === employee.id).map(privateBonus),
+    deductions: (delegatedDeductions ? data.deductions : data.deductions.filter(item => item.employeeId === employee.id)).map(privateDeduction),
+    bonuses: (delegatedBonuses ? data.bonuses : data.bonuses.filter(item => item.employeeId === employee.id)).map(privateBonus),
     payments: data.payments.filter(item => item.employeeId === employee.id).map(privatePayment),
-    months: data.months.filter(item => item.state === 'OPEN' || Boolean(item.snapshots[employee.id])).map(item => ownMonth(item, employee.id)),
+    months: (delegatedFinance ? data.months : data.months.filter(item => item.state === 'OPEN' || Boolean(item.snapshots[employee.id]))).map(item => ownMonth(item, employee.id)),
     audit: [],
     settings: { centerName: data.settings.centerName, qrInterval: data.settings.qrInterval },
     evaluationSeasons: evaluationAllowed ? data.evaluationSeasons.map(item => ({ id: item.id, name: item.name, startDate: item.startDate, endDate: item.endDate, state: item.state, openedAt: item.openedAt, openedBy: '', closedAt: item.closedAt, closedBy: '', ...(item.state === 'ARCHIVED' && item.snapshot ? { snapshot: seasonSnapshot(item.snapshot) } : {}) })) : [],

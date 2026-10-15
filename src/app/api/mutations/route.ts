@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       const revoked = new Set<string>();
       for (const employee of context.data.employees) {
         const next = after.employees.find(row => row.id === employee.id);
-        if (!next || next.active !== employee.active || next.role !== employee.role || next.username !== employee.username) revoked.add(employee.id);
+        if (!next || next.active !== employee.active || next.role !== employee.role || next.username !== employee.username || JSON.stringify(next.permissions ?? {}) !== JSON.stringify(employee.permissions ?? {})) revoked.add(employee.id);
       }
       const deletedEmployeeIds = new Set(context.data.employees.filter(employee => !after.employees.some(row => row.id === employee.id)).map(employee => employee.id));
       for (const employeeId of deletedEmployeeIds) delete auth.employees[employeeId];

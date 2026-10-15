@@ -5,6 +5,19 @@ export function date(value: string): string {
   const d = new Date(value.length === 10 ? `${value}T12:00:00+03:00` : value);
   return Number.isNaN(d.getTime()) ? '—' : new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Baghdad', day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
 }
+
+export function englishMonthName(value: string): string {
+  const d = new Date(`${value}-15T12:00:00+03:00`);
+  return Number.isNaN(d.getTime()) ? '—' : new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Baghdad', month: 'long' }).format(d);
+}
+export function attendanceDateLabel(value: string): string {
+  if (!value) return '—';
+  const d = new Date(value.length === 10 ? `${value}T12:00:00+03:00` : value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const weekday = new Intl.DateTimeFormat('ar-IQ', { timeZone: 'Asia/Baghdad', weekday: 'long' }).format(d);
+  const english = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Baghdad', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  return `${weekday} — ${english}`;
+}
 export function time(value: string): string {
   if (!value) return '—';
   const d = new Date(value.includes('T') ? value : `2026-09-28T${value}+03:00`);

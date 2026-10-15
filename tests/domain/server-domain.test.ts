@@ -48,9 +48,11 @@ describe('canonical server mutation boundary', () => {
     state.employees[0].active = false;
     expect(() => applyMutation(state, actor(state), { revision: 1, changes: [] }, now)).toThrow();
   });
-  it('protects salary fields, administrator accounts and departments from manager requests', () => {
+  it('protects salary fields, administrator accounts, account permissions and departments from manager requests', () => {
     const state = data(); const manager = actor(state, 'manager');
     expect(() => change(state, next => { next.employees[0].fixedSalary = 500_000; }, manager)).toThrow();
+    expect(() => change(state, next => { next.employees[0].permissions = { DEDUCTIONS: { view: true, create: false, edit: false, delete: false } }; }, manager)).toThrow('إدارة صلاحيات الحساب متاحة للمشرف العام فقط.');
+    expect(change(state, next => { next.employees[0].permissions = { DEDUCTIONS: { view: true, create: false, edit: false, delete: false } }; }).employees[0].permissions?.DEDUCTIONS?.view).toBe(true);
     expect(() => change(state, next => { next.employees[0].role = 'ADMIN'; }, manager)).toThrow();
     expect(() => change(state, next => { next.employees.at(-1)!.name = 'غير مسموح'; }, manager)).toThrow();
     expect(() => change(state, next => { next.departments[0].name = 'غير مسموح'; }, manager)).toThrow();
@@ -268,10 +270,11 @@ describe('server financial snapshots and payments', () => {
 });
 
 describe('evaluation permissions and read projections', () => {
-  it('permits only active audit employees to edit open corrector results and assigns actor metadata', () => {
+  it('permits the super admin and explicitly delegated employees to edit open corrector results and assigns actor metadata', () => {
     const state = evaluationState(); const auditor = actor(state, 'CP-0004');
-    expect(() => change(state, next => { next.examEvaluations.push(evaluation()); })).toThrow(/موظفي قسم التدقيق/);
-    expect(() => change(state, next => { next.examEvaluations.push(evaluation()); }, actor(state))).toThrow();
+    const byOwner = change(state, next => { next.examEvaluations.push(evaluation()); });
+    expect(byOwner.examEvaluations[0]).toMatchObject({ createdBy: owner.name, updatedBy: owner.name });
+    expect(() => change(state, next => { next.examEvaluations.push(evaluation()); }, actor(state))).toThrow(/صلاحية|مفوضة/);
     const saved = change(state, next => { next.examEvaluations.push(evaluation()); }, auditor);
     expect(saved.examEvaluations[0]).toMatchObject({ createdBy: auditor.name, updatedBy: auditor.name, updatedAt: now.toISOString() });
     const closed = change(saved, next => { next.evaluationExams[0].state = 'CLOSED'; });

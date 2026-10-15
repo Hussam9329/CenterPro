@@ -2,7 +2,7 @@ import { canManageEmployeeAccount } from '@/lib/permissions';
 import { validateSalaryConfig } from '@/lib/payroll';
 import type { DemoData, Employee } from '@/lib/types';
 import { settingsSchema } from './schemas';
-import { fail, put, requireSuper, unchanged, type MutationContext } from './shared';
+import { fail, put, requireSuper, same, unchanged, type MutationContext } from './shared';
 
 /** Canonical settings, department policy and employee/account profile changes. */
 export function applyPeopleChanges(context: MutationContext) {
@@ -27,9 +27,14 @@ export function applyPeopleChanges(context: MutationContext) {
     if (!canManageEmployeeAccount(actor.role, previous?.role ?? item.role)) fail('إدارة حسابات المسؤولين متاحة للمشرف العام فقط.');
     if (actor.role !== 'SUPER_ADMIN') {
       if (item.role !== 'EMPLOYEE') fail();
-      unchanged(previous ?? { role: 'EMPLOYEE', fixedOverride: false, fixedSalary: 0, dailyRateOverride: null }, item, ['role', 'fixedOverride', 'fixedSalary', 'dailyRateOverride']);
+      if (!same(previous?.permissions, item.permissions)) fail('إدارة صلاحيات الحساب متاحة للمشرف العام فقط.');
+      unchanged(previous ?? { role: 'EMPLOYEE', permissions: undefined, fixedOverride: false, fixedSalary: 0, dailyRateOverride: null }, item, ['role', 'permissions', 'fixedOverride', 'fixedSalary', 'dailyRateOverride']);
     }
-    if (previous) { unchanged(previous, item, ['code', 'createdAt']); item.createdAt = previous.createdAt; }
+    if (previous) {
+      unchanged(previous, item, ['code', 'createdAt']);
+      if (actor.role !== 'SUPER_ADMIN') unchanged(previous, item, ['permissions']);
+      item.createdAt = previous.createdAt;
+    } else if (actor.role !== 'SUPER_ADMIN' && item.permissions && Object.keys(item.permissions).length) fail('إدارة صلاحيات الحساب متاحة للمشرف العام فقط.');
     else {
       if (request.password?.employeeId !== item.id) fail('أدخل كلمة مرور أولية لحساب الموظف.');
       const next = Math.max(0, ...after.employees.map(employee => Number(employee.code.replace(/^CP-/, '')) || 0)) + 1;

@@ -54,6 +54,7 @@ function testEmployee(input: {
   gender: 'MALE' | 'FEMALE';
   phone: string;
   guardianPhone: string;
+  permissions?: Employee['permissions'];
 }): Employee {
   return {
     ...input,
@@ -78,9 +79,9 @@ const testEmployees: Employee[] = [
   testEmployee({ id: 'employee-hiba-mohammed', code: 'CP-0002', name: 'هبة محمد', username: 'HIBA1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000002', guardianPhone: '07800000002' }),
   testEmployee({ id: 'employee-fatima-firas', code: 'CP-0003', name: 'فاطمة فراس', username: 'FATIMA1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000003', guardianPhone: '07800000003' }),
   testEmployee({ id: 'employee-maryam-issam', code: 'CP-0004', name: 'مريم عصام', username: 'MARYAME1', departmentId: 'department-correction-test', gender: 'FEMALE', phone: '07700000004', guardianPhone: '07800000004' }),
-  testEmployee({ id: 'employee-jaafar-ali', code: 'CP-0005', name: 'جعفر علي', username: 'JAAFAR1', departmentId: 'department-audit-test', gender: 'MALE', phone: '07700000005', guardianPhone: '07800000005' }),
-  testEmployee({ id: 'employee-maryam-fahad', code: 'CP-0006', name: 'مريم فهد', username: 'MARYAMF1', departmentId: 'department-audit-test', gender: 'FEMALE', phone: '07700000006', guardianPhone: '07800000006' }),
-  testEmployee({ id: 'employee-dania-iyad', code: 'CP-0007', name: 'دانيا اياد', username: 'DANIA1', departmentId: 'department-audit-test', gender: 'FEMALE', phone: '07700000007', guardianPhone: '07800000007' }),
+  testEmployee({ id: 'employee-jaafar-ali', code: 'CP-0005', name: 'جعفر علي', username: 'JAAFAR1', departmentId: 'department-audit-test', gender: 'MALE', phone: '07700000005', guardianPhone: '07800000005', permissions: { AUDIT_REVIEW: { view: true, create: true, edit: true, delete: true } } }),
+  testEmployee({ id: 'employee-maryam-fahad', code: 'CP-0006', name: 'مريم فهد', username: 'MARYAMF1', departmentId: 'department-audit-test', gender: 'FEMALE', phone: '07700000006', guardianPhone: '07800000006', permissions: { AUDIT_REVIEW: { view: true, create: true, edit: true, delete: true } } }),
+  testEmployee({ id: 'employee-dania-iyad', code: 'CP-0007', name: 'دانيا اياد', username: 'DANIA1', departmentId: 'department-audit-test', gender: 'FEMALE', phone: '07700000007', guardianPhone: '07800000007', permissions: { AUDIT_REVIEW: { view: true, create: true, edit: true, delete: true } } }),
 ];
 
 function day(index: number): Workday {
