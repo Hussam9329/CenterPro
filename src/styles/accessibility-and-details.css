@@ -53,6 +53,7 @@
 .employee-cell:hover strong { color: var(--brand); }
 .subtext { display: block; color: #6b707b; font-size: 10px; line-height: 1.6; }
 .employee-cell .subtext { text-align: right; }
+.data-table .employee-cell .subtext { text-align: center; }
 .activity-row { align-items: flex-start; }
 .activity-dot { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: #faf1f4; color: #b26475; margin-top: 1px; }
 .activity-row > div { min-width: 0; flex: 1; }

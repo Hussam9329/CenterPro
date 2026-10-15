@@ -6,6 +6,8 @@
 .code { font-family: "Inter Variable", "Noto Sans Arabic Variable", sans-serif; color: #6b6570; font-size: 12px; direction: ltr; text-align: right; }
 .rowActions { display: flex; gap: 4px; justify-content: flex-end; }
 .rowActions button { min-width: 40px; padding-inline: 9px; }
+:global(.data-table) .person, :global(.data-table) .rowActions { justify-content: center; }
+:global(.data-table) .code { text-align: center; }
 .mobilePerson { display: grid; gap: 15px; padding: 18px 0; border-bottom: 1px solid #ecebed; }
 .mobileTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .mobileMeta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: #6a656e; }

@@ -51,9 +51,11 @@
 .examActions { display:flex; gap:7px; flex-wrap:wrap; }
 
 /* Standard leaderboards */
-.leaderboardTable,.seasonTable { width:100%; border-collapse:collapse; }
-.leaderboardTable th,.seasonTable th { font-size:11px; color:var(--muted,#6b707b); background:color-mix(in srgb,var(--surface,#fff) 96%,#a51c30 4%); padding:11px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border,#ececf0); }
-.leaderboardTable td,.seasonTable td { padding:13px 11px; border-bottom:1px solid var(--border,#f0f0f2); color:var(--text,#5d626c); font-size:11px; vertical-align:middle; }
+.leaderboardTable,.seasonTable { width:100%; border-collapse:collapse; text-align:center; }
+.leaderboardTable th,.seasonTable th { font-size:11px; color:var(--muted,#6b707b); background:color-mix(in srgb,var(--surface,#fff) 96%,#a51c30 4%); padding:11px; text-align:center; white-space:nowrap; border-bottom:1px solid var(--border,#ececf0); }
+.leaderboardTable td,.seasonTable td { padding:13px 11px; border-bottom:1px solid var(--border,#f0f0f2); color:var(--text,#5d626c); font-size:11px; vertical-align:middle; text-align:center; }
+.leaderboardTable td > :global(.inline),.seasonTable td > :global(.inline) { justify-content:center; }
+.leaderboardTable td > .rank,.seasonTable td > .rank { margin-inline:auto; }
 .leaderboardTable tr:last-child td,.seasonTable tr:last-child td { border-bottom:0; }
 .seasonTable tbody tr { transition:background .16s ease; }
 .seasonTable tbody tr:hover { background:color-mix(in srgb,var(--surface,#fff) 94%,#a51c30 6%); }

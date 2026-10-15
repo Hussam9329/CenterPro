@@ -74,6 +74,8 @@
 /* Fast attendance review: compact, keyboard-accessible inline select in both
    the desktop table and the existing mobile cards. */
 .quickStatusSelect { min-width: 148px; max-width: 190px; width: 100%; font-size: 12.5px; font-weight: 600; }
+:global(.data-table) .quickStatusSelect { min-width: 190px; margin-inline: auto; padding-inline: 32px; text-align: center; text-align-last: center; }
+:global(.data-table) .recordNote { margin-inline: auto; }
 .cardHeading { flex-wrap: wrap; }
 .cardHeading > :global(.inline) { min-width: 0; max-width: 100%; }
 .cardHeading > :global(.inline) > div { min-width: 0; overflow-wrap: anywhere; }
