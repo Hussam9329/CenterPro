@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { AuthStore } from '../../src/lib/local-auth';
+import { createPopulatedTestData } from '../fixtures/populated-data';
 import {
   test, expect, gotoPreview, loginAccount, seedPopulatedPreview, readPreviewData,
   readPreviewSession, AUTH_STORAGE_KEY, TEST_PASSWORD, fillLoginCredentials, submitLogin,
@@ -20,6 +21,12 @@ test.describe('Password changes inside employee information', () => {
   test.beforeEach(async ({ page }) => { await seedPopulatedPreview(page); });
 
   test('admin saves a new employee password with profile edits and the previous password stops working', async ({ page }, testInfo) => {
+    const fixture = createPopulatedTestData();
+    fixture.employees.find(employee => employee.id === 'CP-0001')!.permissions = {
+      AUDIT_REVIEW: { view: true, create: true, edit: false, delete: true },
+      BONUSES: { view: true, create: false, edit: false, delete: false },
+    };
+    await seedPopulatedPreview(page, fixture);
     await loginAccount(page, 'CP-0013');
     for (const protectedAccount of ['CP-0012', 'CP-0013']) {
       await gotoPreview(page, `/employees/${protectedAccount}`);
@@ -54,6 +61,7 @@ test.describe('Password changes inside employee information', () => {
     const saved = await readPreviewData(page);
     const employee = saved.employees.find(item => item.id === 'CP-0001')!;
     expect(employee).toMatchObject({ name: changedName, code: 'CP-0001', role: 'EMPLOYEE' });
+    expect(employee.permissions).toEqual(before.employees.find(item => item.id === employee.id)?.permissions);
     expect(saved.attendance).toEqual(before.attendance);
     const changedCredential = (await readAuth(page)).employees[employee.id];
     expect(changedCredential.version).toBe(beforeAuth.employees[employee.id].version + 1);

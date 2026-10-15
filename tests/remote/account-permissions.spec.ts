@@ -11,7 +11,7 @@ const viewOnly: AccountPermission = { view: true, create: false, edit: false, de
 
 /** HTTP is synthetic; authorization, projection and mutation are the actual
  * server functions. No database, production account or external service is used. */
-async function permissionsTransport(page: Page) {
+async function permissionsTransport(page: Page, withManager = false) {
   const seeded = createTestData();
   let data: DemoData = {
     ...createInitialData(), departments: structuredClone(seeded.departments),
@@ -19,6 +19,8 @@ async function permissionsTransport(page: Page) {
   };
   const [target, peer, otherDepartment] = data.employees;
   for (const employee of data.employees) delete employee.permissions;
+  const manager = { ...seeded.employees[2], id: 'profile-manager', code: 'CP-0100', username: 'PROFILE_MANAGER', name: 'مدير مراجعة الملفات', role: 'ADMIN' as const };
+  if (withManager) data.employees.push(manager);
   data.departments[1].name = 'المتابعة';
   data.bonuses.push({ id: 'peer-bonus', employeeId: peer.id, amount: 15000, date: '2026-09-28', reason: 'مكافأة زميل للمراجعة', createdBy: owner.name, createdAt: now.toISOString() });
   data.deductions.push({ id: 'peer-deduction', employeeId: peer.id, amount: 5000, date: '2026-09-28', type: 'خصم إداري', customType: '', reason: 'خصم زميل للمراجعة', createdBy: owner.name, createdAt: now.toISOString() });
@@ -55,7 +57,7 @@ async function permissionsTransport(page: Page) {
     return acknowledge(route, command);
   });
   return {
-    target, peer, otherDepartment, commands, snapshot, data: () => data, reads: () => reads,
+    target, peer, otherDepartment, manager, commands, snapshot, data: () => data, reads: () => reads,
     asOwner: () => { session = owner; },
     asEmployee: (id: string) => { const employee = data.employees.find(item => item.id === id)!; session = { kind: 'EMPLOYEE', role: employee.role, name: employee.name, employeeId: id }; },
     holdNext: () => { hold = true; },
@@ -226,3 +228,45 @@ test('failed permission drafts survive background refresh and conflicts require 
   expect(server.data().employees[0].permissions?.DEDUCTIONS).toEqual(viewOnly);
   expect(server.commands.map(command => command.revision)).toEqual([11, 11, 12]);
 });
+
+for (const role of ['SUPER_ADMIN', 'ADMIN'] as const) {
+  test(`${role} profile and password edits preserve explicitly granted account permissions in the submitted and canonical employee`, async ({ page }) => {
+    const server = await permissionsTransport(page, true);
+    await selectAccount(page, server.target.id);
+    for (const feature of ['المكافآت', 'الخصومات', 'التدقيق']) await page.getByRole('checkbox', { name: `عرض ${feature}`, exact: true }).check();
+    await page.getByRole('checkbox', { name: 'إضافة المكافآت', exact: true }).check();
+    await page.getByRole('checkbox', { name: 'تعديل الخصومات', exact: true }).check();
+    await page.getByRole('checkbox', { name: 'حذف التدقيق', exact: true }).check();
+    await page.getByRole('button', { name: 'حفظ الصلاحيات', exact: true }).click();
+    const granted = {
+      BONUSES: { ...viewOnly, create: true },
+      DEDUCTIONS: { ...viewOnly, edit: true },
+      AUDIT_REVIEW: { ...viewOnly, delete: true },
+    };
+    await expect.poll(() => server.data().employees[0].permissions).toEqual(granted);
+
+    if (role === 'ADMIN') server.asEmployee(server.manager.id);
+    await page.goto(`/employees/${server.target.id}`);
+    await page.getByRole('button', { name: 'تعديل الملف', exact: true }).click();
+    const form = page.getByRole('dialog', { name: 'تعديل بيانات الموظف', exact: true });
+    const name = role === 'ADMIN' ? 'ابرار حقي بعد مراجعة المدير' : 'ابرار حقي بعد مراجعة المشرف';
+    await form.getByLabel('الاسم الكامل', { exact: false }).fill(name);
+    await form.getByRole('button', { name: /حساب الدخول/ }).click();
+    if (role === 'ADMIN') await expect(form.getByLabel('الصلاحية', { exact: true })).toBeDisabled();
+    const password = 'permission-profile-test-only';
+    await form.getByLabel('كلمة المرور الجديدة', { exact: false }).fill(password);
+    await form.getByRole('button', { name: 'التالي', exact: true }).click();
+    await form.getByRole('button', { name: 'حفظ التعديلات', exact: true }).click();
+    await expect(form).toBeHidden();
+    await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+
+    const command = server.commands.at(-1)!;
+    const submitted = command.changes.find(change => change.collection === 'employees')?.upsert?.[0];
+    expect(submitted).toMatchObject({ id: server.target.id, name, permissions: granted });
+    expect(command.password).toEqual({ employeeId: server.target.id, value: password });
+    expect(command.audit?.oldValues?.permissions).toEqual(granted);
+    expect(command.audit?.newValues?.permissions).toEqual(granted);
+    expect(server.data().employees.find(employee => employee.id === server.target.id)).toMatchObject({ name, permissions: granted });
+    expect(JSON.stringify(server.data())).not.toContain(password);
+  });
+}

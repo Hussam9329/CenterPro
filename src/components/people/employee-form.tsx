@@ -58,11 +58,18 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
         dailyRateOverride: isSuper ? draft.dailyRateOverride : employee?.dailyRateOverride ?? null,
       };
       const auditProfile = (value: Employee) => { const { photo, ...fields } = value; return { ...fields, hasPhoto: Boolean(photo) }; };
-      await updateData(state => { const index = state.employees.findIndex(item => item.id === id); if (index >= 0) state.employees[index] = updated; else state.employees.push(updated); }, {
+      await updateData(state => {
+        const index = state.employees.findIndex(item => item.id === id);
+        if (index >= 0) {
+          // Profile fields do not manage grants. Preserve the latest canonical
+          // permissions, including changes made after this form was opened.
+          state.employees[index] = { ...updated, permissions: state.employees[index].permissions };
+        } else state.employees.push(updated);
+      }, (before, after) => ({
         action: employee ? 'تعديل بيانات موظف' : 'إضافة موظف وحساب دخول', entity: 'employee', entityId: id, employeeId: id,
-        oldValues: employee ? auditProfile(employee) : {},
-        newValues: { ...auditProfile(updated), ...(employee && changesPassword ? { passwordChanged: true, sessionsInvalidated: true } : {}) },
-      }, changesPassword ? { password: { employeeId: id, value: newPassword } } : undefined);
+        oldValues: before.employees.some(item => item.id === id) ? auditProfile(before.employees.find(item => item.id === id)!) : {},
+        newValues: { ...auditProfile(after.employees.find(item => item.id === id)!), ...(employee && changesPassword ? { passwordChanged: true, sessionsInvalidated: true } : {}) },
+      }), changesPassword ? { password: { employeeId: id, value: newPassword } } : undefined);
       pendingPassword.current = '';
       if (passwordRef.current) passwordRef.current.value = '';
       setConfirmSalary(false);
