@@ -83,11 +83,11 @@ function PermissionForm({ employee }: { employee: Employee }) {
       <p className="muted">تفعيل العرض يتيح قراءة القائمة فقط. امنح الإضافة والتعديل والحذف كلّاً على حدة عند الحاجة.</p>
       {ACCOUNT_PERMISSION_FEATURES.map(item => {
         const value = permissions[item.feature] ?? EMPTY_ACCOUNT_PERMISSION;
-        return <fieldset key={item.feature} style={{ minWidth: 0, margin: 0, padding: '12px 16px', border: '1px solid var(--border)', borderRadius: 10 }}>
-          <legend style={{ paddingInline: 6, fontWeight: 700 }}>{item.label}</legend>
+        return <fieldset key={item.feature} className="perm-group">
+          <legend>{item.label}</legend>
           <p className="muted">{item.description}</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px' }}>{actions.map(({ action, label }) => <label key={action} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
-            <input type="checkbox" aria-label={`${label} ${item.label}`} style={{ width: 20, height: 20, accentColor: 'var(--brand-text)' }} checked={Boolean(value[action])} disabled={!canManage || (action !== 'view' && !value.view) || pending} onChange={event => setPermission(item.feature, action, event.target.checked)} />{label}
+          <div className="perm-actions">{actions.map(({ action, label }) => <label key={action} className="perm-toggle">
+            <input type="checkbox" aria-label={`${label} ${item.label}`} className="toggle" checked={Boolean(value[action])} disabled={!canManage || (action !== 'view' && !value.view) || pending} onChange={event => setPermission(item.feature, action, event.target.checked)} />{label}
           </label>)}</div>
         </fieldset>;
       })}

@@ -4,7 +4,7 @@ import { Avatar, Badge, Card, EmptyState } from '@/components/ui';
 import type { Employee, Role } from '@/lib/types';
 import styles from '@/app/(admin)/settings/settings.module.css';
 
-const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف', QR_DISPLAY: 'QR Display' };
+const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'المدير العام', ADMIN: 'مدير العمليات', EMPLOYEE: 'موظف', QR_DISPLAY: 'شاشة الحضور' };
 
 export function AdminAccountsCard({ adminAccounts }: { adminAccounts: Employee[] }) {
   return <Card title="حسابات الإدارة" action={<Link href="/employees" className="button-link"><UsersRound size={17} />إدارة الموظفين<ChevronLeft size={15} /></Link>}>

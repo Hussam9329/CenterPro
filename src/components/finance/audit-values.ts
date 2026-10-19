@@ -1,7 +1,7 @@
 import { date, duration, money, monthLabel, number, time } from '@/lib/format';
 import type { DemoData, Role } from '@/lib/types';
 
-export const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin / Manager', EMPLOYEE: 'موظف', QR_DISPLAY: 'QR Display' };
+export const roleLabels: Record<Role, string> = { SUPER_ADMIN: 'المدير العام', ADMIN: 'مدير العمليات', EMPLOYEE: 'موظف', QR_DISPLAY: 'شاشة الحضور' };
 export const entityLabels: Record<string, string> = {
   employee: 'الموظفون',
   department: 'الأقسام',
@@ -18,10 +18,10 @@ export const entityLabels: Record<string, string> = {
   'exam-evaluation': 'تقييمات المصححين'
 };
 const valueLabels: Record<string, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  ADMIN: 'Admin / Manager',
+  SUPER_ADMIN: 'المدير العام',
+  ADMIN: 'مدير العمليات',
   EMPLOYEE: 'موظف',
-  QR_DISPLAY: 'QR Display',
+  QR_DISPLAY: 'شاشة الحضور',
   OPEN: 'مفتوح',
   CLOSED: 'مغلق',
   ARCHIVED: 'مؤرشف',
