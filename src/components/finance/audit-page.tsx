@@ -5,6 +5,7 @@ import { FilterX, History, ShieldCheck } from 'lucide-react';
 import { useDemo } from '@/components/demo-provider';
 import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, StatCard } from '@/components/ui';
 import { number } from '@/lib/format';
+import { hasSessionAccountPermission } from '@/lib/permissions';
 import type { AuditEntry } from '@/lib/types';
 import { baghdadDate, entityLabels } from './audit-values';
 import { AuditRecords, AuditDetailsDialog } from './audit-records';
@@ -30,12 +31,12 @@ export function AuditPage() {
   const change = (setter: (value: string) => void, value: string) => { setter(value); setPage(1); };
   const clear = () => { setActor('all'); setEmployee('all'); setAction('all'); setEntity('all'); setFrom(''); setTo(''); setPage(1); };
   const hasFilters = actor !== 'all' || employee !== 'all' || action !== 'all' || entity !== 'all' || Boolean(from || to);
+  const canView = session?.role === 'SUPER_ADMIN' || (session?.role === 'EMPLOYEE' && hasSessionAccountPermission(data, session, 'AUDIT_LOG', 'view'));
 
-
-  if (session?.role !== 'SUPER_ADMIN') return <EmptyState title="هذه الصفحة متاحة لـ Super Admin فقط" description="سجل العمليات مخصص لمراجعة الإجراءات الإدارية." />;
+  if (!canView) return <EmptyState title="لا تملك صلاحية عرض سجل العمليات" description="يجب أن يمنحك المشرف العام صلاحية سجل العمليات أولاً." />;
 
   return <div className="page-stack">
-    <PageHeader title="سجل العمليات" actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
+    <PageHeader title="سجل العمليات" actions={<Badge tone="brand"><ShieldCheck size={14} />{session?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'عرض مفوض'}</Badge>} />
     <div className="stats-grid"><StatCard label="العمليات المسجلة" value={number(data.audit.length)} icon={<History size={21} />} /><StatCard label="نتائج الفلاتر" value={number(rows.length)} accent /><StatCard label="المستخدمون المنفذون" value={number(new Set(data.audit.map(entry => entry.actor)).size)} /></div>
     <Card title="البحث في السجل" action={hasFilters ? <Button variant="ghost" onClick={clear}><FilterX size={17} />مسح الفلاتر</Button> : undefined}>
       <div className="form-grid">

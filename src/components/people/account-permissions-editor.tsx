@@ -60,9 +60,15 @@ function PermissionForm({ employee }: { employee: Employee }) {
     event.preventDefault();
     if (!canManage || !draft || pending) return;
     setError('');
-    const normalized = Object.fromEntries(ACCOUNT_PERMISSION_FEATURES.map(({ feature }) => {
+    const normalized = Object.fromEntries(ACCOUNT_PERMISSION_FEATURES.map(({ feature, actions: supported }) => {
       const current = draft.values[feature] ?? EMPTY_ACCOUNT_PERMISSION;
-      return [feature, { view: Boolean(current.view), create: Boolean(current.view && current.create), edit: Boolean(current.view && current.edit), delete: Boolean(current.view && current.delete) }];
+      const allowed = new Set(supported);
+      return [feature, {
+        view: Boolean(current.view),
+        create: Boolean(current.view && allowed.has('create') && current.create),
+        edit: Boolean(current.view && allowed.has('edit') && current.edit),
+        delete: Boolean(current.view && allowed.has('delete') && current.delete),
+      }];
     })) as AccountPermissions;
     if (!await mutate(() => updateData((data, actor) => {
       if (actor?.role !== 'SUPER_ADMIN') throw new Error('تعديل صلاحيات الحساب متاح للمشرف العام فقط.');
@@ -83,10 +89,11 @@ function PermissionForm({ employee }: { employee: Employee }) {
       <p className="muted">تفعيل العرض يتيح قراءة القائمة فقط. امنح الإضافة والتعديل والحذف كلّاً على حدة عند الحاجة.</p>
       {ACCOUNT_PERMISSION_FEATURES.map(item => {
         const value = permissions[item.feature] ?? EMPTY_ACCOUNT_PERMISSION;
+        const supportedActions = actions.filter(({ action }) => item.actions.includes(action)).map(action => ({ ...action, label: item.actionLabels?.[action.action] ?? action.label }));
         return <fieldset key={item.feature} style={{ minWidth: 0, margin: 0, padding: '12px 16px', border: '1px solid var(--border)', borderRadius: 10 }}>
           <legend style={{ paddingInline: 6, fontWeight: 700 }}>{item.label}</legend>
           <p className="muted">{item.description}</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px' }}>{actions.map(({ action, label }) => <label key={action} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px' }}>{supportedActions.map(({ action, label }) => <label key={action} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
             <input type="checkbox" aria-label={`${label} ${item.label}`} style={{ width: 20, height: 20, accentColor: 'var(--brand-text)' }} checked={Boolean(value[action])} disabled={!canManage || (action !== 'view' && !value.view) || pending} onChange={event => setPermission(item.feature, action, event.target.checked)} />{label}
           </label>)}</div>
         </fieldset>;

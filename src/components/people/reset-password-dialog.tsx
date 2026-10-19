@@ -3,11 +3,12 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { Button, Dialog, Field, Input } from '@/components/ui';
+import { canManageEmployeeWithSession } from '@/lib/permissions';
 import type { Employee } from '@/lib/types';
 import styles from './people.module.css';
 
 export function ResetPasswordDialog({ employee, onClose }: { employee: Employee | null; onClose: () => void }) {
-  const { session, updateData, backend } = useDemo();
+  const { data, session, updateData, backend } = useDemo();
   const toast = useToast();
   const passwordRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
@@ -22,7 +23,7 @@ export function ResetPasswordDialog({ employee, onClose }: { employee: Employee 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (savingRef.current) return;
-    if (!employee || (session?.role !== 'SUPER_ADMIN' && (session?.role !== 'ADMIN' || employee.role !== 'EMPLOYEE'))) { setError('لا تمتلك صلاحية إدارة هذا الحساب.'); return; }
+    if (!employee || !canManageEmployeeWithSession(data, session, employee.role, 'edit')) { setError('لا تمتلك صلاحية إدارة هذا الحساب.'); return; }
     const password = passwordRef.current?.value ?? '';
     if (!password.trim()) { setError('أدخل كلمة المرور الجديدة.'); return; }
     if (password.length < 6) { setError('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.'); return; }

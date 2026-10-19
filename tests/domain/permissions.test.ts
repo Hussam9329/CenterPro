@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canManageEmployeeAccount, canViewEmployee, hasEmployeePermission, hasPreviewPermission } from '../../src/lib/permissions';
+import { ACCOUNT_PERMISSION_FEATURES, canManageEmployeeAccount, canViewEmployee, hasEmployeePermission, hasPreviewPermission } from '../../src/lib/permissions';
 import type { PreviewPermission } from '../../src/lib/permissions';
 import type { Employee } from '../../src/lib/types';
 
@@ -24,6 +24,15 @@ describe('preview role boundaries (server enforcement belongs to phase 2)', () =
     const session = { role: 'EMPLOYEE' as const, employeeId: 'CP-0001', name: 'علي' };
     expect(canViewEmployee(session, 'CP-0001')).toBe(true);
     expect(canViewEmployee(session, 'CP-0002')).toBe(false);
+  });
+
+  it('lists every delegable admin menu while keeping permission management outside delegation', () => {
+    expect(ACCOUNT_PERMISSION_FEATURES.map(item => item.feature)).toEqual([
+      'DASHBOARD', 'EMPLOYEES', 'ATTENDANCE', 'AUDIT_REVIEW', 'PAYROLL', 'DEDUCTIONS',
+      'BONUSES', 'DEPARTMENTS', 'REPORTS', 'AUDIT_LOG', 'SETTINGS',
+    ]);
+    expect(ACCOUNT_PERMISSION_FEATURES.find(item => item.feature === 'REPORTS')?.actions).toEqual(['view']);
+    expect(ACCOUNT_PERMISSION_FEATURES.find(item => item.feature === 'SETTINGS')?.actions).toEqual(['view', 'edit']);
   });
 
   it('grants delegated menus per individual account and defaults missing permissions to denied', () => {

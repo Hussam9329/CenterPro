@@ -4,7 +4,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useDemo, useToast } from '@/components/demo-provider';
 import { Button, ConfirmDialog, Dialog } from '@/components/ui';
-import { canManageEmployeeAccount } from '@/lib/permissions';
+import { canManageEmployeeWithSession } from '@/lib/permissions';
 import type { Employee } from '@/lib/types';
 import { employeeFormSteps as steps, fullPhone, phoneSuffix, telegramUsername, initialEmployee, validateEmployeeStep, type DraftEmployee } from './employee-form-model';
 import { EmployeePersonalFields, EmployeeContactFields, EmployeeWorkFields, EmployeeAccountFields, EmployeeSalaryFields } from './employee-form-fields';
@@ -26,7 +26,7 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
   const pendingEmployeeId = useRef<string | null>(null);
   const savingRef = useRef(false);
   const isSuper = session?.role === 'SUPER_ADMIN';
-  const canModify = Boolean(session && canManageEmployeeAccount(session.role, employee?.role ?? 'EMPLOYEE'));
+  const canModify = canManageEmployeeWithSession(data, session, employee?.role ?? 'EMPLOYEE', employee ? 'edit' : 'create');
   const update = <K extends keyof DraftEmployee>(field: K, value: DraftEmployee[K]) => setDraft(previous => ({ ...previous, [field]: value }));
 
   const validateStep = (current: number) => validateEmployeeStep(current, {

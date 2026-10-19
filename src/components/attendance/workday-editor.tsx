@@ -6,6 +6,7 @@ import { useDemo, useToast } from '@/components/demo-provider';
 import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Button, Dialog, EmptyState, Field, Input, Select, Textarea } from '@/components/ui';
 import { assertCanOpenWorkday, getOpenWorkday, getLatenessSeconds, isExpected } from '@/lib/attendance';
+import { hasSessionAccountPermission } from '@/lib/permissions';
 import type { Workday } from '@/lib/types';
 import { canEditDay } from './day-helpers';
 import { OpenDayBlock } from './open-day-block';
@@ -19,6 +20,7 @@ export function WorkdayEditor({ day, onClose, onSaved }: { day?: Workday; onClos
   const { data, session, updateData, today } = useDemo();
   const toast = useToast();
   const { mutate, pending } = useAsyncMutation(toast);
+  const canSave = hasSessionAccountPermission(data, session, 'ATTENDANCE', day ? 'edit' : 'create');
   const [form, setForm] = useState<Workday>(() => day ? structuredClone(day) : emptyForm(today));
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
@@ -41,6 +43,7 @@ export function WorkdayEditor({ day, onClose, onSaved }: { day?: Workday; onClos
   async function save() {
     setError('');
     try {
+      if (!canSave) throw new Error('ليس لديك صلاحية حفظ تغييرات الحضور.');
       if (day && !dayChanged) return;
       if (!day) assertCanOpenWorkday(data.workdays);
       if (!form.date || !form.startTime) throw new Error('حدد تاريخ يوم الحضور ووقت بدء الدوام.');
@@ -85,7 +88,7 @@ export function WorkdayEditor({ day, onClose, onSaved }: { day?: Workday; onClos
       {day && <div className="notice notice-warning">تغيير المشاركين يحدث حالات الحضور المرتبطة. تغيير وقت البدء يعيد احتساب التأخير، وتحفظ العملية وسببها في سجل العمليات.</div>}
       {needsReason && <Field label="سبب التعديل" required><Textarea required value={reason} onChange={event => setReason(event.target.value)} placeholder="وضح سبب تعديل يوم الحضور المحفوظ" /></Field>}
       {monthState === 'REOPENED' && <div className="notice notice-warning">هذا الشهر مؤرشف سابقاً. يحفظ التعديل على السجلات، وتبقى الرواتب والتقارير على نسختها السابقة حتى إعادة الاحتساب الصريحة من صفحة الرواتب بالقواعد المؤرشفة.</div>}
-      {error && <p role="alert" className="text-danger">{error}</p>}<div className="form-actions"><Button loading={pending} type="submit" disabled={Boolean(day && !dayChanged) || (!day && !employees.length)}>{day ? 'حفظ التعديل' : 'فتح يوم الحضور'}</Button><Button disabled={pending} variant="secondary" onClick={onClose}>إلغاء</Button></div>
+      {error && <p role="alert" className="text-danger">{error}</p>}<div className="form-actions"><Button loading={pending} type="submit" disabled={!canSave || Boolean(day && !dayChanged) || (!day && !employees.length)}>{day ? 'حفظ التعديل' : 'فتح يوم الحضور'}</Button><Button disabled={pending} variant="secondary" onClick={onClose}>إلغاء</Button></div>
     </form>}
   </Dialog>;
 }

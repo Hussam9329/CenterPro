@@ -11,6 +11,7 @@ import { getMonthPayroll, recalculateReopenedPayroll } from '@/lib/payroll';
 import { date, money, monthLabel } from '@/lib/format';
 import type { Payment, PayrollMonth, PayrollResult } from '@/lib/types';
 import { paymentLabels } from '@/lib/finance/payment-status';
+import { hasSessionAccountPermission } from '@/lib/permissions';
 import { PayrollRecords } from './payroll-records';
 import { PayrollDetailsDialog, PayrollPaymentDialog, PayrollMonthDialog, type PayrollMonthAction } from './payroll-dialogs';
 import { captureMonthSource, monthSource } from '@/lib/finance/month-source';
@@ -33,6 +34,8 @@ export function PayrollPage() {
   const [paymentError, setPaymentError] = useState('');
   const [action, setAction] = useState<PayrollMonthAction | null>(null);
   const [confirmText, setConfirmText] = useState('');
+  const canRecordPayment = hasSessionAccountPermission(data, session, 'PAYROLL', 'create');
+  const canEditPayroll = hasSessionAccountPermission(data, session, 'PAYROLL', 'edit');
   const period = data.months.find(item => item.month === month);
   const monthState = period?.state ?? 'OPEN';
   const results = getMonthPayroll(data, month);
@@ -48,7 +51,8 @@ export function PayrollPage() {
 
   function beginAction(next: typeof action) { setAction(next); setConfirmText(''); }
   async function performMonthAction() {
-    if (!action || confirmText !== month || !session || session.role === 'EMPLOYEE' || results.length === 0) return;
+    if (!action || confirmText !== month || !session || results.length === 0) return;
+    if (action === 'archive' && !canEditPayroll) return;
     if ((action === 'reopen' || action === 'recalculate' || monthState === 'REOPENED') && session.role !== 'SUPER_ADMIN') return;
     if (action === 'archive' && unresolved > 0) { toast('احسم جميع حالات الحضور قبل الأرشفة.'); return; }
     if (action === 'archive' && pendingHistoricalEdits) { toast('نفّذ إعادة الاحتساب الصريحة لمراجعة التعديلات قبل إعادة الأرشفة.'); return; }
@@ -73,10 +77,10 @@ export function PayrollPage() {
       setAction(null);
     } catch (failure) { toast(failure instanceof Error ? failure.message : 'تعذر حفظ تعديل الشهر.'); }
   }
-  function beginPayment(item: PayrollResult) { setPaymentFor(item); setPaymentAmount(String(Math.max(0, item.finalSalary))); setPaymentDate(today); setPaymentError(''); }
+  function beginPayment(item: PayrollResult) { if (!canRecordPayment) return; setPaymentFor(item); setPaymentAmount(String(Math.max(0, item.finalSalary))); setPaymentDate(today); setPaymentError(''); }
   async function savePayment(event: React.FormEvent) {
     event.preventDefault();
-    if (!paymentFor || !session || session.role === 'EMPLOYEE') return;
+    if (!paymentFor || !session || !canRecordPayment) return;
     const current = getMonthPayroll(data, month).find(item => item.employeeId === paymentFor.employeeId);
     const amount = Number(paymentAmount);
     if (!current || !Number.isSafeInteger(amount) || amount < 0 || !paymentDate) { setPaymentError('أدخل مبلغاً صحيحاً غير سالب وتاريخ صرف صالحاً.'); return; }
@@ -87,14 +91,14 @@ export function PayrollPage() {
 
   return <div className="page-stack">
     <PageHeader title="الرواتب" actions={<Link href={`/reports?type=payroll&month=${month}`} className="button-link"><FileText size={17} /> كشف الرواتب</Link>} />
-    <div className="toolbar"><div className="inline"><Input aria-label="شهر الرواتب" type="month" className={styles.monthField} value={month} onChange={event => { if(event.target.value) { setMonth(event.target.value); setPage(1); setSelectedId(null); } }} /><Badge tone={monthState === 'ARCHIVED' ? 'success' : monthState === 'REOPENED' ? 'warning' : 'brand'}>{!results.length && !period ? 'لا توجد بيانات' : monthState === 'ARCHIVED' ? 'مؤرشف' : monthState === 'REOPENED' ? 'معاد فتحه' : 'شهر مفتوح'}</Badge></div><div className="inline">{period && session?.role === 'SUPER_ADMIN' && <SafeDeleteButton collection="months" id={period.id} label={`أرشيف رواتب ${period.month}`} compact />}{monthState !== 'ARCHIVED' ? <Button variant="secondary" disabled={results.length === 0 || (monthState === 'REOPENED' && session?.role !== 'SUPER_ADMIN')} onClick={() => beginAction('archive')}><Archive size={17} /> إغلاق وأرشفة الشهر</Button> : session?.role === 'SUPER_ADMIN' ? <Button variant="secondary" onClick={() => beginAction('reopen')}><ArchiveRestore size={17} /> إعادة فتح للتعديل</Button> : <span className="muted inline"><LockKeyhole size={16} /> إعادة الفتح للمشرف العام فقط</span>}</div></div>
+    <div className="toolbar"><div className="inline"><Input aria-label="شهر الرواتب" type="month" className={styles.monthField} value={month} onChange={event => { if(event.target.value) { setMonth(event.target.value); setPage(1); setSelectedId(null); } }} /><Badge tone={monthState === 'ARCHIVED' ? 'success' : monthState === 'REOPENED' ? 'warning' : 'brand'}>{!results.length && !period ? 'لا توجد بيانات' : monthState === 'ARCHIVED' ? 'مؤرشف' : monthState === 'REOPENED' ? 'معاد فتحه' : 'شهر مفتوح'}</Badge></div><div className="inline">{period && <SafeDeleteButton collection="months" id={period.id} label={`أرشيف رواتب ${period.month}`} compact />}{monthState !== 'ARCHIVED' ? canEditPayroll && <Button variant="secondary" disabled={results.length === 0 || (monthState === 'REOPENED' && session?.role !== 'SUPER_ADMIN')} onClick={() => beginAction('archive')}><Archive size={17} /> إغلاق وأرشفة الشهر</Button> : session?.role === 'SUPER_ADMIN' ? <Button variant="secondary" onClick={() => beginAction('reopen')}><ArchiveRestore size={17} /> إعادة فتح للتعديل</Button> : <span className="muted inline"><LockKeyhole size={16} /> إعادة الفتح للمشرف العام فقط</span>}</div></div>
     {monthState === 'REOPENED' && <div className="notice notice-warning"><CircleAlert size={20} /><div><strong>هذا الشهر مؤرشف سابقاً وتمت إعادة فتحه للتعديل.</strong><p>القيم والقواعد التاريخية محفوظة. أي تعديل على السجلات لا يغيّر الراتب المعروض حتى إعادة الاحتساب الصريحة بواسطة المشرف العام.</p>{pendingHistoricalEdits && <p><strong>توجد تعديلات على السجلات تنتظر إعادة الاحتساب.</strong></p>}{session?.role === 'SUPER_ADMIN' && <Button variant="secondary" onClick={() => beginAction('recalculate')}><Calculator size={16} /> إعادة الاحتساب بالقواعد المؤرشفة</Button>}</div></div>}
     {monthState === 'ARCHIVED' && <div className="notice"><LockKeyhole size={18} /><span>نسخة ثابتة{period?.archivedAt ? ` — أُرشفت في ${date(period.archivedAt)}` : ''}. تغييرات إعدادات الأقسام لا تؤثر في هذا الشهر.</span></div>}
     <div className="stats-grid"><StatCard label="صافي رواتب الشهر" value={money(total)} icon={<Wallet size={20} />} accent /><StatCard label="رواتب غير مصروفة" value={String(results.filter(item => item.paymentStatus === 'UNPAID').length)} icon={<Banknote size={20} />} /><StatCard label="تحتاج مراجعة" value={String(results.filter(item => item.paymentStatus === 'REVIEW').length)} icon={<CircleAlert size={20} />} /><StatCard label="حضور غير محسوم" value={String(unresolved)} icon={<Calculator size={20} />} /></div>
     <Card title={`كشف ${monthLabel(month)}`} description={`${filtered.length} موظف في النتائج`}><div className="filter-row"><SearchInput value={query} onChange={value => { setQuery(value); setPage(1); }} placeholder="اسم الموظف أو رقمه" /><Select aria-label="القسم" value={department} onChange={e => { setDepartment(e.target.value); setPage(1); }}><option value="">كل الأقسام</option>{Array.from(new Set(results.map(item => item.departmentName))).map(name => <option key={name}>{name}</option>)}</Select><Select aria-label="حالة الصرف" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="">كل حالات الصرف</option>{Object.entries(paymentLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</Select><Select aria-label="نوع الراتب" value={mode} onChange={e => { setMode(e.target.value); setPage(1); }}><option value="">جميع الأنواع</option><option value="TIERED">غير قطعي</option><option value="FIXED">قطعي</option></Select></div>
-      {!filtered.length ? <EmptyState title={!data.employees.length ? "لا توجد بيانات رواتب حتى الآن." : !results.length ? "لا توجد رواتب لهذا الشهر." : "لا توجد رواتب تطابق اختياراتك"} description={!data.employees.length ? "ابدأ بإضافة فريقك وتحديد قوانين القسم. ستظهر كشوف الموظفين هنا مع تفاصيل الاحتساب." : "جرّب شهراً آخر أو غيّر خيارات البحث."} action={!data.employees.length ? <Link className="button-link" href={data.departments.length ? "/employees?add=1" : "/departments"}>{data.departments.length ? "إضافة أول موظف" : "إضافة أول قسم"}</Link> : undefined} /> : <><PayrollRecords visible={visible} page={page} total={filtered.length} pageSize={pageSize} onPageChange={setPage} onSelect={setSelectedId} onPayment={beginPayment} /></>}
+      {!filtered.length ? <EmptyState title={!data.employees.length ? "لا توجد بيانات رواتب حتى الآن." : !results.length ? "لا توجد رواتب لهذا الشهر." : "لا توجد رواتب تطابق اختياراتك"} description={!data.employees.length ? "ابدأ بإضافة فريقك وتحديد قوانين القسم. ستظهر كشوف الموظفين هنا مع تفاصيل الاحتساب." : "جرّب شهراً آخر أو غيّر خيارات البحث."} action={!data.employees.length ? <Link className="button-link" href={data.departments.length ? "/employees?add=1" : "/departments"}>{data.departments.length ? "إضافة أول موظف" : "إضافة أول قسم"}</Link> : undefined} /> : <><PayrollRecords visible={visible} page={page} total={filtered.length} pageSize={pageSize} onPageChange={setPage} onSelect={setSelectedId} onPayment={beginPayment} canPayment={canRecordPayment} /></>}
     </Card>
-    <PayrollDetailsDialog selected={selected} source={source} month={month} onClose={() => setSelectedId(null)} onPayment={beginPayment} />
+    <PayrollDetailsDialog selected={selected} source={source} month={month} onClose={() => setSelectedId(null)} onPayment={beginPayment} canPayment={canRecordPayment} />
     <PayrollPaymentDialog paymentFor={paymentFor} month={month} pending={pending} paymentAmount={paymentAmount} paymentDate={paymentDate} paymentError={paymentError} onAmountChange={setPaymentAmount} onDateChange={setPaymentDate} onClose={() => setPaymentFor(null)} onSubmit={savePayment} />
     <PayrollMonthDialog action={action} month={month} pending={pending} pendingHistoricalEdits={pendingHistoricalEdits} unresolved={unresolved} total={total} employeeCount={results.length} confirmText={confirmText} onConfirmTextChange={setConfirmText} onClose={() => setAction(null)} onConfirm={performMonthAction} />
 

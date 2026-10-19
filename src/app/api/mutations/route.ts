@@ -1,6 +1,6 @@
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { canManageEmployeeAccount } from '@/lib/permissions';
+import { canManageEmployeeWithSession } from '@/lib/permissions';
 import { MUTABLE_COLLECTIONS, type MutationRequest } from '@/lib/server-contract';
 import type { DemoData } from '@/lib/types';
 import { createServerCredential } from '@/server/auth-crypto';
@@ -45,7 +45,8 @@ export async function POST(request: Request) {
       if (input.password) {
         const target = after.employees.find(row => row.id === input.password!.employeeId);
         const previous = context.data.employees.find(row => row.id === input.password!.employeeId);
-        if (!target || !canManageEmployeeAccount(identity.actor.role, target.role) || (previous && !canManageEmployeeAccount(identity.actor.role, previous.role))) {
+        const action = previous ? 'edit' : 'create';
+        if (!target || !canManageEmployeeWithSession(context.data, identity.actor, target.role, action) || (previous && !canManageEmployeeWithSession(context.data, identity.actor, previous.role, 'edit'))) {
           throw new ApiError(403, 'لا تملك صلاحية تغيير كلمة مرور هذا الحساب.');
         }
         auth.employees[target.id] = await createServerCredential(input.password.value, auth.employees[target.id]?.version ?? 0, context.now);

@@ -14,11 +14,12 @@ interface PayrollDetailsDialogProps {
   month: string;
   onClose: () => void;
   onPayment: (result: PayrollResult) => void;
+  canPayment: boolean;
 }
 
-export function PayrollDetailsDialog({ selected, source, month, onClose, onPayment }: PayrollDetailsDialogProps) {
+export function PayrollDetailsDialog({ selected, source, month, onClose, onPayment, canPayment }: PayrollDetailsDialogProps) {
   return (
-    <Dialog open={Boolean(selected)} onClose={onClose} title={selected?.employeeName ?? 'تفاصيل الراتب'} description={selected ? `${selected.employeeCode} · ${selected.departmentName}` : ''} wide>{selected && <><PayrollBreakdown result={selected} data={source} /><div className="form-actions"><Link href={`/reports?type=payslip&employee=${selected.employeeId}&month=${month}`} className="button-link"><FileText size={16} /> قسيمة راتب</Link><Button onClick={() => onPayment(selected)}><Banknote size={17} />{selected.paymentStatus === 'UNPAID' ? 'تسجيل صرف الراتب' : 'تسجيل عملية صرف جديدة'}</Button></div></>}</Dialog>
+    <Dialog open={Boolean(selected)} onClose={onClose} title={selected?.employeeName ?? 'تفاصيل الراتب'} description={selected ? `${selected.employeeCode} · ${selected.departmentName}` : ''} wide>{selected && <><PayrollBreakdown result={selected} data={source} /><div className="form-actions"><Link href={`/reports?type=payslip&employee=${selected.employeeId}&month=${month}`} className="button-link"><FileText size={16} /> قسيمة راتب</Link>{canPayment && <Button onClick={() => onPayment(selected)}><Banknote size={17} />{selected.paymentStatus === 'UNPAID' ? 'تسجيل صرف الراتب' : 'تسجيل عملية صرف جديدة'}</Button>}</div></>}</Dialog>
   );
 }
 

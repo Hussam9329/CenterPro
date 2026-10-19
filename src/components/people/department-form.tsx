@@ -6,6 +6,7 @@ import { useDemo, useToast } from '@/components/demo-provider';
 import { useAsyncMutation } from '@/components/use-async-mutation';
 import { Button, ConfirmDialog, Dialog, Field, Input, Select, Textarea } from '@/components/ui';
 import { validateSalaryConfig } from '@/lib/payroll';
+import { hasSessionAccountPermission } from '@/lib/permissions';
 import type { Department, SalaryConfig, SalaryTier } from '@/lib/types';
 import styles from './people.module.css';
 
@@ -29,13 +30,14 @@ export function DepartmentForm({ department, onClose }: { department?: Departmen
     return values;
   });
   const [confirmation, setConfirmation] = useState(false);
+  const canSave = hasSessionAccountPermission(data, session, 'DEPARTMENTS', department ? 'edit' : 'create');
   const setNumberText = (key: string, value: string) => setNumericText(current => ({ ...current, [key]: value }));
   const displayNumber = (key: string) => numericText[key] ?? '';
   const change = <K extends keyof SalaryConfig>(key: K, value: SalaryConfig[K]) => setSalary(current => ({ ...current, [key]: value }));
   const updateTier = <K extends keyof SalaryTier>(id: string, key: K, value: SalaryTier[K]) => setSalary(current => ({ ...current, tiers: current.tiers.map(tier => tier.id === id ? { ...tier, [key]: value } : tier) }));
   const addTier = () => { const last = salary.tiers.at(-1); const from = last ? last.toDays + 1 : 0; const id = crypto.randomUUID(); change('tiers', [...salary.tiers, { id, fromDays: from, toDays: from, type: 'FIXED', amount: 0 }]); setNumericText(current => ({ ...current, [`${id}:fromDays`]: String(from), [`${id}:toDays`]: String(from) })); };
   const save = async () => {
-    if (session?.role !== 'SUPER_ADMIN') return;
+    if (!canSave) return;
     const id = department?.id ?? `department-${crypto.randomUUID()}`;
     const updated: Department = { id, name: name.trim(), description: description.trim(), active: department?.active ?? true, salary: structuredClone(salary) };
     if (!await mutate(() => updateData(draft => { const index = draft.departments.findIndex(item => item.id === id); if (index >= 0) draft.departments[index] = updated; else draft.departments.push(updated); }, { action: department ? 'تعديل القسم وإعدادات الراتب' : 'إضافة قسم', entity: 'department', entityId: id, oldValues: department ? { name: department.name, salary: department.salary } : {}, newValues: { name: updated.name, salary: updated.salary } }), setError)) return;
@@ -75,7 +77,7 @@ export function DepartmentForm({ department, onClose }: { department?: Departmen
         {salary.mode === 'FIXED' && <p className={styles.mutedNote}>الشهر الأول أو الأخير غير المكتمل: الأيام المطلوبة × قيمة اليومية، ضمن سقف الراتب القطعي. تطبق بعدها خصومات الغياب وبقية الخصومات والمكافآت.</p>}
         {department && <div className="notice notice-warning"><AlertCircle size={18} /><span>سيتم تطبيق تعديل إعدادات الراتب على الشهر المفتوح حالياً وإعادة احتساب الرواتب. الأشهر المؤرشفة تبقى ثابتة.</span></div>}
         {error && <p className={styles.error} role="alert">{error}</p>}
-        <div className="form-actions"><Button loading={pending} type="submit" disabled={session?.role !== 'SUPER_ADMIN'}>{department ? 'حفظ الإعدادات' : 'إضافة القسم'}</Button><Button disabled={pending} type="button" variant="secondary" onClick={onClose}>إلغاء</Button></div>
+        <div className="form-actions"><Button loading={pending} type="submit" disabled={!canSave}>{department ? 'حفظ الإعدادات' : 'إضافة القسم'}</Button><Button disabled={pending} type="button" variant="secondary" onClick={onClose}>إلغاء</Button></div>
       </form>
     </Dialog>
     <ConfirmDialog open={confirmation} onClose={() => setConfirmation(false)} onConfirm={save} title="تأكيد تعديل قوانين القسم" description="سيتم تطبيق هذا التعديل على الشهر المفتوح حالياً وإعادة احتساب رواتب موظفي القسم. إذا تغير راتب مصروف ستظهر حالته «يحتاج مراجعة». تبقى النسخ المؤرشفة محفوظة." confirmLabel="حفظ وإعادة الاحتساب" />

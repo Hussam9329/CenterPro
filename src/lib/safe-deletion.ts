@@ -51,6 +51,20 @@ export function authorizeDeletion(data: DemoData, session: DemoSession | null, c
     return;
   }
   const employee = data.employees.find(item => item.id === session.employeeId && item.active && item.role === 'EMPLOYEE');
+  if (!employee) throw new Error('انتهت صلاحية الحساب. سجّل الدخول مجدداً.');
+  if (collection === 'employees') {
+    const target = data.employees.find(item => item.id === id);
+    if (!hasEmployeePermission(employee, 'EMPLOYEES', 'delete') || !target || target.role !== 'EMPLOYEE' || target.id === employee.id) throw new Error('ليس لديك صلاحية حذف هذا الحساب.');
+    return;
+  }
+  if (collection === 'departments') {
+    if (!hasEmployeePermission(employee, 'DEPARTMENTS', 'delete')) throw new Error('ليس لديك صلاحية حذف الأقسام.');
+    return;
+  }
+  if (collection === 'workdays' || collection === 'attendance') {
+    if (!hasEmployeePermission(employee, 'ATTENDANCE', 'delete')) throw new Error('ليس لديك صلاحية حذف بيانات الحضور.');
+    return;
+  }
   if (collection === 'deductions' || collection === 'bonuses') {
     const feature = collection === 'deductions' ? 'DEDUCTIONS' : 'BONUSES';
     if (!hasEmployeePermission(employee, feature, 'delete')) throw new Error('ليس لديك صلاحية حذف هذا السجل.');
@@ -60,8 +74,13 @@ export function authorizeDeletion(data: DemoData, session: DemoSession | null, c
     if (state !== undefined && state !== 'OPEN') throw new Error('لا يمكن حذف سجل مالي من شهر مؤرشف أو معاد فتحه من حساب موظف.');
     return;
   }
-  if (collection !== 'examEvaluations') throw new Error('هذا الحذف متاح للإدارة فقط.');
-  if (!employee || !isAuditEmployee(data, employee) || !hasEmployeePermission(employee, 'AUDIT_REVIEW', 'delete')) throw new Error('لا يملك الحساب صلاحية حذف بيانات التدقيق.');
+  if (collection === 'months' || collection === 'payments') {
+    if (!hasEmployeePermission(employee, 'PAYROLL', 'delete')) throw new Error('ليس لديك صلاحية حذف سجلات الرواتب.');
+    if (collection === 'months' && data.months.find(item => item.id === id)?.state !== 'OPEN') throw new Error('حذف أرشيف شهر مغلق يبقى للمشرف العام.');
+    return;
+  }
+  if (collection !== 'examEvaluations') throw new Error('هذا الحذف غير متاح لهذا الحساب.');
+  if (!isAuditEmployee(data, employee) || !hasEmployeePermission(employee, 'AUDIT_REVIEW', 'delete')) throw new Error('لا يملك الحساب صلاحية حذف بيانات التدقيق.');
   const entry = data.examEvaluations.find(item => item.id === id);
   const exam = data.evaluationExams.find(item => item.id === entry?.examId);
   const cycle = data.evaluationCycles.find(item => item.id === exam?.cycleId);
