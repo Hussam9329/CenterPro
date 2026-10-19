@@ -124,7 +124,7 @@ describe('navigation for the current account', () => {
     const nav = getShellNavigation(data, session('EMPLOYEE', correction.id), true);
     expect(hrefs(getMobileNavigation(nav, true))).toEqual(['/employee', '/employee/scan', '/employee/evaluation', '/employee/salary']);
     expect(hrefs(nav)).toContain('/employee/attendance');
-    const ordinary = data.employees.find(employee => employee.role === 'EMPLOYEE' && employee.id !== correction.id && employee.active)!;
+    const ordinary = data.employees.find(employee => employee.role === 'EMPLOYEE' && employee.departmentId !== correction.departmentId && employee.active)!;
     ordinary.permissions = undefined;
     const ordinaryNav = getShellNavigation(data, session('EMPLOYEE', ordinary.id), true);
     expect(hrefs(getMobileNavigation(ordinaryNav, true))).toEqual(['/employee', '/employee/scan', '/employee/salary', '/calculator']);

@@ -97,7 +97,7 @@ describe('safe, reasoned, authenticated deletion', () => {
   });
   it('restricts employee accounts and only allows an auditor to delete an open exam evaluation', () => {
     const before = withExam();
-    expect(() => remove(before, 'evaluationExams', 'exam', actor(before, 'CP-0004'))).toThrow(/للإدارة/);
+    expect(() => remove(before, 'evaluationExams', 'exam', actor(before, 'CP-0004'))).toThrow(/غير متاح لهذا الحساب/);
     expect(remove(before, 'examEvaluations', 'score', actor(before, 'CP-0004')).examEvaluations).toHaveLength(0);
     expect(() => remove(before, 'examEvaluations', 'score', actor(before, 'CP-0001'))).toThrow(/صلاحية حذف بيانات التدقيق/);
     before.evaluationExams[0].state = 'CLOSED';
