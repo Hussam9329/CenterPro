@@ -26,7 +26,7 @@ export function EvaluationEditor({ examId, employeeId, disabled, deletionLocked 
     </div>
     <div className={styles.scoreStrip}><div><span className="muted">التقييم الحالي</span><strong dir="ltr">{score} نقطة</strong></div><span className={styles.saveState} data-state={saveState} role="status" aria-live="polite">{saveState === 'saving' ? 'جارٍ الحفظ…' : saveState === 'saved' ? <><Check size={13}/>تم الحفظ</> : saveState === 'error' ? 'لم يُحفظ التعديل' : current ? 'حفظ تلقائي' : 'أدخل القيم للبدء'}</span></div>
     {error && <div className="stack"><p className="text-danger" role="alert">{error}</p><Button variant="secondary" disabled={disabled} onClick={retry}>إعادة محاولة الحفظ</Button></div>}
-    {current && <div className={styles.metaLine}>آخر تحديث بواسطة {current.updatedBy} · <span dir="ltr">{date(current.updatedAt)} — {time(current.updatedAt)}</span></div>}
+    {current && <div className={styles.metaLine}>آخر تحديث بواسطة {current.updatedBy} · <span dir="ltr">{date(current.updatedAt)} — <bdi dir="ltr">{time(current.updatedAt)}</bdi></span></div>}
     {current && !deletionLocked && canDelete && <SafeDeleteButton collection="examEvaluations" id={current.id} label={`تقييم ${employee.name}`} compact disabled={hasPendingChanges} disabledReason="أكمل حفظ التعديلات المعلقة قبل حذف التقييم." onDeleted={resetAfterDeletion} />}
   </article>;
 }

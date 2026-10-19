@@ -36,7 +36,7 @@ export function AuditPage() {
   if (!canView) return <EmptyState title="لا تملك صلاحية عرض سجل العمليات" description="يجب أن يمنحك المشرف العام صلاحية سجل العمليات أولاً." />;
 
   return <div className="page-stack">
-    <PageHeader title="سجل العمليات" actions={<Badge tone="brand"><ShieldCheck size={14} />{session?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'عرض مفوض'}</Badge>} />
+    <PageHeader title="سجل العمليات" actions={<Badge tone="brand"><ShieldCheck size={14} />{session?.role === 'SUPER_ADMIN' ? 'المدير العام' : 'عرض مفوض'}</Badge>} />
     <div className="stats-grid"><StatCard label="العمليات المسجلة" value={number(data.audit.length)} icon={<History size={21} />} /><StatCard label="نتائج الفلاتر" value={number(rows.length)} accent /><StatCard label="المستخدمون المنفذون" value={number(new Set(data.audit.map(entry => entry.actor)).size)} /></div>
     <Card title="البحث في السجل" action={hasFilters ? <Button variant="ghost" onClick={clear}><FilterX size={17} />مسح الفلاتر</Button> : undefined}>
       <div className="form-grid">

@@ -40,7 +40,7 @@ export function SafeDeleteButton({ collection, id, label, compact = false, disab
     onDeleted?.();
   }
   return <>
-    <Button variant="ghost" disabled={disabled || pending} title={disabled && disabledReason ? disabledReason : `حذف ${label}`} aria-label={`حذف ${label}`} onClick={() => { setError(''); setOpen(true); }}>
+    <Button variant="ghost" className="delete-action" disabled={disabled || pending} title={disabled && disabledReason ? disabledReason : `حذف ${label}`} aria-label={`حذف ${label}`} onClick={() => { setError(''); setOpen(true); }}>
       <Trash2 size={16} />{!compact && `حذف ${deletionLabels[collection]}`}
     </Button>
     <Dialog open={open} onClose={() => clear()} title={`حذف ${label}؟`}>

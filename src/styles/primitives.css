@@ -81,7 +81,9 @@
 .input:focus { border-color: #b34759; outline: none; box-shadow: 0 0 0 3px #a51c300c; }
 .input::placeholder { color: #adb0b8; font-weight: 400; }
 .input:disabled, .input[readonly] { background: #f8f9fa; color: #9296a0; cursor: default; }
-.input[type="date"], .input[type="month"], .input[type="time"] { min-height: 43px; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+.input[type="date"], .input[type="month"], .input[type="time"] { min-height: 43px; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; -webkit-appearance: none; appearance: none; }
+/* iOS Safari sizes native date controls intrinsically and ignores width:100% unless appearance is reset. */
+.input[type="date"]::-webkit-date-and-time-value, .input[type="month"]::-webkit-date-and-time-value, .input[type="time"]::-webkit-date-and-time-value { min-width: 0; text-align: right; }
 .input[type="number"] { font-variant-numeric: tabular-nums; }
 .input[dir="ltr"] { text-align: left; }
 .select { padding-inline-end: 32px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239398a3' stroke-width='1.7'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: left 11px center; }

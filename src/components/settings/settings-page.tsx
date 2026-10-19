@@ -50,7 +50,7 @@ export function SettingsPage() {
   if (!isSuper && !delegatedView) return <EmptyState title="لا تملك صلاحية عرض الإعدادات" description="يجب أن يمنحك المشرف العام صلاحية الإعدادات أولاً." />;
 
   return <div className="page-stack">
-    <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />{isSuper ? 'Super Admin' : 'صلاحية مفوضة'}</Badge>} />
+    <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />{isSuper ? 'المدير العام' : 'صلاحية مفوضة'}</Badge>} />
     {isSuper && <SuperAdminSettingsExtras resetCenterDraft={centerSettings.resetDraft}/>}
     <div className="grid-2">
       <CenterSettingsCard settings={centerSettings}/>

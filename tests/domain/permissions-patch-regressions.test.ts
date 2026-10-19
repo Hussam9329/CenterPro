@@ -5,9 +5,9 @@ import { getCorrectionEmployees, isAuditEmployee, isCorrectionDepartmentName } f
 import { projectData } from '../../src/server/projection';
 
 describe('attendance date presentation', () => {
-  it('shows the Arabic weekday and English month in Baghdad time', () => {
-    expect(attendanceDateLabel('2026-10-15')).toBe('الخميس — 15 October 2026');
-    expect(attendanceDateLabel('2026-10-14T22:30:00.000Z')).toBe('الخميس — 15 October 2026');
+  it('shows the Arabic weekday and numeric date in Baghdad time', () => {
+    expect(attendanceDateLabel('2026-10-15')).toBe('الخميس · 15/10/2026');
+    expect(attendanceDateLabel('2026-10-14T22:30:00.000Z')).toBe('الخميس · 15/10/2026');
     expect(englishMonthName('2026-01')).toBe('January');
     expect(englishMonthName('2026-09')).toBe('September');
   });

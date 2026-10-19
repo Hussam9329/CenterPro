@@ -1,4 +1,5 @@
-export const number = (value: number) => new Intl.NumberFormat('en-US').format(value);
+// `|| 0` turns -0 into 0 so a zero amount never displays as "-0".
+export const number = (value: number) => new Intl.NumberFormat('en-US').format(value || 0);
 export const money = (value: number) => `${number(value)} د.ع`;
 export function date(value: string): string {
   if (!value) return '—';
@@ -15,8 +16,9 @@ export function attendanceDateLabel(value: string): string {
   const d = new Date(value.length === 10 ? `${value}T12:00:00+03:00` : value);
   if (Number.isNaN(d.getTime())) return '—';
   const weekday = new Intl.DateTimeFormat('ar-IQ', { timeZone: 'Asia/Baghdad', weekday: 'long' }).format(d);
-  const english = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Baghdad', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
-  return `${weekday} — ${english}`;
+  // Numeric date, matching date() elsewhere; the owner prefers numbers to month names.
+  const numeric = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Baghdad', day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+  return `${weekday} · ${numeric}`;
 }
 export function time(value: string): string {
   if (!value) return '—';
@@ -24,7 +26,8 @@ export function time(value: string): string {
   return Number.isNaN(d.getTime()) ? '—' : new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).format(d);
 }
 export function monthLabel(value: string): string {
-  const months = ['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
+  // English month names: the owner reads these more easily than the Levantine Arabic names.
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const [year, month] = value.split('-');
   return `${months[Number(month) - 1] || ''} ${year}`;
 }

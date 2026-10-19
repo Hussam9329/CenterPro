@@ -3,24 +3,26 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CalendarDays, ChevronLeft, Clock3, LockKeyhole, Plus, QrCode, Users } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Clock3, LayoutGrid, List, LockKeyhole, Plus, QrCode, Users } from 'lucide-react';
 import { useDemo } from '@/components/demo-provider';
 import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, StatCard } from '@/components/ui';
 import { getOpenWorkday } from '@/lib/attendance';
-import { attendanceDateLabel, englishMonthName, time } from '@/lib/format';
+import { attendanceDateLabel, date, englishMonthName, time } from '@/lib/format';
 import { getDaySummary } from '@/components/attendance/day-helpers';
 import { hasSessionAccountPermission } from '@/lib/permissions';
 import { WorkdayEditor } from '@/components/attendance/day-dialogs';
+import { AttendanceCalendar } from '@/components/attendance/attendance-calendar';
 import styles from '@/components/attendance/attendance.module.css';
 
 function AttendanceHub() {
-  const { data, session, month: currentMonth } = useDemo();
+  const { data, session, month: currentMonth, today } = useDemo();
   const query = useSearchParams();
   const router = useRouter();
   const [opening, setOpening] = useState(query.get('open') === 'new');
   const [month, setMonth] = useState(currentMonth);
   const [state, setState] = useState('');
+  const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const currentOpen = getOpenWorkday(data.workdays);
   const monthDays = data.workdays.filter(day => day.date.startsWith(month));
   const days = monthDays.filter(day => !state || day.state === state).sort((a, b) => b.date.localeCompare(a.date));
@@ -31,10 +33,10 @@ function AttendanceHub() {
   const canCreate = hasSessionAccountPermission(data, session, 'ATTENDANCE', 'create');
   return <div className="page-stack">
     <PageHeader title="الحضور" actions={<><Link className="button-link" href="/attendance-display"><QrCode size={18} />شاشة الحضور</Link>{canCreate && <Button onClick={() => setOpening(true)}><Plus size={18} />فتح يوم حضور جديد</Button>}</>} />
-    <div className="stats-grid"><StatCard label="إجمالي أيام الحضور" value={monthDays.length} icon={<CalendarDays size={20} />} /><StatCard label="اليوم المفتوح" value={currentOpen ? attendanceDateLabel(currentOpen.date) : 'لا يوجد'} icon={<Clock3 size={20} />} /><StatCard label="حالات تحتاج المراجعة" value={unresolved} icon={<Users size={20} />} /><StatCard label="سجلات الحضور" value={present} /></div>
+    <div className="stats-grid"><StatCard label="إجمالي أيام الحضور" value={monthDays.length} icon={<CalendarDays size={20} />} /><StatCard label="اليوم المفتوح" value={currentOpen ? <span dir="ltr">{date(currentOpen.date)}</span> : 'لا يوجد'} hint={currentOpen ? attendanceDateLabel(currentOpen.date).split(' · ')[0] : undefined} icon={<Clock3 size={20} />} /><StatCard label="حالات تحتاج المراجعة" value={unresolved} icon={<Users size={20} />} /><StatCard label="سجلات الحضور" value={present} /></div>
     {currentOpen && <div className={styles.currentDayBanner}><div><Badge tone="success">مفتوح الآن</Badge><strong>{attendanceDateLabel(currentOpen.date)}</strong><span className="muted">بدء الدوام <b dir="ltr">{time(currentOpen.startTime)}</b></span></div><Link href={`/attendance/${currentOpen.id}`} className="button-link">الذهاب إلى اليوم المفتوح<ChevronLeft size={16} /></Link></div>}
-    <Card title="أيام الحضور" action={<div className="inline"><Input type="month" aria-label="شهر الحضور" value={month} onChange={event => { if (event.target.value) setMonth(event.target.value); }} /><Select aria-label="حالة اليوم" value={state} onChange={event => setState(event.target.value)}><option value="">كل الأيام</option><option value="OPEN">مفتوح</option><option value="CLOSED">مغلق</option></Select></div>}>
-      {!data.workdays.length ? <EmptyState title="لا توجد أيام حضور حتى الآن." description={!hasDepartments ? 'ابدأ بإضافة قسم، ثم أضف الموظفين لفتح أول يوم حضور.' : !hasEmployees ? 'أضف موظفاً نشطاً إلى أحد الأقسام لبدء تسجيل الحضور.' : 'فريقك جاهز. افتح أول يوم وحدد وقت الدوام والموظفين المشاركين.'} action={!hasDepartments ? session?.role === 'SUPER_ADMIN' ? <Link className="button-link" href="/departments">إضافة قسم</Link> : <span className="muted">راجع المدير العام لإضافة قسم.</span> : !hasEmployees ? <Link className="button-link" href="/employees">إضافة موظف</Link> : canCreate ? <Button onClick={() => setOpening(true)}>فتح أول يوم حضور</Button> : undefined} /> : !days.length ? <EmptyState title="لا توجد أيام مطابقة" description="غيّر الشهر أو حالة اليوم لعرض سجلات الحضور." action={<Button variant="secondary" onClick={() => { setState(''); setMonth(data.workdays.toSorted((a, b) => b.date.localeCompare(a.date))[0].date.slice(0, 7)); }}>عرض أحدث أيام الحضور</Button>} /> : <div className={styles.dayList}>{days.map(day => {
+    <Card title="أيام الحضور" action={<div className="inline"><div className="view-toggle" role="group" aria-label="طريقة العرض"><button type="button" aria-pressed={view === 'calendar'} onClick={() => setView('calendar')}><LayoutGrid size={16} />تقويم</button><button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}><List size={16} />قائمة</button></div><Input type="month" aria-label="شهر الحضور" value={month} onChange={event => { if (event.target.value) setMonth(event.target.value); }} /><Select aria-label="حالة اليوم" value={state} onChange={event => setState(event.target.value)}><option value="">كل الأيام</option><option value="OPEN">مفتوح</option><option value="CLOSED">مغلق</option></Select></div>}>
+      {!data.workdays.length ? <EmptyState title="لا توجد أيام حضور حتى الآن." description={!hasDepartments ? 'ابدأ بإضافة قسم، ثم أضف الموظفين لفتح أول يوم حضور.' : !hasEmployees ? 'أضف موظفاً نشطاً إلى أحد الأقسام لبدء تسجيل الحضور.' : 'فريقك جاهز. افتح أول يوم وحدد وقت الدوام والموظفين المشاركين.'} action={!hasDepartments ? session?.role === 'SUPER_ADMIN' ? <Link className="button-link" href="/departments">إضافة قسم</Link> : <span className="muted">راجع المدير العام لإضافة قسم.</span> : !hasEmployees ? <Link className="button-link" href="/employees">إضافة موظف</Link> : canCreate ? <Button onClick={() => setOpening(true)}>فتح أول يوم حضور</Button> : undefined} /> : !days.length ? <EmptyState title="لا توجد أيام مطابقة" description="غيّر الشهر أو حالة اليوم لعرض سجلات الحضور." action={<Button variant="secondary" onClick={() => { setState(''); setMonth(data.workdays.toSorted((a, b) => b.date.localeCompare(a.date))[0].date.slice(0, 7)); }}>عرض أحدث أيام الحضور</Button>} /> : view === 'calendar' ? <AttendanceCalendar month={month} days={days} summary={day => getDaySummary(data, day)} today={today} /> : <div className={styles.dayList}>{days.map(day => {
         const summary = getDaySummary(data, day);
         const archived = data.months.some(item => item.month === day.date.slice(0, 7) && item.state === 'ARCHIVED');
         return <article key={day.id}><Link href={`/attendance/${day.id}`} className={styles.dayCard} aria-label={`تفاصيل حضور ${attendanceDateLabel(day.date)}`}><div className={styles.dayCardTop}><div className={styles.calendarTile}><span>{day.date.slice(8)}</span><small>{englishMonthName(day.date.slice(0, 7))}</small></div><div className={styles.workdayInfo}><div className="inline"><h3>{attendanceDateLabel(day.date)}</h3><Badge tone={day.state === 'OPEN' ? 'success' : 'neutral'}>{day.state === 'OPEN' ? 'مفتوح' : 'مغلق'}</Badge>{archived && <Badge><LockKeyhole size={12} />مؤرشف</Badge>}</div><p>بدء الدوام <b dir="ltr">{time(day.startTime)}</b></p><span className="muted">{day.departmentIds.map(id => data.departments.find(dep => dep.id === id)?.name).filter(Boolean).join('، ') || 'اختيارات فردية'}</span></div><ChevronLeft size={19} className={styles.dayCardArrow} /></div><div className={styles.dayCardMetrics}><span><b>{summary.expected}</b>متوقع</span><span><b>{summary.present}</b>حاضر</span><span><b>{summary.excused}</b>غياب بعذر</span><span><b>{summary.unexcused}</b>غياب بدون عذر</span><span><b>{summary.late}</b>متأخر</span><span className={summary.unresolved ? 'text-brand' : ''}><b>{summary.unresolved}</b>غير محسوم</span></div></Link><div className={styles.dayDeleteAction}><SafeDeleteButton collection="workdays" id={day.id} label={`يوم ${attendanceDateLabel(day.date)}`} compact /></div></article>;
