@@ -173,14 +173,14 @@ html[data-theme='dark'] .card-bottom { border-top-color: var(--rd-line); }
 
 /* ---------- Phase 3: crimson details ---------- */
 /* Icon-only actions (edit, password, delete, deactivate…) become soft crimson circles everywhere. */
-.btn.btn-ghost:has(> svg:only-child),
-html[data-theme='dark'] .btn.btn-ghost:has(> svg:only-child) { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; border: 0; background: var(--brand-light); color: var(--brand); }
-html[data-theme='dark'] .btn.btn-ghost:has(> svg:only-child) { color: var(--brand-text); }
-.btn.btn-ghost:has(> svg:only-child):hover:not(:disabled),
-html[data-theme='dark'] .btn.btn-ghost:has(> svg:only-child):hover:not(:disabled) { background: var(--brand); color: #fff; }
-.btn.btn-ghost:has(> svg:only-child):disabled { background: var(--rd-chip); color: var(--muted); opacity: .7; }
-.btn.btn-ghost:has(> svg:only-child) svg { width: 16px; height: 16px; }
-.data-table td .btn.btn-ghost:has(> svg:only-child) + .btn.btn-ghost:has(> svg:only-child) { margin-inline-start: 2px; }
+.btn.btn-ghost.btn-icon,
+html[data-theme='dark'] .btn.btn-ghost.btn-icon { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; border: 0; background: var(--brand-light); color: var(--brand); }
+html[data-theme='dark'] .btn.btn-ghost.btn-icon { color: var(--brand-text); }
+.btn.btn-ghost.btn-icon:hover:not(:disabled),
+html[data-theme='dark'] .btn.btn-ghost.btn-icon:hover:not(:disabled) { background: var(--brand); color: #fff; }
+.btn.btn-ghost.btn-icon:disabled { background: var(--rd-chip); color: var(--muted); opacity: .7; }
+.btn.btn-ghost.btn-icon svg { width: 16px; height: 16px; }
+.data-table td .btn.btn-ghost.btn-icon + .btn.btn-ghost.btn-icon { margin-inline-start: 2px; }
 
 /* Round avatars and stat icons with a crimson tint. */
 .avatar { border-radius: 50%; }
@@ -288,6 +288,10 @@ html[data-theme='dark'] .login-heading .login-greeting { color: var(--brand-text
   .card-heading { flex-wrap: wrap; row-gap: 12px; }
   .card-heading > .inline { flex-wrap: wrap; width: 100%; }
   .card-heading > .inline > * { flex: 1 1 auto; min-width: 0; }
+  .card-heading > .inline > .btn,
+  .form-actions > .btn { white-space: nowrap; }
+  .form-actions { flex-wrap: wrap; }
+  .form-actions > .btn { flex: 1 1 auto; }
   .view-toggle { width: 100%; }
   .view-toggle button { flex: 1; justify-content: center; }
   .chart-bars { height: 210px; grid-template-columns: 30px minmax(0, 1fr); }
