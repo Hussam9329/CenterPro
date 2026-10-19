@@ -29,7 +29,7 @@ export default function EmployeeAttendancePage() {
   const pageSize = 8;
   const visiblePage = Math.max(1, Math.min(page, Math.ceil(rows.length / pageSize)));
   const pageRows = rows.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
-  const financialEffect = (recordStatus: AttendanceStatus) => recordStatus === 'EXCUSED' ? <bdi dir="ltr" className="amount">−{money(result?.dailyRate ?? 0)}</bdi> : recordStatus === 'UNEXCUSED' ? <bdi dir="ltr" className="amount">−{money(result?.salaryConfig.unexcusedRate ?? 0)}</bdi> : recordStatus === 'PRESENT' ? 'يُحتسب ضمن الحضور' : 'بدون خصم';
+  const financialEffect = (recordStatus: AttendanceStatus) => recordStatus === 'EXCUSED' ? <bdi dir="ltr" className="amount">−<bdi dir="ltr">{money(result?.dailyRate ?? 0)}</bdi></bdi> : recordStatus === 'UNEXCUSED' ? <bdi dir="ltr" className="amount">−<bdi dir="ltr">{money(result?.salaryConfig.unexcusedRate ?? 0)}</bdi></bdi> : recordStatus === 'PRESENT' ? 'يُحتسب ضمن الحضور' : 'بدون خصم';
   return <div className="page-stack">
     <PageHeader title="سجل حضوري" actions={<Badge tone={period?.state === 'ARCHIVED' ? 'success' : 'brand'}>{period?.state === 'ARCHIVED' ? 'سجل مؤرشف' : monthLabel(month)}</Badge>} />
     <div className="grid-3"><StatCard label="الأيام المطلوبة" value={result?.requiredDays ?? 0} icon={<CalendarCheck size={20} />} /><StatCard label="أيام الحضور" value={result?.attendanceDays ?? 0} /><StatCard label="أيام الغياب" value={(result?.excusedDays ?? 0) + (result?.unexcusedDays ?? 0)} icon={<UserRoundX size={20} />} /><StatCard label="إجمالي التأخير" value={result?.latenessSeconds ? duration(result.latenessSeconds) : '0 ثانية'} icon={<Clock3 size={20} />} /></div>

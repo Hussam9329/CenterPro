@@ -109,13 +109,22 @@ html:not([data-theme='dark']) .app-footer { color: #62666f; }
 .page-header h1 { color: var(--ink); font-weight: 700; letter-spacing: -.5px; }
 
 /* Number cards everywhere use the same calm strip as the dashboard. */
-.stats-grid { gap: 0; padding: 8px; background: var(--surface); border: 1px solid var(--rd-line); border-radius: var(--rd-radius); }
+/* 1px gaps over a line-coloured background draw the dividers, so they stay correct for any
+   number of cells, any order and any wrap. Columns follow the number of cells. */
+.stats-grid,
+.grid-3:has(> .stat-card) { gap: 1px; padding: 0; background: var(--rd-line); border: 1px solid var(--rd-line); border-radius: var(--rd-radius); overflow: hidden; }
+@media (min-width: 1024px) {
+  .stats-grid:has(> :nth-child(2):last-child), .grid-3:has(> .stat-card):has(> :nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats-grid:has(> :nth-child(3):last-child), .grid-3:has(> .stat-card):has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stats-grid:has(> :nth-child(4):last-child), .grid-3:has(> .stat-card):has(> :nth-child(4):last-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .stats-grid:has(> :nth-child(5):last-child), .grid-3:has(> .stat-card):has(> :nth-child(5):last-child) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .stats-grid:has(> :nth-child(6):last-child), .grid-3:has(> .stat-card):has(> :nth-child(6):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .stat-card,
-html[data-theme='dark'] .stat-card { border: 0; border-radius: 0; box-shadow: none; background: transparent; padding: 18px 22px; }
-.stat-card + .stat-card:not(.stat-accent) { border-inline-start: 1px solid var(--rd-line); }
-html[data-theme='dark'] .stat-card + .stat-card:not(.stat-accent) { border-inline-start: 1px solid var(--rd-line); }
+html[data-theme='dark'] .stat-card { border: 0; border-radius: 0; box-shadow: none; background: var(--surface); padding: 18px 22px; }
+/* The crimson highlight always sits first (rightmost in RTL), whatever its position in the markup. */
 .stat-card.stat-accent,
-html[data-theme='dark'] .stat-card.stat-accent { background: var(--brand); border-radius: var(--rd-radius-sm); }
+html[data-theme='dark'] .stat-card.stat-accent { order: -1; background: var(--brand); }
 .stat-value { font-weight: 650; letter-spacing: -.5px; overflow-wrap: anywhere; }
 html[data-theme='dark'] .stat-card:not(.stat-accent) .stat-value { color: var(--ink); }
 
@@ -252,6 +261,44 @@ html[data-theme='dark'] .login-heading .login-greeting { color: var(--brand-text
 .employee-salary strong { font-size: clamp(28px, 3vw, 38px); font-weight: 750; letter-spacing: -.5px; }
 .employee-gauge-card .chart-gauge { max-width: 420px; margin-inline: auto; }
 
+/* Month/date pickers keep their full value visible; file picker gets a branded pill button. */
+.input[type='month'] { min-width: 11.5rem; padding-inline-end: 10px; }
+input[type='file'] { padding: 6px; min-height: auto; cursor: pointer; }
+input[type='file']::file-selector-button { margin-inline-end: 12px; padding: 8px 16px; border: 0; border-radius: 999px; background: var(--brand-light); color: var(--brand); font: inherit; font-weight: 650; cursor: pointer; }
+html[data-theme='dark'] input[type='file']::file-selector-button { color: var(--brand-text); }
+input[type='file']:hover::file-selector-button { background: var(--brand); color: #fff; }
+
+/* Header and toolbar actions: text buttons read as outline pills; delete reads crimson. */
+.page-actions .btn-ghost:not(.btn-icon),
+.profile-card .btn-ghost:not(.btn-icon),
+.toolbar .btn-ghost:not(.btn-icon),
+.page-header .btn-ghost:not(.btn-icon) { border: 1px solid var(--rd-line); background: var(--surface); color: var(--text); }
+.page-actions .btn-ghost:not(.btn-icon):hover:not(:disabled),
+.profile-card .btn-ghost:not(.btn-icon):hover:not(:disabled),
+.toolbar .btn-ghost:not(.btn-icon):hover:not(:disabled),
+.page-header .btn-ghost:not(.btn-icon):hover:not(:disabled) { border-color: var(--brand); color: var(--brand); background: var(--surface); }
+.delete-action:not(.btn-icon),
+html[data-theme='dark'] .delete-action:not(.btn-icon) { color: var(--brand); }
+html[data-theme='dark'] .delete-action:not(.btn-icon) { color: var(--brand-text); }
+.page-stack > .toolbar { padding: 10px 14px; background: var(--surface); border: 1px solid var(--rd-line); border-radius: var(--rd-radius); }
+
+/* Disabled primary buttons read as inactive gray, not a faded brand colour. */
+.btn-primary:disabled,
+html[data-theme='dark'] .btn-primary:disabled { opacity: 1; background: var(--rd-chip); border-color: var(--rd-chip); color: var(--muted); box-shadow: none; }
+
+/* Permission groups: neutral cards with on/off switches (still native checkboxes). */
+.perm-group { min-width: 0; margin: 0; padding: 16px 18px; border: 1px solid var(--rd-line); border-radius: 16px; background: var(--surface); }
+.perm-group > legend { float: inline-start; width: 100%; padding: 0; margin-bottom: 4px; font-weight: 700; color: var(--ink); }
+.perm-group > legend + * { clear: both; }
+.perm-actions { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 8px; }
+.perm-toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; white-space: nowrap; cursor: pointer; }
+.toggle { appearance: none; -webkit-appearance: none; position: relative; flex: none; width: 40px; height: 24px; margin: 0; border-radius: 999px; background: var(--rd-chip); border: 1px solid var(--rd-line); cursor: pointer; transition: background .15s ease; }
+.toggle::after { content: ''; position: absolute; top: 2px; inset-inline-start: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: inset-inline-start .15s ease; }
+.toggle:checked { background: var(--brand); border-color: var(--brand); }
+.toggle:checked::after { inset-inline-start: 18px; }
+.toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.toggle:disabled { opacity: .5; cursor: not-allowed; }
+
 /* Segmented view switch (calendar / list). */
 .view-toggle { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--rd-chip); }
 .view-toggle button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; }
@@ -268,10 +315,10 @@ html[data-theme='dark'] .login-heading .login-greeting { color: var(--brand-text
   .app-main { margin-right: 0; }
   .topbar { padding-inline: 22px; }
   .dashboard-overview, .dashboard-middle { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stats-grid > .stat-card:nth-child(odd),
-  html[data-theme='dark'] .stats-grid > .stat-card:nth-child(odd) { border-inline-start: 0; }
-  .stat-card:nth-child(n + 3):not(.stat-accent) { border-top: 1px solid var(--rd-line); }
+  .stats-grid, .grid-3:has(> .stat-card) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* An odd last cell spans the row instead of sitting alone. */
+  .stats-grid > .stat-card:last-child:nth-child(odd):not(.stat-accent),
+  .grid-3 > .stat-card:last-child:nth-child(odd):not(.stat-accent) { grid-column: 1 / -1; }
 }
 @media (max-width: 767px) {
   .topbar { height: 64px; padding-inline: 14px; }
@@ -280,11 +327,14 @@ html[data-theme='dark'] .login-heading .login-greeting { color: var(--brand-text
   .user-menu { padding: 3px; border-radius: 50%; }
   .dashboard-overview, .dashboard-middle, .dashboard-page .dashboard-lower { grid-template-columns: 1fr; gap: 16px; }
   .dashboard-page .dashboard-lower > :first-child { grid-column: auto; }
-  .stats-grid { padding: 6px; }
   .stat-card,
   html[data-theme='dark'] .stat-card { padding: 14px; }
   .stat-value { font-size: 23px; }
-  .tabs { width: 100%; }
+  .tabs { width: 100%; flex-wrap: wrap; border-radius: 20px; overflow: visible; }
+  .tabs button { flex: 1 1 auto; }
+  .data-table th, .data-table td { padding: 10px 6px; font-size: 12px; }
+  .dashboard-page .stat-value { white-space: nowrap; font-size: clamp(19px, 5.8vw, 26px); }
+  .btn.btn-ghost.btn-icon { width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
   .card-heading { flex-wrap: wrap; row-gap: 12px; }
   .card-heading > .inline { flex-wrap: wrap; width: 100%; }
   .card-heading > .inline > * { flex: 1 1 auto; min-width: 0; }

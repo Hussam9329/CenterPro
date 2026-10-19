@@ -91,3 +91,10 @@
   .dayCardMetrics span { font-size:9.5px; line-height:1.35; text-align:center; align-items:center; }
   .dayCardMetrics b { font-size:15px; }
 }
+.currentDayBanner { border-color:var(--rd-line, #ececf0); border-radius:18px; }
+/* Phone: tighter employee cards on the day detail page. */
+@media(max-width:767px){
+  :global(.mobile-cards) > .attendanceCard { gap:8px; }
+  .attendanceCard .cardMetrics { margin:4px 0 0; }
+  .attendanceCard .recordNote { margin:0; }
+}

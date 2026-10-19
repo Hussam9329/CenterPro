@@ -371,3 +371,11 @@
   .employeeEvaluationPage > :global(.page-header) > :global(.page-actions) > :global(.inline) { width:100%; min-width:0; flex-wrap:wrap; }
   .employeeEvaluationPage > :global(.page-header) > :global(.page-actions) > :global(.inline) > :global(.select) { flex:1 1 220px; width:auto; min-width:0; max-width:100%; }
 }
+
+/* Redesign: neutral surfaces instead of pink tints; status counts read as one strip like other pages. */
+.adminHubStatus { gap:1px; background:var(--rd-line,#ececf0); border:1px solid var(--rd-line,#ececf0); border-radius:18px; overflow:hidden; }
+.adminHubStatus > div { border:0; border-radius:0; background:var(--surface,#fff); padding:16px 20px; }
+.simpleMetricRow,.adminSectionBar { background:var(--surface,#fff); border-color:var(--rd-line,#ececf0); border-radius:18px; }
+.adminSectionBar { border-inline-start:1px solid var(--rd-line,#ececf0); }
+.adminHubCard { border-color:var(--rd-line,#ececf0); border-radius:18px; }
+.adminHubIcon { border-radius:50%; background:var(--brand-light,#fbf0f2); }

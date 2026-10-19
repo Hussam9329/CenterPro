@@ -32,10 +32,10 @@ export function AuditPage() {
   const hasFilters = actor !== 'all' || employee !== 'all' || action !== 'all' || entity !== 'all' || Boolean(from || to);
 
 
-  if (session?.role !== 'SUPER_ADMIN') return <EmptyState title="هذه الصفحة متاحة لـ Super Admin فقط" description="سجل العمليات مخصص لمراجعة الإجراءات الإدارية." />;
+  if (session?.role !== 'SUPER_ADMIN') return <EmptyState title="هذه الصفحة متاحة لـ المدير العام فقط" description="سجل العمليات مخصص لمراجعة الإجراءات الإدارية." />;
 
   return <div className="page-stack">
-    <PageHeader title="سجل العمليات" actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
+    <PageHeader title="سجل العمليات" actions={<Badge tone="brand"><ShieldCheck size={14} />المدير العام</Badge>} />
     <div className="stats-grid"><StatCard label="العمليات المسجلة" value={number(data.audit.length)} icon={<History size={21} />} /><StatCard label="نتائج الفلاتر" value={number(rows.length)} accent /><StatCard label="المستخدمون المنفذون" value={number(new Set(data.audit.map(entry => entry.actor)).size)} /></div>
     <Card title="البحث في السجل" action={hasFilters ? <Button variant="ghost" onClick={clear}><FilterX size={17} />مسح الفلاتر</Button> : undefined}>
       <div className="form-grid">

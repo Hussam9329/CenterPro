@@ -32,10 +32,10 @@ export function SettingsPage() {
     setResetWord('');
   }
 
-  if (session?.role !== 'SUPER_ADMIN') return <EmptyState title="هذه الصفحة متاحة لـ Super Admin فقط" description="يمكن للإدارة العليا تعديل إعدادات المركز والاطلاع على صلاحيات الأدوار." />;
+  if (session?.role !== 'SUPER_ADMIN') return <EmptyState title="هذه الصفحة متاحة لـ المدير العام فقط" description="يمكن للإدارة العليا تعديل إعدادات المركز والاطلاع على صلاحيات الأدوار." />;
 
   return <div className="page-stack">
-    <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />Super Admin</Badge>} />
+    <PageHeader title="الإعدادات" actions={<Badge tone="brand"><ShieldCheck size={14} />المدير العام</Badge>} />
     <BackupCard backend={backend} backup={backup}/>
     <div className="grid-2">
       <CenterSettingsCard settings={centerSettings}/>
