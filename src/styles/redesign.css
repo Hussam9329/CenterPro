@@ -200,6 +200,64 @@ html[data-theme='dark'] .topbar .icon-button { color: var(--brand-text); }
 .topbar .icon-button:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
 .pagination .btn:not(:disabled):hover { background: var(--brand); border-color: var(--brand); color: #fff; }
 
+/* Employee profile: ID-card header with a flat crimson band and overlapping photo. */
+/* Hard colour stop = a flat band, not a gradient. */
+.profile-card,
+html[data-theme='dark'] .profile-card { padding-top: 46px; background: linear-gradient(var(--brand) 0 84px, var(--surface) 84px); }
+.profile-card > div { align-items: flex-end; }
+.profile-card .avatar { box-shadow: 0 0 0 5px var(--surface); }
+.profile-card h2 { margin-top: 42px; }
+.profile-card .btn { white-space: nowrap; }
+
+/* Phone record cards: framed, with actions on their own row. */
+@media (max-width: 767px) {
+  .mobile-cards { gap: 10px; }
+  .mobile-cards > article { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--rd-line); border-radius: 16px; background: var(--surface); }
+  .mobile-cards > article > :last-child:not(:first-child) { padding-top: 12px; border-top: 1px dashed var(--rd-line); }
+  .mobile-cards > .list-row { padding: 12px 14px; border: 1px solid var(--rd-line); border-radius: 14px; background: var(--surface); }
+  .mobile-cards > .list-row:last-child { border-bottom: 1px solid var(--rd-line); }
+}
+
+/* Empty states: large crimson circle with a soft ring. */
+.empty-state .empty-icon,
+html[data-theme='dark'] .empty-state .empty-icon { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--brand-light); color: var(--brand); box-shadow: 0 0 0 8px color-mix(in srgb, var(--brand) 6%, transparent); margin-bottom: 8px; }
+html[data-theme='dark'] .empty-state .empty-icon { color: var(--brand-text); }
+.empty-state .empty-icon svg { width: 28px; height: 28px; }
+
+/* Subtle entrance motion; skipped entirely for people who prefer reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Opacity only: layout positions never shift while content fades in. */
+  @keyframes rd-rise { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rd-grow { from { transform: scaleY(0); } to { transform: none; } }
+  @keyframes rd-draw { from { stroke-dashoffset: var(--rd-len, 1000); } to { stroke-dashoffset: 0; } }
+  .page-stack > * { animation: rd-rise .45s cubic-bezier(.2, .8, .2, 1) both; }
+  .page-stack > :nth-child(2) { animation-delay: .05s; }
+  .page-stack > :nth-child(3) { animation-delay: .1s; }
+  .page-stack > :nth-child(4) { animation-delay: .15s; }
+  .page-stack > :nth-child(n + 5) { animation-delay: .2s; }
+  .chart-bar-fill { transform-origin: bottom; animation: rd-grow .8s cubic-bezier(.2, .8, .2, 1) .2s both; }
+  .chart-gauge-value { animation: rd-draw 1s ease-out .2s both; }
+  .chart-trend-line { stroke-dasharray: 1000; animation: rd-draw 1.2s ease-out .2s both; }
+  .payroll-progress-track span, .department-bar-track > span { transform-origin: right; animation: rd-grow-x .8s ease-out .2s both; }
+  @keyframes rd-grow-x { from { transform: scaleX(0); } to { transform: none; } }
+}
+
+/* Login: crimson greeting above the heading. */
+.login-heading .login-greeting,
+html[data-theme='dark'] .login-heading .login-greeting { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 6px; color: var(--brand); font-size: 13px; font-weight: 650; }
+html[data-theme='dark'] .login-heading .login-greeting { color: var(--brand-text); }
+.login-heading .login-greeting::before { content: ''; width: 18px; height: 2px; border-radius: 2px; background: currentColor; }
+
+/* Employee home: expected salary stands out. */
+.employee-salary strong { font-size: clamp(28px, 3vw, 38px); font-weight: 750; letter-spacing: -.5px; }
+.employee-gauge-card .chart-gauge { max-width: 420px; margin-inline: auto; }
+
+/* Segmented view switch (calendar / list). */
+.view-toggle { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--rd-chip); }
+.view-toggle button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.view-toggle button[aria-pressed='true'] { background: var(--brand); color: #fff; }
+.view-toggle button:not([aria-pressed='true']):hover { color: var(--brand); }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1279px) {
   .dashboard-page .dashboard-lower { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -227,6 +285,11 @@ html[data-theme='dark'] .topbar .icon-button { color: var(--brand-text); }
   html[data-theme='dark'] .stat-card { padding: 14px; }
   .stat-value { font-size: 23px; }
   .tabs { width: 100%; }
+  .card-heading { flex-wrap: wrap; row-gap: 12px; }
+  .card-heading > .inline { flex-wrap: wrap; width: 100%; }
+  .card-heading > .inline > * { flex: 1 1 auto; min-width: 0; }
+  .view-toggle { width: 100%; }
+  .view-toggle button { flex: 1; justify-content: center; }
   .chart-bars { height: 210px; grid-template-columns: 30px minmax(0, 1fr); }
   .chart-bar-label { padding: 2px 6px; font-size: 9px; }
   .card { border-radius: 16px; }

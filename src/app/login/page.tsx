@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { ArrowLeft, LockKeyhole, Moon, Sun, UserRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Brand } from '@/components/brand';
@@ -9,12 +9,20 @@ import { useDemo } from '@/components/demo-provider';
 import { useWelcome } from '@/components/welcome-provider';
 import { useTheme } from '@/components/theme-provider';
 
+const noSubscription = () => () => {};
+function baghdadGreeting() {
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Baghdad', hour: '2-digit', hourCycle: 'h23' }).format(new Date()));
+  return hour >= 5 && hour < 12 ? 'صباح الخير' : 'مساء الخير';
+}
+
 export default function LoginPage() {
   const { login, setupSystemAdmin, ready, session, remembered, systemConfigured, systemUsername, backend, pendingImport, connectionError, refresh } = useDemo();
   const router = useRouter();
   const { showWelcome } = useWelcome();
   const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(false);
+  // Client-only snapshot, so the server render never disagrees with the visitor's clock.
+  const greeting = useSyncExternalStore(noSubscription, baghdadGreeting, () => '');
   const [remember, setRemember] = useState(false);
   const [usernameInput, setUsername] = useState<string | null>(null);
   const username = usernameInput ?? (ready && backend === 'local' && !systemConfigured ? systemUsername : '');
@@ -68,7 +76,7 @@ export default function LoginPage() {
     <section className="login-form-side">
       <div className="login-form-wrap">
         <div className="login-mobile-brand"><Brand/></div>
-        <div className="login-heading"><h2>{pendingImport ? 'بانتظار استيراد بيانات المركز' : setup ? 'تهيئة مدير النظام' : 'تسجيل الدخول'}</h2></div>
+        <div className="login-heading">{greeting && !pendingImport && <p className="login-greeting">{greeting}</p>}<h2>{pendingImport ? 'بانتظار استيراد بيانات المركز' : setup ? 'تهيئة مدير النظام' : 'تسجيل الدخول'}</h2></div>
         {connectionError && <div className="stack"><p className="field-error" role="alert">{connectionError}</p><Button variant="secondary" onClick={() => { void refresh().catch(() => {}); }}>إعادة الاتصال</Button></div>}
         {pendingImport ? <div className="notice" role="status"><span>تم ربط النظام بقاعدة البيانات. ننتظر استيراد النسخة الاحتياطية لاستعادة حسابات المركز وتفاصيله. احتفظ بملف النسخة الذي حمّلته.</span></div> : <form onSubmit={enter} className="stack" noValidate>
           <Field label="اسم المستخدم" required>

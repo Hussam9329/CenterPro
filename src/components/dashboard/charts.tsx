@@ -15,23 +15,23 @@ export function AttendanceBars({ points }: { points: BarPoint[] }) {
   </div>;
 }
 
-export function AttendanceGauge({ rate, present, unresolved, absent }: { rate: number; present: number; unresolved: number; absent: number }) {
+export function AttendanceGauge({ rate, present, unresolved, absent, caption = 'نسبة الحضور', labels = ['حاضر', 'غير محسوم', 'غائب'] }: { rate: number; present: number; unresolved: number; absent: number; caption?: string; labels?: [string, string, string] }) {
   const clamped = Math.min(Math.max(rate, 0), 100);
   // Half circle from left to right; RTL does not affect SVG geometry.
   const radius = 80; const length = Math.PI * radius;
   const angle = Math.PI * (1 - clamped / 100);
   const dot = { x: 100 + radius * Math.cos(angle), y: 100 - radius * Math.sin(angle) };
   return <div className="chart-gauge">
-    <svg viewBox="0 0 200 112" role="img" aria-label={`نسبة الحضور ${clamped}%`}>
+    <svg viewBox="0 0 200 112" role="img" aria-label={`${caption} ${clamped}%`}>
       <path className="chart-gauge-track" d="M20 100 A80 80 0 0 1 180 100"/>
-      <path className="chart-gauge-value" d="M20 100 A80 80 0 0 1 180 100" strokeDasharray={`${length * clamped / 100} ${length}`}/>
+      <path className="chart-gauge-value" d="M20 100 A80 80 0 0 1 180 100" strokeDasharray={`${length * clamped / 100} ${length}`} style={{ ['--rd-len' as string]: length * clamped / 100 }}/>
       {clamped > 0 && <circle className="chart-gauge-dot" cx={dot.x} cy={dot.y} r="5"/>}
     </svg>
-    <div className="chart-gauge-center"><strong>{clamped}<small>%</small></strong><span>نسبة الحضور</span></div>
+    <div className="chart-gauge-center"><strong>{clamped}<small>%</small></strong><span>{caption}</span></div>
     <div className="chart-gauge-legend">
-      <div><strong>{number(present)}</strong><span>حاضر</span></div>
-      <div><strong>{number(unresolved)}</strong><span>غير محسوم</span></div>
-      <div><strong>{number(absent)}</strong><span>غائب</span></div>
+      <div><strong>{number(present)}</strong><span>{labels[0]}</span></div>
+      <div><strong>{number(unresolved)}</strong><span>{labels[1]}</span></div>
+      <div><strong>{number(absent)}</strong><span>{labels[2]}</span></div>
     </div>
   </div>;
 }
@@ -53,7 +53,7 @@ export function PayrollTrend({ points, format }: { points: TrendPoint[]; format:
     <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={points.map(point => `${point.label}: ${format(point.value)}`).join('، ')}>
       {[0.25, 0.5, 0.75].map(f => <line key={f} className="chart-trend-grid" x1="0" x2={width} y1={height * f} y2={height * f}/>)}
       {area && <path className="chart-trend-area" d={area}/>}
-      {line && <path className="chart-trend-line" d={line}/>}
+      {line && <path className="chart-trend-line" d={line} pathLength={1000}/>}
       {coords.map((c, index) => <circle key={points[index].key} className="chart-trend-dot" cx={c.x} cy={c.y} r="4"><title>{`${points[index].label}: ${format(points[index].value)}`}</title></circle>)}
     </svg>
     <div className="chart-trend-labels" dir="ltr">{points.map(point => <span key={point.key}>{point.label}</span>)}</div>
