@@ -171,6 +171,35 @@ html[data-theme='dark'] .setup-step { border-color: var(--rd-line); }
 .card-bottom,
 html[data-theme='dark'] .card-bottom { border-top-color: var(--rd-line); }
 
+/* ---------- Phase 3: crimson details ---------- */
+/* Icon-only actions (edit, password, delete, deactivate…) become soft crimson circles everywhere. */
+.btn.btn-ghost:has(> svg:only-child),
+html[data-theme='dark'] .btn.btn-ghost:has(> svg:only-child) { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; border: 0; background: var(--brand-light); color: var(--brand); }
+html[data-theme='dark'] .btn.btn-ghost:has(> svg:only-child) { color: var(--brand-text); }
+.btn.btn-ghost:has(> svg:only-child):hover:not(:disabled),
+html[data-theme='dark'] .btn.btn-ghost:has(> svg:only-child):hover:not(:disabled) { background: var(--brand); color: #fff; }
+.btn.btn-ghost:has(> svg:only-child):disabled { background: var(--rd-chip); color: var(--muted); opacity: .7; }
+.btn.btn-ghost:has(> svg:only-child) svg { width: 16px; height: 16px; }
+.data-table td .btn.btn-ghost:has(> svg:only-child) + .btn.btn-ghost:has(> svg:only-child) { margin-inline-start: 2px; }
+
+/* Round avatars and stat icons with a crimson tint. */
+.avatar { border-radius: 50%; }
+.stat-card:not(.stat-accent) .stat-icon,
+html[data-theme='dark'] .stat-card:not(.stat-accent) .stat-icon { border-radius: 50%; border: 0; background: var(--brand-light); }
+.stat-accent .stat-icon { border-radius: 50%; }
+
+/* Small crimson marker before card titles. */
+.card-heading h2 { display: inline-flex; align-items: center; gap: 9px; }
+.card-heading h2::before { content: ''; display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); flex-shrink: 0; }
+
+/* Crimson accents on navigation helpers. */
+.search-input > svg,
+html[data-theme='dark'] .search-input > svg { color: var(--brand); }
+.topbar .icon-button { color: var(--brand); }
+html[data-theme='dark'] .topbar .icon-button { color: var(--brand-text); }
+.topbar .icon-button:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+.pagination .btn:not(:disabled):hover { background: var(--brand); border-color: var(--brand); color: #fff; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1279px) {
   .dashboard-page .dashboard-lower { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -182,8 +211,8 @@ html[data-theme='dark'] .card-bottom { border-top-color: var(--rd-line); }
   .topbar { padding-inline: 22px; }
   .dashboard-overview, .dashboard-middle { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stat-card:nth-child(odd),
-  html[data-theme='dark'] .stat-card:nth-child(odd) { border-inline-start: 0; }
+  .stats-grid > .stat-card:nth-child(odd),
+  html[data-theme='dark'] .stats-grid > .stat-card:nth-child(odd) { border-inline-start: 0; }
   .stat-card:nth-child(n + 3):not(.stat-accent) { border-top: 1px solid var(--rd-line); }
 }
 @media (max-width: 767px) {
