@@ -1,4 +1,5 @@
 import { canManageEmployeeAccount, hasEmployeePermission } from '@/lib/permissions';
+import { PASSWORD_RULE_MESSAGE, passwordProblem } from '@/lib/password-policy';
 import { validateSalaryConfig } from '@/lib/payroll';
 import type { DemoData, Employee } from '@/lib/types';
 import { settingsSchema } from './schemas';
@@ -71,7 +72,8 @@ export function applyPeopleChanges(context: MutationContext) {
     const action = previous ? 'edit' : 'create';
     const canManage = employee && (canManageEmployeeAccount(actor.role, employee.role) || (actor.role === 'EMPLOYEE' && employee.role === 'EMPLOYEE' && hasEmployeePermission(delegatedEmployee, 'EMPLOYEES', action)));
     if (!employee || !canManage) fail('ليس لديك صلاحية تغيير كلمة مرور هذا الحساب.');
-    if (typeof request.password.value !== 'string' || request.password.value.length < 6 || request.password.value.length > 1024) fail('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.');
+    const passwordIssue = typeof request.password.value === 'string' ? passwordProblem(request.password.value, employee.username) : PASSWORD_RULE_MESSAGE;
+    if (passwordIssue) fail(passwordIssue);
   }
 
 }

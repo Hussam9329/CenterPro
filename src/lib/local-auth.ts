@@ -1,3 +1,5 @@
+import { passwordProblem } from './password-policy';
+
 export const AUTH_STORAGE_KEY = 'centerpro-local-auth-v1';
 export const AUTH_SCHEMA_VERSION = 1;
 /** Persist this descriptor with backups so a future server can verify existing hashes. */
@@ -183,7 +185,8 @@ function nextVersion(previousVersion = 0) {
 }
 
 export async function createCredential(password: string, previousVersion = 0): Promise<StoredCredential> {
-  if (password.length < 6) throw new Error('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.');
+  const problem = passwordProblem(password);
+  if (problem) throw new Error(problem);
   if (!authStorage()) throw new Error('هذا المتصفح لا يدعم تشفير كلمات المرور المطلوب.');
   const version = nextVersion(previousVersion);
   const salt = window.crypto.getRandomValues(new Uint8Array(AUTH_PASSWORD_KDF.saltBytes));

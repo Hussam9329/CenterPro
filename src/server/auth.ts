@@ -7,4 +7,4 @@ export {
 } from './auth/sessions';
 export { requireIdentity, baghdadDate, makeSnapshot, withState, type StateContext } from './auth/state';
 export { trustedRequestIp, stampAuditMetadata } from './auth/request-metadata';
-export { LOGIN_WINDOW_MS, LOGIN_ACCOUNT_LIMIT, LOGIN_IP_LIMIT, login, type LoginOutcome } from './auth/login';
+export { LOGIN_WINDOW_MS, LOGIN_ACCOUNT_LIMIT, LOGIN_IP_LIMIT, LOGIN_ACCOUNT_DAILY_LIMIT, LOGIN_DAY_MS, login, type LoginOutcome } from './auth/login';

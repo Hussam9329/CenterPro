@@ -68,8 +68,9 @@ function PermissionForm({ employee }: { employee: Employee }) {
         create: Boolean(current.view && allowed.has('create') && current.create),
         edit: Boolean(current.view && allowed.has('edit') && current.edit),
         delete: Boolean(current.view && allowed.has('delete') && current.delete),
-      }];
-    })) as AccountPermissions;
+      }] as const;
+      // Store only sections that are switched on; a missing section already means no access.
+    }).filter(([, value]) => value.view)) as AccountPermissions;
     if (!await mutate(() => updateData((data, actor) => {
       if (actor?.role !== 'SUPER_ADMIN') throw new Error('تعديل صلاحيات الحساب متاح للمشرف العام فقط.');
       const target = data.employees.find(item => item.id === employee.id);
@@ -89,12 +90,13 @@ function PermissionForm({ employee }: { employee: Employee }) {
       <p className="muted">تفعيل العرض يتيح قراءة القائمة فقط. امنح الإضافة والتعديل والحذف كلّاً على حدة عند الحاجة.</p>
       {ACCOUNT_PERMISSION_FEATURES.map(item => {
         const value = permissions[item.feature] ?? EMPTY_ACCOUNT_PERMISSION;
-        const supportedActions = actions.filter(({ action }) => item.actions.includes(action)).map(action => ({ ...action, label: item.actionLabels?.[action.action] ?? action.label }));
+        const supportedActions = actions.filter(({ action }) => item.actions.includes(action)).map(action => ({ ...action, display: item.actionLabels?.[action.action] ?? action.label }));
+        // Accessible names stay "<action> <section>" (e.g. "حذف التدقيق"); the visible text may be more specific.
         return <fieldset key={item.feature} className="perm-group">
           <legend>{item.label}</legend>
           <p className="muted">{item.description}</p>
-          <div className="perm-actions">{supportedActions.map(({ action, label }) => <label key={action} className="perm-toggle">
-            <input type="checkbox" aria-label={`${label} ${item.label}`} className="toggle" checked={Boolean(value[action])} disabled={!canManage || (action !== 'view' && !value.view) || pending} onChange={event => setPermission(item.feature, action, event.target.checked)} />{label}
+          <div className="perm-actions">{supportedActions.map(({ action, label, display }) => <label key={action} className="perm-toggle">
+            <input type="checkbox" aria-label={`${label} ${item.label}`} className="toggle" checked={Boolean(value[action])} disabled={!canManage || (action !== 'view' && !value.view) || pending} onChange={event => setPermission(item.feature, action, event.target.checked)} />{display}
           </label>)}</div>
         </fieldset>;
       })}

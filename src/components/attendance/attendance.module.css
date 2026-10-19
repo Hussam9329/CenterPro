@@ -98,3 +98,25 @@
   .attendanceCard .cardMetrics { margin:4px 0 0; }
   .attendanceCard .recordNote { margin:0; }
 }
+
+/* Employee check-in confirmation: replaces the camera with a clear green success screen. */
+.successScreen { display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding:40px 22px 30px; border-radius:24px; background:#edf7f1; border:1px solid #cfe7d8; }
+.successScreen h2 { margin:6px 0 0; font-size:24px; font-weight:750; color:#1f5e3f; }
+.successScreen p { margin:0; color:#3f6b55; font-size:13.5px; }
+.successMark { width:112px; height:112px; border-radius:50%; display:grid; place-items:center; background:#2f9e6b; color:#fff; box-shadow:0 0 0 12px #2f9e6b26, 0 12px 30px #2f9e6b40; }
+.successTime { display:inline-flex; align-items:center; gap:8px; margin-top:6px; padding:9px 16px; border-radius:999px; background:#fff; border:1px solid #cfe7d8; color:#3f6b55; font-size:12.5px; }
+.successTime strong { color:#1f5e3f; font-size:15px; }
+.successActions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:12px; width:100%; }
+.successActions > * { flex:1 1 180px; max-width:260px; justify-content:center; }
+:global(html[data-theme='dark']) .successScreen { background:#152b21; border-color:#2c5242; }
+:global(html[data-theme='dark']) .successScreen h2,
+:global(html[data-theme='dark']) .successTime strong { color:#bfe8d1; }
+:global(html[data-theme='dark']) .successScreen p,
+:global(html[data-theme='dark']) .successTime { color:#9fcfb5; }
+:global(html[data-theme='dark']) .successTime { background:#1b3529; border-color:#2c5242; }
+@media (prefers-reduced-motion: no-preference) {
+  .successMark { animation: success-pop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+  .successMark svg { animation: success-draw .35s ease-out .25s both; }
+  @keyframes success-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes success-draw { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+}

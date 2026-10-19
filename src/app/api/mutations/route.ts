@@ -19,7 +19,7 @@ const schema = z.strictObject({
   changes: z.array(z.strictObject({ collection: z.enum(MUTABLE_COLLECTIONS), upsert: z.array(z.record(z.string(), z.unknown())).max(5000).optional(), remove: z.array(string).max(5000).optional() })).max(MUTABLE_COLLECTIONS.length),
   settings: z.strictObject({ centerName: z.string().min(1).max(500), qrInterval: z.number().int().min(1).max(3600) }).optional(),
   audit: z.strictObject({ action: string, entity: string, entityId: string, employeeId: string.optional(), oldValues: z.record(z.string(), z.unknown()).optional(), newValues: z.record(z.string(), z.unknown()).optional() }).optional(),
-  password: z.strictObject({ employeeId: string.min(1), value: z.string().min(6).max(512) }).optional(),
+  password: z.strictObject({ employeeId: string.min(1), value: z.string().min(1).max(512) }).optional(),
   deletion: z.strictObject({ collection: z.enum(MUTABLE_COLLECTIONS), id: string.min(1), reason: z.string().trim().min(3).max(1000), confirmation: z.literal('حذف') }).optional(),
 }).refine(value => new Set(value.changes.map(change => change.collection)).size === value.changes.length)
   .refine(value => value.changes.length > 0 || !!value.settings || !!value.password || !!value.deletion);

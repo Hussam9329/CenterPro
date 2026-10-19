@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const outcome = await login(request, input);
     if (!outcome.ok) {
       const response = jsonResponse({ error: outcome.error }, outcome.status);
-      if (outcome.status === 429) response.headers.set('Retry-After', '900');
+      if (outcome.status === 429) response.headers.set('Retry-After', String(outcome.retryAfterSeconds ?? 900));
       return response;
     }
     const response = jsonResponse(outcome.snapshot);

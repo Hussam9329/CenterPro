@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { passwordProblem } from '@/lib/password-policy';
 
 export function useQrAccountSettings() {
   const { session, saveQrDisplayAccount, qrDisplayConfigured, qrDisplayUsername, qrDisplayActive, discardDraft } = useDemo();
@@ -20,8 +21,9 @@ export function useQrAccountSettings() {
     const username = qrUsername.trim();
     if (!username) { setQrError('أدخل اسم مستخدم شاشة الحضور.'); return; }
     if (/\s/.test(username)) { setQrError('اسم المستخدم لا يقبل المسافات.'); return; }
-    if (!qrDisplayConfigured && qrPassword.length < 6) { setQrError('أدخل كلمة مرور من 6 أحرف أو أرقام على الأقل.'); return; }
-    if (qrPassword && qrPassword.length < 6) { setQrError('كلمة المرور يجب أن تكون 6 أحرف أو أرقام على الأقل.'); return; }
+    if (!qrDisplayConfigured && !qrPassword) { setQrError('أدخل كلمة مرور من 8 أحرف على الأقل تجمع بين حروف وأرقام أو رموز.'); return; }
+    const passwordIssue = qrPassword ? passwordProblem(qrPassword, username) : null;
+    if (passwordIssue) { setQrError(passwordIssue); return; }
     setQrSaving(true); setQrError('');
     try {
       await saveQrDisplayAccount({ username, active: qrActive, ...(qrPassword ? { password: qrPassword } : {}) }, draftForm);

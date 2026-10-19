@@ -16,7 +16,7 @@ test('first owner setup validates confirmation and persists a salted hash for a 
   await expect(page.getByRole('heading', { name: 'تهيئة مدير النظام', exact: true })).toBeVisible();
   await fillLoginCredentials(page, '  Center.Owner  ', 'short');
   await submitLogin(page);
-  await expect(page.locator('form').getByRole('alert')).toHaveText('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.');
+  await expect(page.locator('form').getByRole('alert')).toHaveText('كلمة المرور يجب أن تتكون من 8 أحرف على الأقل، وتجمع بين حروف وأرقام أو رموز.');
   expect(await page.evaluate(key => localStorage.getItem(key), AUTH_STORAGE_KEY)).toBeNull();
   expect(await readPreviewSession(page)).toBeNull();
 

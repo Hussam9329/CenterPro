@@ -9,6 +9,7 @@ import type { Employee } from '@/lib/types';
 import { employeeFormSteps as steps, fullPhone, phoneSuffix, telegramUsername, initialEmployee, validateEmployeeStep, type DraftEmployee } from './employee-form-model';
 import { EmployeePersonalFields, EmployeeContactFields, EmployeeWorkFields, EmployeeAccountFields, EmployeeSalaryFields } from './employee-form-fields';
 import styles from './people.module.css';
+import { passwordProblem } from '@/lib/password-policy';
 
 export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClose: () => void; employee?: Employee }) {
   const { data, session, systemUsername, today, backend, updateData } = useDemo();
@@ -40,7 +41,8 @@ export function EmployeeForm({ open, onClose, employee }: { open: boolean; onClo
     if (!data.departments.some(item => item.id === draft.departmentId && (item.active || item.id === employee?.departmentId))) { setError('أضف قسماً نشطاً أولاً قبل إضافة الموظفين.'); setStep(2); return; }
     const newPassword = pendingPassword.current;
     const changesPassword = newPassword.length > 0;
-    if ((!employee || changesPassword) && newPassword.length < 6) { setStep(3); setError('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.'); return; }
+    const passwordIssue = !employee || changesPassword ? passwordProblem(newPassword, draft.username) : null;
+    if (passwordIssue) { setStep(3); setError(passwordIssue); return; }
     savingRef.current = true;
     setSaving(true);
     try {

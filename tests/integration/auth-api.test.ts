@@ -15,7 +15,7 @@ import * as schema from '@/server/db/schema';
 import { importBackup } from '@/server/db/import-backup';
 import { loadAuthStore, loadData } from '@/server/db/repository';
 import { hashSessionToken, rateLimitKey } from '@/server/auth-crypto';
-import { baghdadDate, LOGIN_ACCOUNT_LIMIT, LOGIN_IP_LIMIT, sessionCookieName } from '@/server/auth';
+import { baghdadDate, LOGIN_ACCOUNT_DAILY_LIMIT, LOGIN_ACCOUNT_LIMIT, LOGIN_DAY_MS, LOGIN_IP_LIMIT, sessionCookieName } from '@/server/auth';
 import { GET as getState } from '@/app/api/state/route';
 import { GET as getBackup } from '@/app/api/backup/route';
 import { POST as login } from '@/app/api/auth/login/route';
@@ -256,6 +256,17 @@ describe('real PostgreSQL authentication and API boundaries', () => {
     expect((await database.select().from(schema.loginRateLimits).where(eq(schema.loginRateLimits.key, rateLimitKey('account', 'unknown-account'))))[0].count).toBe(LOGIN_ACCOUNT_LIMIT + 1);
     await database.update(schema.loginRateLimits).set({ count: LOGIN_IP_LIMIT }).where(eq(schema.loginRateLimits.key, rateLimitKey('ip', 'local-server')));
     expect((await login(request('/api/auth/login', { username: 'test-owner', password, remember: false }, undefined, { 'X-Forwarded-For': '1.2.3.4' }))).status).toBe(429);
+    expect(await database.select().from(schema.sessions)).toHaveLength(0);
+  }, 30_000);
+
+  it('locks a username for a day after repeated failures, even with the right password, and says when to retry', async () => {
+    await seed();
+    expect((await login(request('/api/auth/login', { username: 'test-owner', password: 'wrong-password-1', remember: false }))).status).toBe(401);
+    const dailyKey = rateLimitKey('account-day', 'test-owner');
+    expect((await database.select().from(schema.loginRateLimits).where(eq(schema.loginRateLimits.key, dailyKey)))[0].count).toBe(1);
+    await database.update(schema.loginRateLimits).set({ count: LOGIN_ACCOUNT_DAILY_LIMIT, blockedUntil: new Date(Date.now() + LOGIN_DAY_MS) }).where(eq(schema.loginRateLimits.key, dailyKey));
+    const blocked = await login(request('/api/auth/login', { username: 'test-owner', password, remember: false }));
+    expect(blocked.status).toBe(429); expect(blocked.headers.get('Retry-After')).toBe(String(LOGIN_DAY_MS / 1000));
     expect(await database.select().from(schema.sessions)).toHaveLength(0);
   }, 30_000);
 

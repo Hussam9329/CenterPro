@@ -188,7 +188,7 @@ describe('strict credential reads for backup', () => {
   });
 
   it('does not silently drop even one invalid account, unlike the tolerant login read', async () => {
-    const valid = await createCredential('password');
+    const valid = await createCredential('fixture-pass-1');
     const raw = JSON.stringify({ schema: 1, system: null, employees: { valid, corrupt: { ...valid, hash: 'broken' } } });
     values.set(AUTH_STORAGE_KEY, raw);
     expect(Object.keys(readAuthStore().employees)).toEqual(['valid']);
@@ -205,7 +205,7 @@ describe('strict credential reads for backup', () => {
   });
 
   it('fails on unavailable storage and rejects unexpected credential plaintext or session fields', async () => {
-    const valid = await createCredential('password');
+    const valid = await createCredential('fixture-pass-1');
     for (const field of ['password', 'session', 'remembered']) {
       values.set(AUTH_STORAGE_KEY, JSON.stringify({ schema: 1, system: null, employees: { employee: { ...valid, [field]: 'must-not-export' } } }));
       expect(() => readAuthStoreForBackup()).toThrow();
