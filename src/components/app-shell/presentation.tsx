@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { CalendarDays, Menu, LogOut, QrCode, ChevronLeft, Monitor, ChevronDown, ShieldCheck, Moon, Sun } from 'lucide-react';
+import { CalendarDays, Menu, LogOut, QrCode, ChevronLeft, Monitor, ChevronDown, Moon, Sun } from 'lucide-react';
 import { Avatar, Dialog } from '@/components/ui';
 import { Brand } from '@/components/brand';
 import type { ThemeMode } from '@/components/theme-provider';
@@ -21,11 +21,8 @@ interface SessionActions {
 export function ShellSidebar({ employee, links }: NavigationProps) {
   return <aside className="sidebar">
     <Link href={employee ? '/employee' : '/dashboard'} className="sidebar-brand"><Brand/></Link>
-    <div className="workspace-label"><span className="workspace-dot"/>إدارة المركز<span className="workspace-version">01</span></div>
-    <div className="nav-caption">{employee ? 'مساحتك الشخصية' : 'مساحة العمل'}</div>
     <nav aria-label="القائمة الرئيسية">{links}</nav>
     {!employee && <Link className="sidebar-qr" href="/attendance-display"><QrCode size={22}/><div>شاشة الحضور<span>عرض الرمز على شاشة المركز</span></div><ChevronLeft size={16}/></Link>}
-    <div className="sidebar-footer"><ShieldCheck size={16}/><span>نظام واحد. مركز أكثر وضوحاً.</span></div>
   </aside>;
 }
 
@@ -39,12 +36,12 @@ interface TopbarProps extends SessionActions {
 
 export function ShellTopbar({ employee, session, current, today, openMenu, theme, toggleTheme, loggingOut, exit }: TopbarProps) {
   return <header className="topbar">
-    <div className="inline">
+    <div className="inline topbar-start">
       <button className="icon-button mobile-menu" onClick={openMenu} aria-label="فتح القائمة"><Menu size={22}/></button>
-      <div className="breadcrumb"><span>CenterPro</span><ChevronLeft size={13}/><strong>{current?.label || 'مساحة العمل'}</strong></div>
+      <strong className="topbar-title">{current?.label || 'مساحة العمل'}</strong>
+      <div className="topbar-date"><CalendarDays size={16}/><span dir="ltr">{date(today)}</span></div>
     </div>
     <div className="topbar-end">
-      <div className="topbar-date"><CalendarDays size={16}/><span dir="ltr">{date(today)}</span></div>
       <button className="icon-button theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>{theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}</button>
       <span className="topbar-divider"/>
       <Link href={employee ? '/employee/profile' : session.employeeId ? `/employees/${session.employeeId}` : '/settings'} className="user-menu"><Avatar name={session.name}/><div><strong>{session.name.split(' ').slice(0,2).join(' ')}</strong><span>{session.role === 'SUPER_ADMIN' ? 'المدير العام' : session.role === 'ADMIN' ? 'مدير العمليات' : 'حساب الموظف'}</span></div><ChevronDown size={14}/></Link>
