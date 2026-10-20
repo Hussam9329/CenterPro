@@ -64,6 +64,7 @@ beforeEach(async () => {
   client = new PGlite();
   await client.exec(await readFile(new URL('../../drizzle/0001_centerpro.sql', import.meta.url), 'utf8'));
   await client.exec(await readFile(new URL('../../drizzle/0002_qr_display_account.sql', import.meta.url), 'utf8'));
+  await client.exec(await readFile(new URL('../../drizzle/0003_game_plays.sql', import.meta.url), 'utf8'));
   database = drizzle(client, { schema }); holder.db = database as unknown as Db;
   const populated = createPopulatedTestData();
   fixture = { ...createInitialData(), departments: populated.departments, employees: populated.employees.slice(0, 3) };

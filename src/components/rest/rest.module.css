@@ -1,0 +1,27 @@
+/* Rest area: game cards, leaderboard and play page. Flat brand colours only. */
+.gameGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.gameCard { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: start; padding: 18px; border: 1px solid var(--rd-line, #ececf0); border-radius: 18px; background: var(--surface); color: var(--text); text-decoration: none; transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+.gameCard:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: 0 8px 22px #a51c3012; }
+.gameCard:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.gameIcon { grid-row: span 2; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-light); color: var(--brand); }
+:global(html[data-theme='dark']) .gameIcon { color: var(--brand-text); }
+.gameText { display: grid; gap: 4px; padding-inline-end: 22px; }
+.gameText strong { font-size: 16px; color: var(--ink); }
+.gameText span { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.gameMeta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.best { font-size: 12px; color: var(--muted); }
+.best b { color: var(--ink); }
+.gameArrow { position: absolute; top: 20px; inset-inline-end: 16px; color: var(--muted); }
+.trophy { color: var(--brand); }
+
+.board { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.board li { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--rd-line, #ececf0); border-radius: 14px; background: var(--surface); }
+.board li.me { border-color: var(--brand); background: var(--brand-light); }
+.rank { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--rd-chip); color: var(--text); }
+.rank.top { background: var(--brand); color: #fff; }
+.score { font-size: 18px; font-weight: 700; color: var(--ink); }
+
+.playCard { display: grid; justify-items: center; }
+.playCard > * { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) { .gameCard { transition: none; } .gameCard:hover { transform: none; } }

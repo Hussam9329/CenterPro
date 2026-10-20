@@ -66,3 +66,10 @@ export const imports = centerpro.table('imports', {
   digest: text('digest').primaryKey(), importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
   sourceRevision: bigint('source_revision', { mode: 'number' }).notNull(), counts: jsonb('counts').$type<Record<string, number>>().notNull(), metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
 });
+// Rest area plays (migration 0003). Outside the revisioned state document on purpose.
+export const gamePlays = centerpro.table('game_plays', {
+  id: text('id').primaryKey(), employeeId: text('employee_id').notNull().references(() => employees.id, { onDelete: 'cascade' }),
+  game: text('game').notNull(), startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+  durationMs: integer('duration_ms').notNull(), score: integer('score').notNull(), outcome: text('outcome').notNull(),
+  playDate: text('play_date').notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [index('game_plays_game_score_idx').on(t.game, t.score), index('game_plays_employee_started_idx').on(t.employeeId, t.startedAt)]);

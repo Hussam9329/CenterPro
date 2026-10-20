@@ -39,7 +39,7 @@ beforeEach(async () => {
   vi.stubEnv('SESSION_SECRET', 'synthetic-deletion-integration-secret-32-bytes');
   vi.stubEnv('NODE_ENV', 'production'); vi.stubEnv('VERCEL', '');
   client = new PGlite();
-  for (const migration of ['0001_centerpro.sql', '0002_qr_display_account.sql']) {
+  for (const migration of ['0001_centerpro.sql', '0002_qr_display_account.sql', '0003_game_plays.sql']) {
     await client.exec(await readFile(new URL(`../../drizzle/${migration}`, import.meta.url), 'utf8'));
   }
   database = drizzle(client, { schema }); holder.db = database as unknown as Db;

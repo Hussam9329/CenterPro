@@ -1,0 +1,34 @@
+.root { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; min-width: 0; }
+.hud { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; width: 100%; max-width: 420px; color: var(--text); font-size: 0.95rem; }
+.hud strong { font-variant-numeric: tabular-nums; }
+
+.board { position: relative; width: min(100%, 420px); aspect-ratio: 1 / 1; border-radius: 14px; overflow: hidden; border: 1px solid var(--rd-line, #ececf0); background: var(--surface, #fff); }
+.canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; background: color-mix(in srgb, var(--surface, #fff) 78%, transparent); }
+.overlayText { margin: 0; font-weight: 700; color: var(--text); }
+
+.primary, .secondary, .padButton { font: inherit; cursor: pointer; border-radius: 12px; }
+.primary { min-height: 48px; padding: 0 28px; border: 0; background: var(--brand, #a51c30); color: #fff; font-weight: 700; }
+.secondary { min-height: 40px; padding: 0 16px; border: 1px solid var(--rd-line, #ececf0); background: var(--surface, #fff); color: var(--text); }
+.primary:focus-visible, .secondary:focus-visible, .padButton:focus-visible { outline: 2px solid var(--brand, #a51c30); outline-offset: 2px; }
+
+.dpad { display: none; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 56px); grid-template-areas: ". up ." "left down right"; gap: 8px; }
+.padButton { width: 56px; height: 56px; border: 1px solid var(--rd-line, #ececf0); background: var(--surface, #fff); color: var(--text); font-size: 1.2rem; display: grid; place-items: center; touch-action: manipulation; }
+.padButton:disabled { opacity: 0.45; cursor: default; }
+.up { grid-area: up; }
+.down { grid-area: down; }
+.left { grid-area: left; }
+.right { grid-area: right; }
+
+.hint { margin: 0; color: var(--muted); font-size: 0.85rem; text-align: center; }
+.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+@media (hover: none), (pointer: coarse), (max-width: 640px) {
+  .dpad { display: grid; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .primary, .secondary, .padButton { transition: transform 120ms ease, background-color 120ms ease; }
+  .padButton:active:not(:disabled), .primary:active { transform: scale(0.94); }
+}
