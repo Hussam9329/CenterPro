@@ -11,10 +11,18 @@ function names(context: StateContext): Map<string, string> {
   return new Map(context.data.employees.map(employee => [employee.id, employee.name]));
 }
 
-function playingEmployee(context: StateContext): string {
+/** Every signed-in account may open the Rest area; the attendance display account may not. */
+function restAccount(context: StateContext) {
   const actor = requireIdentity(context).actor;
-  const employee = actor.role === 'EMPLOYEE' && actor.employeeId ? context.data.employees.find(item => item.id === actor.employeeId) : undefined;
-  if (!employee?.active || employee.role !== 'EMPLOYEE') throw new ApiError(403, 'قسم الاستراحة متاح لحسابات الموظفين فقط.');
+  if (actor.role === 'QR_DISPLAY') throw new ApiError(403, 'قسم الاستراحة غير متاح لحساب شاشة الحضور.');
+  return actor;
+}
+
+/** Plays are stored per employee record, so only employee-linked accounts (any role) are recorded. */
+function playingEmployee(context: StateContext): string {
+  const actor = restAccount(context);
+  const employee = actor.employeeId ? context.data.employees.find(item => item.id === actor.employeeId) : undefined;
+  if (!employee?.active) throw new ApiError(403, 'نتائج حساب مدير النظام لا تُحفظ لأنه غير مرتبط بموظف.');
   return employee.id;
 }
 
@@ -41,7 +49,8 @@ export async function recordPlay(context: StateContext, input: NewPlay): Promise
 }
 
 export async function restOverview(context: StateContext): Promise<RestOverview> {
-  const employeeId = playingEmployee(context);
+  // The system owner account has no employee record: it sees the boards but has no own results.
+  const employeeId = restAccount(context).employeeId ?? null;
   const today = baghdadDate(context.now);
   const who = names(context);
   const best = await context.tx.select({ employeeId: gamePlays.employeeId, game: gamePlays.game, best: max(gamePlays.score), plays: count() })

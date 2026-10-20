@@ -34,6 +34,18 @@ test.describe('Rest area', () => {
     await expect(recent).toContainText('إكس أو');
   });
 
+  test('managers find Rest in their menu; the system owner plays without saving', async ({ page }) => {
+    await loginPreview(page);
+    await page.getByRole('navigation', { name: 'القائمة الرئيسية' }).getByRole('link', { name: 'استراحة', exact: true }).click();
+    await expect(page).toHaveURL(/\/rest$/);
+    await page.getByRole('link', { name: /إكس أو/ }).click();
+    await expect(page).toHaveURL(/\/rest\/xo$/);
+    await expect(page.getByRole('status').filter({ hasText: 'لا تُحفظ' })).toBeVisible();
+    await loginPreview(page, 'مدير العمليات');
+    await gotoPreview(page, '/rest');
+    await expect(page.getByRole('heading', { name: 'استراحة', exact: true })).toBeVisible();
+  });
+
   test('statistics stay owner-only and employees are kept inside their own area', async ({ page }) => {
     await loginPreview(page, 'مدير العمليات');
     await gotoPreview(page, '/rest-stats');
