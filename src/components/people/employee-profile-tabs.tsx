@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { CalendarDays, KeyRound, ShieldCheck, Wallet } from 'lucide-react';
 import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
+import { useDemo } from '@/components/demo-provider';
 import { AccountPermissionsEditor } from './account-permissions-editor';
 import { Badge, Button, Card, EmptyState, StatCard } from '@/components/ui';
 import { date, duration, money, time } from '@/lib/format';
@@ -30,5 +31,7 @@ export function EmployeeProfilePayroll({ payroll, historical, payments, employee
 }
 
 export function EmployeeProfileAccount({ employee, canModify, onPassword }: { employee: Employee; canModify: boolean; onPassword: () => void }) {
-  return <div className="stack"><div className="grid-2"><Card title="حساب الدخول"><dl className={styles.profileDetails}><Detail title="اسم المستخدم" ltr>{employee.username}</Detail><Detail title="الصلاحية">{employee.role === 'SUPER_ADMIN' ? 'مشرف عام' : employee.role === 'ADMIN' ? 'مدير' : 'موظف'}</Detail><Detail title="حالة الحساب"><Badge tone={employee.active ? 'success' : 'neutral'}>{employee.active ? 'نشط' : 'غير نشط'}</Badge></Detail><Detail title="كلمة المرور">لا يتم عرض كلمة المرور</Detail></dl><div className="form-actions"><Button variant="secondary" disabled={!canModify} onClick={onPassword}><KeyRound size={17} />تغيير كلمة المرور</Button></div></Card><Card title="صلاحيات الحساب"><div className="notice"><ShieldCheck size={20} /><span>{employee.role === 'EMPLOYEE' ? 'تبقى صلاحيات الموظف الأساسية كما هي، ويمكن للمشرف العام إضافة قوائم عمل إضافية لهذا الحساب فقط.' : employee.role === 'ADMIN' ? 'يدير العمليات اليومية حسب صلاحية المدير. الصلاحيات اليدوية للموظفين يضبطها المشرف العام.' : 'يمتلك المشرف العام صلاحيات الإدارة الكاملة.'}</span></div><p className={styles.mutedNote}>منح قائمة إضافية يبدأ بعرض فقط، ثم تُفعّل الإضافة أو التعديل أو الحذف بشكل مستقل.</p></Card></div><AccountPermissionsEditor employee={employee}/></div>;
+  const { session } = useDemo();
+  const canManagePermissions = session?.role === 'SUPER_ADMIN';
+  return <div className="stack"><div className="grid-2"><Card title="حساب الدخول"><dl className={styles.profileDetails}><Detail title="اسم المستخدم" ltr>{employee.username}</Detail><Detail title="الصلاحية">{employee.role === 'SUPER_ADMIN' ? 'مشرف عام' : employee.role === 'ADMIN' ? 'مدير' : 'موظف'}</Detail><Detail title="حالة الحساب"><Badge tone={employee.active ? 'success' : 'neutral'}>{employee.active ? 'نشط' : 'غير نشط'}</Badge></Detail><Detail title="كلمة المرور">لا يتم عرض كلمة المرور</Detail></dl><div className="form-actions"><Button variant="secondary" disabled={!canModify} onClick={onPassword}><KeyRound size={17} />تغيير كلمة المرور</Button></div></Card><Card title="صلاحيات الحساب"><div className="notice"><ShieldCheck size={20} /><span>{employee.role === 'EMPLOYEE' ? 'تبقى صلاحيات الموظف الأساسية كما هي، والقوائم الإدارية الإضافية يديرها المشرف العام فقط.' : employee.role === 'ADMIN' ? 'يدير العمليات اليومية حسب صلاحية المدير. الصلاحيات اليدوية للموظفين يضبطها المشرف العام.' : 'يمتلك المشرف العام صلاحيات الإدارة الكاملة.'}</span></div>{canManagePermissions && <p className={styles.mutedNote}>منح قائمة إضافية يبدأ بعرض فقط، ثم تُفعّل الإضافة أو التعديل أو الحذف بشكل مستقل.</p>}</Card></div>{canManagePermissions && <AccountPermissionsEditor employee={employee}/>}</div>;
 }

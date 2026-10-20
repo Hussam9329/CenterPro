@@ -1,4 +1,5 @@
 import type { Department, Employee } from '@/lib/types';
+import { passwordProblem } from '@/lib/password-policy';
 
 export const employeeFormSteps = ['المعلومات الشخصية', 'معلومات الاتصال', 'معلومات العمل', 'حساب الدخول', 'إعدادات الراتب'];
 
@@ -49,7 +50,7 @@ export function validateEmployeeStep(current: number, {
   if (current === 3 && employees.some(item => item.id !== employee?.id && item.username.toLocaleLowerCase() === draft.username.trim().toLocaleLowerCase())) return 'اسم المستخدم مستخدم مسبقاً. اختر اسماً آخر.';
   if (current === 3 && draft.username.trim().toLocaleLowerCase('en-US') === systemUsername.trim().toLocaleLowerCase('en-US')) return 'اسم المستخدم محجوز لحساب مدير النظام. اختر اسماً آخر.';
   if (current === 3 && !employee && !password.trim()) return 'أدخل كلمة مرور أولية للحساب.';
-  if (current === 3 && password && password.length < 6) return 'كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.';
+  if (current === 3 && password) { const problem = passwordProblem(password, draft.username); if (problem) return problem; }
   if (current === 4 && draft.fixedOverride && fixedSalaryText.trim() === '') return 'أدخل الراتب القطعي. اكتب 0 بنفسك إذا كانت القيمة المقصودة صفراً.';
   if (current === 4 && (!Number.isSafeInteger(draft.fixedSalary) || draft.fixedSalary < 0 || (draft.dailyRateOverride !== null && (!Number.isSafeInteger(draft.dailyRateOverride) || draft.dailyRateOverride < 0)))) return 'قيم الراتب واليومية يجب أن تكون أعداداً صحيحة تساوي صفراً أو أكثر.';
   return '';

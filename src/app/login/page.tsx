@@ -8,6 +8,7 @@ import { Button, Field, Input } from '@/components/ui';
 import { useDemo } from '@/components/demo-provider';
 import { useWelcome } from '@/components/welcome-provider';
 import { useTheme } from '@/components/theme-provider';
+import { passwordProblem } from '@/lib/password-policy';
 
 const noSubscription = () => () => {};
 function baghdadGreeting() {
@@ -44,7 +45,8 @@ export default function LoginPage() {
     if (!cleanUsername) { setError('أدخل اسم المستخدم.'); return; }
     if (!password) { setError('أدخل كلمة المرور.'); return; }
     if (setup) {
-      if (password.length < 6) { setError('كلمة المرور يجب أن تتكون من 6 أحرف أو أرقام على الأقل.'); return; }
+      const problem = passwordProblem(password, cleanUsername);
+      if (problem) { setError(problem); return; }
       if (password !== confirmPassword) { setError('تأكيد كلمة المرور غير مطابق.'); return; }
     }
     setLoading(true);
@@ -82,7 +84,7 @@ export default function LoginPage() {
           <Field label="اسم المستخدم" required>
             <div className="login-input-wrap"><UserRound size={18}/><Input dir="ltr" value={username} onChange={event => setUsername(event.target.value)} autoComplete="username" disabled={loading} placeholder="USERNAME" /></div>
           </Field>
-          <Field label="كلمة المرور" required>
+          <Field label="كلمة المرور" required hint={setup ? '8 أحرف على الأقل تجمع بين حروف وأرقام أو رموز.' : undefined}>
             <div className="login-input-wrap"><LockKeyhole size={18}/><Input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete={setup ? 'new-password' : 'current-password'} disabled={loading} /></div>
           </Field>
           {setup && <Field label="تأكيد كلمة المرور" required><Input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} autoComplete="new-password" disabled={loading} /></Field>}

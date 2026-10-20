@@ -33,7 +33,7 @@ export function AuditorWorkspace({ examId, examControl }: { examId: string; exam
       <div className="field"><span className="field-label">اختيار المصححين</span><MultiEmployeeFilter selected={selected} onChange={setSelection} employeeIds={employees.map(item => ({ id:item.id, name:item.name }))}/></div>
     </div>
     <div className="filter-row" style={{ marginBottom: 0 }}><div className="search-input" style={{ maxWidth: 420 }}><Search size={18}/><Input value={query} onChange={event => setQuery(event.target.value)} aria-label="البحث في المصححين المختارين" placeholder="ابحث داخل المصححين المختارين"/></div></div>
-    {disabled && <div className="notice notice-warning">{season?.state === 'ARCHIVED' ? 'الموسم مؤرشف — عرض فقط.' : cycle?.state === 'ARCHIVED' ? 'الدورة مؤرشفة — عرض فقط.' : 'الامتحان مغلق — عرض فقط.'}</div>}
+    {disabled && <div className="notice notice-warning">{season?.state === 'ARCHIVED' ? 'الموسم مؤرشف — عرض فقط.' : cycle?.state === 'ARCHIVED' ? 'الـ Drive مؤرشف — عرض فقط.' : 'الامتحان مغلق — عرض فقط.'}</div>}
     {!disabled && !canCreate && !canEdit && <div className="notice">لا يملك هذا الحساب صلاحية إضافة أو تعديل بيانات التدقيق.</div>}
     {!selected.length ? <EmptyState title="لم تختر أي مصحح" /> : !filtered.length ? <EmptyState title="لا توجد نتائج مطابقة" /> : <div className={styles.auditGrid}>{filtered.map(employee => { const current = getExamEvaluation(data, exam.id, employee.id); const permissionLocked = current ? !canEdit : !canCreate; return <EvaluationEditor key={`${exam.id}:${employee.id}:${actorKey(session)}`} examId={exam.id} employeeId={employee.id} disabled={disabled || permissionLocked} deletionLocked={disabled}/>; })}</div>}
   </div>;

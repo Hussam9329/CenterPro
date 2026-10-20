@@ -4,11 +4,11 @@ import { assertUniqueIds, sameIds, validDate } from './comparison';
 /** Structural validation also accepts historical staff who have since moved or left. */
 export function assertEvaluationState(data: DemoData): void {
   assertUniqueIds(data.evaluationSeasons, 'المواسم');
-  assertUniqueIds(data.evaluationCycles, 'دورات التقييم');
+  assertUniqueIds(data.evaluationCycles, 'Drives');
   assertUniqueIds(data.evaluationExams, 'الامتحانات');
   assertUniqueIds(data.examEvaluations, 'التقييمات');
   if (data.evaluationSeasons.filter(item => item.state === 'OPEN').length > 1) throw new Error('لا يمكن فتح أكثر من موسم واحد.');
-  if (data.evaluationCycles.filter(item => item.state === 'OPEN').length > 1) throw new Error('لا يمكن فتح أكثر من دورة تقييم واحدة.');
+  if (data.evaluationCycles.filter(item => item.state === 'OPEN').length > 1) throw new Error('لا يمكن فتح أكثر من Drive واحد.');
   const seasons = new Map(data.evaluationSeasons.map(item => [item.id, item]));
   const cycles = new Map(data.evaluationCycles.map(item => [item.id, item]));
   const exams = new Map(data.evaluationExams.map(item => [item.id, item]));
@@ -20,24 +20,24 @@ export function assertEvaluationState(data: DemoData): void {
     if (season.state === 'ARCHIVED') {
       if (!season.endDate) throw new Error('الموسم المؤرشف يتطلب تاريخ نهاية.');
       const cycleIds = data.evaluationCycles.filter(item => item.seasonId === season.id).map(item => item.id);
-      if (!sameIds(season.snapshot!.cycleIds, cycleIds)) throw new Error('دورات الموسم المؤرشف يجب أن تطابق النسخة المحفوظة.');
+      if (!sameIds(season.snapshot!.cycleIds, cycleIds)) throw new Error('Drives الموسم المؤرشف يجب أن تطابق النسخة المحفوظة.');
     }
   }
   for (const cycle of data.evaluationCycles) {
-    if (cycle.state !== 'OPEN' && cycle.state !== 'ARCHIVED') throw new Error('حالة دورة التقييم غير صالحة.');
+    if (cycle.state !== 'OPEN' && cycle.state !== 'ARCHIVED') throw new Error('حالة الـ Drive غير صالحة.');
     if (cycle.seasonId) {
       const season = seasons.get(cycle.seasonId);
-      if (!season) throw new Error('يجب أن تتبع دورة التقييم موسماً موجوداً.');
-      if (season.state === 'ARCHIVED' && cycle.state !== 'ARCHIVED') throw new Error('دورات الموسم المؤرشف يجب أن تكون مؤرشفة.');
+      if (!season) throw new Error('يجب أن يتبع الـ Drive موسماً موجوداً.');
+      if (season.state === 'ARCHIVED' && cycle.state !== 'ARCHIVED') throw new Error('Drives الموسم المؤرشف يجب أن تكون مؤرشفة.');
     }
-    if (cycle.state === 'ARCHIVED' && (!cycle.snapshot || !Array.isArray(cycle.snapshot.rows) || !Array.isArray(cycle.snapshot.exams))) throw new Error('الدورة المؤرشفة تتطلب نسخة محفوظة.');
-    if (cycle.state === 'ARCHIVED' && !sameIds(cycle.snapshot!.exams.map(item => item.id), data.evaluationExams.filter(item => item.cycleId === cycle.id).map(item => item.id))) throw new Error('امتحانات الدورة المؤرشفة يجب أن تطابق النسخة المحفوظة.');
+    if (cycle.state === 'ARCHIVED' && (!cycle.snapshot || !Array.isArray(cycle.snapshot.rows) || !Array.isArray(cycle.snapshot.exams))) throw new Error('الـ Drive المؤرشف يتطلب نسخة محفوظة.');
+    if (cycle.state === 'ARCHIVED' && !sameIds(cycle.snapshot!.exams.map(item => item.id), data.evaluationExams.filter(item => item.cycleId === cycle.id).map(item => item.id))) throw new Error('امتحانات الـ Drive المؤرشف يجب أن تطابق النسخة المحفوظة.');
   }
   for (const exam of data.evaluationExams) {
     const cycle = cycles.get(exam.cycleId);
-    if (!cycle) throw new Error('يجب أن يتبع الامتحان دورة تقييم موجودة.');
+    if (!cycle) throw new Error('يجب أن يتبع الامتحان Drive موجوداً.');
     if (exam.state !== 'OPEN' && exam.state !== 'CLOSED') throw new Error('حالة الامتحان غير صالحة.');
-    if (cycle.state === 'ARCHIVED' && exam.state !== 'CLOSED') throw new Error('امتحانات الدورة المؤرشفة يجب أن تبقى مغلقة.');
+    if (cycle.state === 'ARCHIVED' && exam.state !== 'CLOSED') throw new Error('امتحانات الـ Drive المؤرشف يجب أن تبقى مغلقة.');
   }
   const pairs = new Set<string>();
   for (const evaluation of data.examEvaluations) {

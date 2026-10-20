@@ -35,9 +35,9 @@ describe('browser-local password credentials', () => {
     expect(JSON.stringify(first)).not.toContain('correct-password');
   });
 
-  it('normalizes usernames but does not weaken the six-character password rule', async () => {
+  it('normalizes usernames but does not weaken the password rule', async () => {
     expect(normalizeUsername('  CenterPro-OWNER  ')).toBe('centerpro-owner');
-    await expect(createCredential('12345')).rejects.toThrow('6');
+    await expect(createCredential('12345')).rejects.toThrow('8 أحرف');
     await expect(configureSystemCredential('  ', '123456')).rejects.toThrow('اسم المستخدم');
     expect(values.size).toBe(0);
   });
@@ -114,8 +114,8 @@ describe('browser-local password credentials', () => {
     Object.defineProperty(window, 'localStorage', { get: () => { throw new Error('SecurityError'); } });
     expect(() => readAuthStore()).not.toThrow();
     expect(readAuthStore().system).toBeNull();
-    await expect(configureSystemCredential('owner', 'password')).rejects.toThrow();
-    await expect(setEmployeeCredential('employee', 'password')).rejects.toThrow();
+    await expect(configureSystemCredential('owner', 'fixture-pass-1')).rejects.toThrow();
+    await expect(setEmployeeCredential('employee', 'fixture-pass-1')).rejects.toThrow();
     expect(values.size).toBe(0);
   });
 
@@ -123,7 +123,7 @@ describe('browser-local password credentials', () => {
     const owner = await configureSystemCredential('owner', 'owner-password');
     const before = values.get(AUTH_STORAGE_KEY);
     vi.spyOn(storage, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError'); });
-    await expect(setEmployeeCredential('employee', 'password')).rejects.toThrow('Quota');
+    await expect(setEmployeeCredential('employee', 'fixture-pass-1')).rejects.toThrow('Quota');
     expect(values.get(AUTH_STORAGE_KEY)).toBe(before);
     expect(readAuthStore().system).toEqual(owner);
   });
@@ -131,13 +131,13 @@ describe('browser-local password credentials', () => {
   it.each(['not-json', 'null', '{"schema":2,"system":null,"employees":{}}', '{"schema":1,"system":null,"employees":[]}'])('does not overwrite unreadable existing auth data: %s', async raw => {
     values.set(AUTH_STORAGE_KEY, raw);
     expect(readAuthStore().system).toBeNull();
-    await expect(configureSystemCredential('owner', 'password')).rejects.toThrow();
-    await expect(setEmployeeCredential('employee', 'password')).rejects.toThrow();
+    await expect(configureSystemCredential('owner', 'fixture-pass-1')).rejects.toThrow();
+    await expect(setEmployeeCredential('employee', 'fixture-pass-1')).rejects.toThrow();
     expect(values.get(AUTH_STORAGE_KEY)).toBe(raw);
   });
 
   it('ignores malformed employee credentials while preserving valid accounts', async () => {
-    const valid = await createCredential('password');
+    const valid = await createCredential('fixture-pass-1');
     values.set(AUTH_STORAGE_KEY, JSON.stringify({ schema: 1, system: null, employees: {
       valid,
       zeroVersion: { ...valid, version: 0 },
@@ -149,21 +149,21 @@ describe('browser-local password credentials', () => {
     } }));
     expect(readAuthStore().employees).toEqual({ valid });
     for (const malformed of [null, {}, { ...valid, hash: '' }, { ...valid, version: undefined }]) {
-      expect(await verifyCredential('password', malformed as StoredCredential)).toBe(false);
+      expect(await verifyCredential('fixture-pass-1', malformed as StoredCredential)).toBe(false);
     }
   });
 
   it('does not overwrite malformed owner credentials during first setup', async () => {
     const raw = JSON.stringify({ schema: 1, system: { username: 'owner', salt: '', hash: '' }, employees: {} });
     values.set(AUTH_STORAGE_KEY, raw);
-    await expect(configureSystemCredential('new-owner', 'password')).rejects.toThrow();
+    await expect(configureSystemCredential('new-owner', 'fixture-pass-1')).rejects.toThrow();
     expect(values.get(AUTH_STORAGE_KEY)).toBe(raw);
   });
 
   it('is safe during server rendering without browser APIs', async () => {
     vi.stubGlobal('window', undefined);
     expect(readAuthStore()).toEqual({ schema: 1, system: null, employees: {} });
-    await expect(createCredential('password')).rejects.toThrow();
+    await expect(createCredential('fixture-pass-1')).rejects.toThrow();
     expect(() => writeAuthStore(readAuthStore())).toThrow();
   });
 });

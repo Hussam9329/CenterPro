@@ -37,7 +37,7 @@ test.describe('Employee and department preview workflows', () => {
     await dialog.getByLabel('اسم المستخدم', { exact: false }).fill('TEST100');
     await dialog.getByLabel('كلمة المرور الأولية', { exact: false }).fill('short');
     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
-    await expect(dialog.getByRole('alert')).toContainText('6 أحرف أو أرقام على الأقل');
+    await expect(dialog.getByRole('alert')).toContainText('8 أحرف على الأقل');
     await dialog.getByLabel('كلمة المرور الأولية', { exact: false }).fill(password);
     await dialog.getByRole('button', { name: 'التالي', exact: true }).click();
     // Going back remounts the input; it must retain the in-memory draft.

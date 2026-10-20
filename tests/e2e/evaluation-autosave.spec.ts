@@ -160,15 +160,15 @@ test.describe('Evaluation autosave', () => {
 
     await loginPreview(page);
     await gotoPreview(page, '/evaluations');
-    await page.getByRole('main').getByRole('link').filter({ has: page.getByRole('heading', { name: 'دورات التقييم', exact: true }) }).click();
+    await page.getByRole('main').getByRole('link').filter({ has: page.getByRole('heading', { name: 'Drives', exact: true }) }).click();
     await expect(page).toHaveURL(/\/evaluations\/cycles$/);
-    await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
+    await page.getByRole('button', { name: 'إغلاق الـ Drive', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'إغلاق وأرشفة الـ Drive', exact: true }).click();
     const archived = await readPreviewData(page);
     expect(archived.evaluationCycles[0].state).toBe('ARCHIVED');
     await gotoPreview(page, '/login');
     await enterAccount(page);
-    await expect(page.getByRole('heading', { name: 'لا توجد دورة تقييم مفتوحة', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'لا يوجد Drive مفتوح', exact: true })).toBeVisible();
     await page.clock.fastForward(2000);
     const after = await readPreviewData(page);
     expect(after.examEvaluations).toEqual(archived.examEvaluations);

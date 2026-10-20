@@ -7,6 +7,7 @@ import { makeSnapshot, requireIdentity, resolveSession, stampAuditMetadata, with
 import { bumpRevision, saveAuthStore, saveData } from '@/server/db/repository';
 import { sessions } from '@/server/db/schema';
 import { ApiError, apiRoute, jsonResponse, readJson } from '@/server/http';
+import { passwordProblem } from '@/lib/password-policy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,8 @@ export async function POST(request: Request) {
       if (context.data.employees.some(employee => normalizeUsername(employee.username) === normalized)) throw new ApiError(400, 'اسم المستخدم مستخدم لحساب آخر.');
       const previous = context.auth.qrDisplay;
       if (!previous && !input.password) throw new ApiError(400, 'أدخل كلمة مرور حساب شاشة الحضور.');
-      if (input.password && input.password.length < 6) throw new ApiError(400, 'كلمة المرور يجب أن تكون 6 أحرف أو أرقام على الأقل.');
+      const passwordIssue = input.password ? passwordProblem(input.password, normalized) : null;
+      if (passwordIssue) throw new ApiError(400, passwordIssue);
 
       const auth = structuredClone(context.auth);
       const base = input.password

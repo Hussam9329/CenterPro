@@ -47,7 +47,7 @@ export function useSeasonManagement() {
 
   async function closeSeason() {
     if (!session || !season) return;
-    if (cycle) { toast('أغلق دورة التقييم الحالية أولاً.'); return; }
+    if (cycle) { toast('أغلق الـ Drive الحالي أولاً.'); return; }
     const now = new Date().toISOString();
     try {
       if (!await mutate(() => updateData(draft => {

@@ -2,7 +2,7 @@ import { createInitialData, DEMO_TODAY, DEMO_MONTH } from '@/lib/mock-data';
 import type { MutationOptions } from '@/lib/server-contract';
 import { applyDeletionPlan, authorizeDeletion, getDeletionPlan } from '@/lib/safe-deletion';
 import { assertSingleOpenWorkday } from '@/lib/attendance';
-import { canManageEmployeeAccount } from '@/lib/permissions';
+import { canManageEmployeeWithSession } from '@/lib/permissions';
 import { assertEvaluationMutation, assertEvaluationState } from '@/lib/evaluations';
 import { PREVIEW_DATA_STORAGE_KEY, PREVIEW_PERSISTENT_STORAGE_KEY, PREVIEW_STORAGE_KEY, PREVIEW_STORAGE_VERSION, PREVIEW_SYSTEM_ADMIN, PREVIEW_SYSTEM_USERNAME } from '@/lib/preview-config';
 import { AUTH_STORAGE_KEY, clearEmployeeCredentials, configureSystemCredential, normalizeUsername, removeEmployeeCredential, readAuthStore, readAuthStoreForBackup, setEmployeeCredential, verifyCredential } from '@/lib/local-auth';
@@ -173,7 +173,7 @@ export async function setEmployeePassword(employeeId: string, password: string, 
     const session = validSession(snapshot.data, snapshot.session);
     const target = snapshot.data.employees.find(employee => employee.id === employeeId);
     return Boolean(actor && session && sameAccount(actor, session) && operation === authOperation
-      && canManageEmployeeAccount(session.role, target?.role ?? 'EMPLOYEE'));
+      && canManageEmployeeWithSession(snapshot.data, session, target?.role ?? 'EMPLOYEE', target ? 'edit' : 'create'));
   };
   if (!mayChange()) throw new Error('ليس لديك صلاحية تغيير كلمة المرور لهذا الحساب.');
   await setEmployeeCredential(employeeId, password, mayChange);

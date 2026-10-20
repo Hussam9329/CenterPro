@@ -23,13 +23,21 @@ export function applyPayrollChanges(context: MutationContext) {
     }
   }
   for (const value of upserts.get('payments') ?? []) {
-    requireAdmin(actor); if (find(before, 'payments', value.id)) fail('سجل الصرف ثابت. سجّل عملية صرف جديدة.');
+    if (actor.role === 'EMPLOYEE') {
+      const employee = before.employees.find(item => item.id === actor.employeeId);
+      if (!hasEmployeePermission(employee, 'PAYROLL', 'create')) fail('ليس لديك صلاحية تسجيل صرف الرواتب.');
+    } else requireAdmin(actor);
+    if (find(before, 'payments', value.id)) fail('سجل الصرف ثابت. سجّل عملية صرف جديدة.');
     const result = getEmployeePayroll(before, String(value.employeeId), String(value.month)); assertSafePayroll(result);
     if (value.salaryAtPayment !== result.finalSalary) fail('تغيّر الراتب. حدّث الصفحة قبل تسجيل الصرف.');
     value.salaryAtPayment = result.finalSalary; value.paidBy = actor.name; value.createdAt = stamp; put(after, 'payments', value);
   }
   for (const value of upserts.get('months') ?? []) {
-    requireAdmin(actor); const requested = value as unknown as PayrollMonth; const previous = before.months.find(item => item.id === requested.id);
+    if (actor.role === 'EMPLOYEE') {
+      const employee = before.employees.find(item => item.id === actor.employeeId);
+      if (!hasEmployeePermission(employee, 'PAYROLL', 'edit')) fail('ليس لديك صلاحية تعديل حالة الرواتب.');
+    } else requireAdmin(actor);
+    const requested = value as unknown as PayrollMonth; const previous = before.months.find(item => item.id === requested.id);
     const suppliedSnapshots = request.changes.find(change => change.collection === 'months')?.upsert?.find(item => item.id === requested.id)?.snapshots;
     if (previous) unchanged(previous, requested, ['month']);
     if (!previous && before.months.some(item => item.month === requested.month)) fail('سجل الشهر موجود مسبقاً.');

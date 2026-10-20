@@ -13,7 +13,7 @@ export const entityLabels: Record<string, string> = {
   payroll_month: 'رواتب الشهر',
   settings: 'إعدادات النظام',
   'evaluation-season': 'مواسم التقييم',
-  'evaluation-cycle': 'دورات التقييم',
+  'evaluation-cycle': 'Drives',
   'evaluation-exam': 'امتحانات التدقيق',
   'exam-evaluation': 'تقييمات المصححين'
 };
@@ -115,7 +115,7 @@ export const fieldLabels: Record<string, string> = {
   otherDeductions: 'الخصومات الأخرى',
   bonuses: 'المكافآت',
   seasonId: 'موسم التقييم',
-  cycleId: 'دورة التقييم',
+  cycleId: 'Drive',
   examId: 'الامتحان',
   papers: 'عدد الأوراق المصححة',
   correctionErrors: 'أخطاء التصحيح',

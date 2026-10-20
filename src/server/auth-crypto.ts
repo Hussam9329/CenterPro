@@ -1,6 +1,7 @@
 import { createHash, createHmac, pbkdf2, randomBytes, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { AUTH_PASSWORD_KDF, type StoredCredential } from '@/lib/local-auth';
+import { passwordProblem } from '@/lib/password-policy';
 import type { Workday } from '@/lib/types';
 
 const derive = promisify(pbkdf2);
@@ -22,7 +23,8 @@ export async function verifyServerPassword(password: string, credential?: Stored
 }
 
 export async function createServerCredential(password: string, previousVersion = 0, now = new Date()): Promise<StoredCredential> {
-  if (password.length < 6 || password.length > 512) throw new Error('كلمة المرور يجب أن تكون بين 6 و512 حرفاً.');
+  const problem = passwordProblem(password);
+  if (problem) throw new Error(problem);
   if (!Number.isSafeInteger(previousVersion) || previousVersion < 0 || previousVersion >= Number.MAX_SAFE_INTEGER) throw new Error('تعذر تحديث إصدار كلمة المرور.');
   const salt = randomBytes(AUTH_PASSWORD_KDF.saltBytes);
   const hash = await derive(password, salt, AUTH_PASSWORD_KDF.iterations, AUTH_PASSWORD_KDF.derivedKeyBytes, 'sha256');
@@ -31,7 +33,7 @@ export async function createServerCredential(password: string, previousVersion =
 
 export function hashSessionToken(token: string): string { return createHash('sha256').update(token).digest('hex'); }
 export function newSessionToken(): string { return randomBytes(32).toString('base64url'); }
-export function rateLimitKey(kind: 'account' | 'ip', value: string): string {
+export function rateLimitKey(kind: 'account' | 'account-day' | 'ip', value: string): string {
   return `${kind}:${createHmac('sha256', serverSecret()).update(`login:${kind}:${value}`).digest('hex')}`;
 }
 

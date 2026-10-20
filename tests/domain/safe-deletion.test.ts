@@ -73,7 +73,7 @@ describe('safe, reasoned, authenticated deletion', () => {
     before.evaluationSeasons[0].state = 'ARCHIVED';
     before.evaluationSeasons[0].endDate = '2026-10-12';
     before.evaluationSeasons[0].snapshot = { rows: [], cycleIds: ['cycle'] };
-    expect(() => remove(before, 'evaluationExams', 'exam')).toThrow(/مؤرشفة/);
+    expect(() => remove(before, 'evaluationExams', 'exam')).toThrow(/مؤرشف/);
     expect(() => remove(before, 'evaluationCycles', 'cycle')).toThrow(/مؤرشف/);
     const after = remove(before, 'evaluationSeasons', 'season');
     expect([after.evaluationSeasons.length, after.evaluationCycles.length, after.evaluationExams.length, after.examEvaluations.length]).toEqual([0,0,0,0]);
@@ -97,7 +97,7 @@ describe('safe, reasoned, authenticated deletion', () => {
   });
   it('restricts employee accounts and only allows an auditor to delete an open exam evaluation', () => {
     const before = withExam();
-    expect(() => remove(before, 'evaluationExams', 'exam', actor(before, 'CP-0004'))).toThrow(/للإدارة/);
+    expect(() => remove(before, 'evaluationExams', 'exam', actor(before, 'CP-0004'))).toThrow(/غير متاح لهذا الحساب/);
     expect(remove(before, 'examEvaluations', 'score', actor(before, 'CP-0004')).examEvaluations).toHaveLength(0);
     expect(() => remove(before, 'examEvaluations', 'score', actor(before, 'CP-0001'))).toThrow(/صلاحية حذف بيانات التدقيق/);
     before.evaluationExams[0].state = 'CLOSED';

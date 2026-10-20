@@ -45,7 +45,7 @@ test.describe('Password changes inside employee information', () => {
     await page.screenshot({ path: testInfo.outputPath('edit-password.png') });
     await password.fill('short');
     await form.getByRole('button', { name: 'التالي', exact: true }).click();
-    await expect(form.getByRole('alert')).toContainText('6 أحرف أو أرقام على الأقل');
+    await expect(form.getByRole('alert')).toContainText('8 أحرف على الأقل');
     expect(await readPreviewData(page)).toEqual(before);
     expect(await readAuth(page)).toEqual(beforeAuth);
 

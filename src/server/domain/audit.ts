@@ -21,7 +21,7 @@ export function auditPaidPayrollChanges(before: DemoData, after: DemoData, actor
 }
 
 function actionFor(collection: Collection, previous?: RecordValue, next?: RecordValue): string {
-  const labels: Record<Collection, string> = { employees: 'موظف', departments: 'قسم', workdays: 'يوم حضور', attendance: 'سجل حضور', deductions: 'خصم', bonuses: 'مكافأة', months: 'رواتب الشهر', payments: 'صرف راتب', evaluationSeasons: 'موسم تقييم', evaluationCycles: 'دورة تقييم', evaluationExams: 'امتحان', examEvaluations: 'بيانات تدقيق مصحح' };
+  const labels: Record<Collection, string> = { employees: 'موظف', departments: 'قسم', workdays: 'يوم حضور', attendance: 'سجل حضور', deductions: 'خصم', bonuses: 'مكافأة', months: 'رواتب الشهر', payments: 'صرف راتب', evaluationSeasons: 'موسم تقييم', evaluationCycles: 'Drive', evaluationExams: 'امتحان', examEvaluations: 'بيانات تدقيق مصحح' };
   if (collection === 'months') return !next ? 'حذف أرشيف رواتب الشهر' : next.state === 'ARCHIVED' ? 'أرشفة رواتب الشهر' : previous?.state === 'ARCHIVED' ? 'إعادة فتح شهر مؤرشف' : 'إعادة احتساب صريحة لشهر معاد فتحه';
   if (collection === 'workdays' && next && previous?.state !== next.state) return next.state === 'CLOSED' ? 'إغلاق يوم حضور' : previous ? 'إعادة فتح يوم حضور' : 'فتح يوم حضور';
   if (collection === 'employees' && previous && next && previous.active !== next.active) return next.active ? 'تفعيل موظف' : 'إيقاف موظف';

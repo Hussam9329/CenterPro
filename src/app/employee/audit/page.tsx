@@ -18,8 +18,8 @@ export default function AuditorPage() {
   const [examId, setExamId] = useState('');
 
   if (!employee || !isAuditEmployee(data, employee)) return <EmptyState title="لا تملك صلاحية عرض قائمة التدقيق"/>;
-  if (!cycle) return <div className="page-stack"><PageHeader eyebrow="الجودة" title="التدقيق"/><EmptyState title="لا توجد دورة تقييم مفتوحة"/></div>;
-  if (!exams.length) return <div className="page-stack"><PageHeader eyebrow={cycle.name} title="التدقيق"/><EmptyState title="لا توجد امتحانات في الدورة الحالية"/></div>;
+  if (!cycle) return <div className="page-stack"><PageHeader eyebrow="الجودة" title="التدقيق"/><EmptyState title="لا يوجد Drive مفتوح"/></div>;
+  if (!exams.length) return <div className="page-stack"><PageHeader eyebrow={cycle.name} title="التدقيق"/><EmptyState title="لا توجد امتحانات في الـ Drive الحالي"/></div>;
 
   const selectedExam = exams.find(item => item.id === examId) || exams[0];
   const examLeaderboard = selectedExam ? getExamLeaderboard(data, selectedExam.id) : [];
@@ -34,6 +34,6 @@ export default function AuditorPage() {
       <AuditorWorkspace key={cycle.id} examId={selectedExam.id} examControl={<Field label="اختيار الامتحان"><Select value={selectedExam.id} onChange={event => setExamId(event.target.value)}>{exams.map(exam => <option key={exam.id} value={exam.id}>{exam.name} — {date(exam.date)}{exam.state === 'CLOSED' ? ' (مغلق)' : ''}</option>)}</Select></Field>}/>
     </Card>
     <Card title="Leaderboard الامتحان"><Leaderboard rows={examLeaderboard}/></Card>
-    <Card title="المحصلة النهائية للدورة"><Leaderboard rows={cycleLeaderboard}/></Card>
+    <Card title="المحصلة النهائية للـ Drive"><Leaderboard rows={cycleLeaderboard}/></Card>
   </div>;
 }

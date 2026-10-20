@@ -127,7 +127,7 @@ test('archived cycle preserves metadata and numeric snapshots even for the owner
   await expect(editor(page)).toHaveCount(0);
   await page.getByRole('button', { name: `حذف تقييم ${correctorName}`, exact: true }).click();
   const dialog = page.getByRole('dialog', { name: `حذف تقييم ${correctorName}؟`, exact: true });
-  await expect(dialog.getByRole('alert').filter({ hasText: 'دورة مؤرشفة' })).toBeVisible();
+  await expect(dialog.getByRole('alert').filter({ hasText: 'Drive مؤرشف' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'تأكيد الحذف', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'إلغاء', exact: true }).click();
   await page.reload();

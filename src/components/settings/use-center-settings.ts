@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useDemo, useToast } from '@/components/demo-provider';
+import { hasSessionAccountPermission } from '@/lib/permissions';
 
 export function useCenterSettings() {
   const { data, session, updateData, discardDraft } = useDemo();
@@ -10,12 +11,13 @@ export function useCenterSettings() {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState('');
+  const canEdit = session?.role === 'SUPER_ADMIN' || (session?.role === 'EMPLOYEE' && hasSessionAccountPermission(data, session, 'SETTINGS', 'edit'));
   const dirty = centerName.trim() !== data.settings.centerName || Number(qrInterval) !== data.settings.qrInterval;
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const draftForm = event.currentTarget;
-    if (savingRef.current || session?.role !== 'SUPER_ADMIN') return;
+    if (savingRef.current || !canEdit) return;
     const nextErrors: typeof errors = {};
     const interval = Number(qrInterval);
     if (!centerName.trim()) nextErrors.name = 'أدخل اسم المركز.';
@@ -47,5 +49,5 @@ export function useCenterSettings() {
     setQrInterval('45');
     setErrors({});
   }
-  return { centerName, setCenterName, qrInterval, setQrInterval, errors, saving, saveError, dirty, save, discard, resetDraft };
+  return { centerName, setCenterName, qrInterval, setQrInterval, errors, saving, saveError, dirty, canEdit, save, discard, resetDraft };
 }

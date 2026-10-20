@@ -1,5 +1,5 @@
 export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE' | 'QR_DISPLAY';
-export type AccountPermissionFeature = 'DEDUCTIONS' | 'BONUSES' | 'AUDIT_REVIEW';
+export type AccountPermissionFeature = 'DASHBOARD' | 'EMPLOYEES' | 'ATTENDANCE' | 'AUDIT_REVIEW' | 'PAYROLL' | 'DEDUCTIONS' | 'BONUSES' | 'DEPARTMENTS' | 'REPORTS' | 'AUDIT_LOG' | 'SETTINGS';
 export type AccountPermissionAction = 'view' | 'create' | 'edit' | 'delete';
 export interface AccountPermission { view: boolean; create: boolean; edit: boolean; delete: boolean }
 export type AccountPermissions = Partial<Record<AccountPermissionFeature, AccountPermission>>;

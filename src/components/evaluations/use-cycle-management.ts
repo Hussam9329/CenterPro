@@ -30,19 +30,19 @@ export function useCycleManagement() {
     const id = crypto.randomUUID();
     const count = data.evaluationCycles.filter(item => item.seasonId === season.id).length + 1;
     const now = new Date().toISOString();
-    const name = `دورة التقييم ${count}`;
+    const name = `Drive ${count}`;
     try {
       if (!await mutate(() => updateData(draft => {
         draft.evaluationCycles.push({ id, seasonId: season.id, name, state: 'OPEN', openedAt: now, openedBy: session.name });
       }, {
-        action: 'فتح دورة تقييم جديدة', entity: 'evaluation-cycle', entityId: id,
+        action: 'فتح Drive جديد', entity: 'evaluation-cycle', entityId: id,
         newValues: { name, seasonId: season.id },
       }))) return;
     } catch (failure) {
-      toast(failure instanceof Error ? failure.message : 'تعذر فتح دورة التقييم.');
+      toast(failure instanceof Error ? failure.message : 'تعذر فتح الـ Drive.');
       return;
     }
-    toast('تم فتح دورة تقييم جديدة.');
+    toast('تم فتح Drive جديد.');
   }
 
   async function closeCycle() {
@@ -51,7 +51,7 @@ export function useCycleManagement() {
     try {
       if (!await mutate(() => updateData(draft => {
         const current = draft.evaluationCycles.find(item => item.id === cycle.id);
-        if (!current) throw new Error('دورة التقييم غير موجودة.');
+        if (!current) throw new Error('الـ Drive غير موجود.');
         const snapshot = buildEvaluationCycleSnapshot(draft, cycle.id);
         current.state = 'ARCHIVED';
         current.closedAt = now;
@@ -67,14 +67,14 @@ export function useCycleManagement() {
       }, (_before, after) => {
         const snapshot = after.evaluationCycles.find(item => item.id === cycle.id)?.snapshot;
         return {
-          action: 'إغلاق وأرشفة دورة التقييم', entity: 'evaluation-cycle', entityId: cycle.id,
+          action: 'إغلاق وأرشفة الـ Drive', entity: 'evaluation-cycle', entityId: cycle.id,
           oldValues: { state: 'OPEN' },
           newValues: { state: 'ARCHIVED', rows: snapshot?.rows.length ?? 0, exams: snapshot?.exams.length ?? 0 },
         };
       }))) return;
       setCloseOpen(false);
-      toast('تم إغلاق وأرشفة دورة التقييم.');
-    } catch (failure) { toast(failure instanceof Error ? failure.message : 'تعذرت أرشفة الدورة.'); }
+      toast('تم إغلاق وأرشفة الـ Drive.');
+    } catch (failure) { toast(failure instanceof Error ? failure.message : 'تعذرت أرشفة الـ Drive.'); }
   }
 
   function selectSeason(value: string) {

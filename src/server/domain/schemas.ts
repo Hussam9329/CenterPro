@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { hasEmployeePermission } from '@/lib/permissions';
+import { hasEmployeePermission, permissionFeatureForCollection } from '@/lib/permissions';
 import type { MutationRequest } from '@/lib/server-contract';
 import type { DemoData, DemoSession } from '@/lib/types';
 import { assertUnique, collections, fail, find, same, type Collection, type RecordValue } from './shared';
@@ -27,7 +27,7 @@ const salary = z.strictObject({
   })).max(500),
 });
 const accountPermission = z.strictObject({ view: z.boolean(), create: z.boolean(), edit: z.boolean(), delete: z.boolean() });
-const accountPermissions = z.object({ DEDUCTIONS: accountPermission.optional(), BONUSES: accountPermission.optional(), AUDIT_REVIEW: accountPermission.optional() }).optional();
+const accountPermissions = z.object({ DASHBOARD: accountPermission.optional(), EMPLOYEES: accountPermission.optional(), ATTENDANCE: accountPermission.optional(), AUDIT_REVIEW: accountPermission.optional(), PAYROLL: accountPermission.optional(), DEDUCTIONS: accountPermission.optional(), BONUSES: accountPermission.optional(), DEPARTMENTS: accountPermission.optional(), REPORTS: accountPermission.optional(), AUDIT_LOG: accountPermission.optional(), SETTINGS: accountPermission.optional() }).optional();
 const profile = {
   id: identifier,
   code: z.string(),
@@ -138,14 +138,15 @@ export function parseMutationChanges(before: DemoData, actor: DemoSession, reque
   if (request.settings && (used.size || request.password)) fail();
   if (request.password && [...used].some(collection => collection !== 'employees')) fail();
   if (actor.role === 'EMPLOYEE') {
-    if (request.settings || request.password) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
     const employee = before.employees.find(item => item.id === actor.employeeId && item.active && item.role === 'EMPLOYEE');
     if (!employee) fail('انتهت صلاحية الحساب. سجّل الدخول مجدداً.');
+    if (request.settings && !hasEmployeePermission(employee, 'SETTINGS', 'edit')) fail('ليس لديك صلاحية تعديل الإعدادات.');
+    if (request.password && !hasEmployeePermission(employee, 'EMPLOYEES', before.employees.some(item => item.id === request.password!.employeeId) ? 'edit' : 'create')) fail('ليس لديك صلاحية إدارة كلمة مرور هذا الحساب.');
     for (const collection of used) {
-      const feature = collection === 'deductions' ? 'DEDUCTIONS' : collection === 'bonuses' ? 'BONUSES' : collection === 'examEvaluations' ? 'AUDIT_REVIEW' : null;
+      const feature = permissionFeatureForCollection(collection);
       if (!feature) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
       for (const value of upserts.get(collection) ?? []) {
-        const action = find(before, collection, value.id) ? 'edit' : 'create';
+        const action = collection === 'months' ? 'edit' : find(before, collection, value.id) ? 'edit' : 'create';
         if (!hasEmployeePermission(employee, feature, action)) fail('ليس لديك صلاحية تنفيذ هذه العملية.');
       }
     }

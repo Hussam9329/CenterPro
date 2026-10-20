@@ -80,7 +80,7 @@ test('owner creates the account after acknowledgement and can disable it without
   await page.goto('/settings');
   await page.getByLabel('اسم المستخدم', { exact: false }).fill('CENTER_TABLET');
   await page.getByRole('button', { name: 'إنشاء حساب شاشة الحضور', exact: true }).click();
-  await expect(page.getByRole('main').getByRole('alert')).toContainText('من 6 أحرف');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('8 أحرف على الأقل');
   expect(commands).toHaveLength(0);
   await page.getByLabel('كلمة المرور', { exact: false }).fill('Test-display-only-73');
   await page.getByRole('button', { name: 'إنشاء حساب شاشة الحضور', exact: true }).click();

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getLatenessSeconds, isExpected } from '@/lib/attendance';
+import { hasEmployeePermission } from '@/lib/permissions';
 import type { AttendanceRecord, DemoData, DemoSession, Workday } from '@/lib/types';
 import { audit } from './audit';
 import { assertActor, baghdadDate, editableMonth, fail, put, requireAdmin, requireReason, same, unchanged, validateState, type MutationContext, type RecordValue } from './shared';
@@ -34,7 +35,11 @@ function unresolved(data: DemoData, day: Workday): boolean {
 export function applyAttendanceChanges(context: MutationContext) {
   const { before, after, actor, upserts, stamp, reason } = context;
   for (const value of upserts.get('workdays') ?? []) {
-    requireAdmin(actor); const item = value as unknown as Workday; const previous = before.workdays.find(day => day.id === item.id);
+    const item = value as unknown as Workday; const previous = before.workdays.find(day => day.id === item.id);
+    if (actor.role === 'EMPLOYEE') {
+      const employee = before.employees.find(row => row.id === actor.employeeId);
+      if (!hasEmployeePermission(employee, 'ATTENDANCE', previous ? 'edit' : 'create')) fail('ليس لديك صلاحية إدارة الحضور.');
+    } else requireAdmin(actor);
     editableMonth(before, actor, item.date.slice(0, 7));
     if (previous) unchanged(previous, item, ['date', 'createdBy', 'createdAt']);
     else if (item.state !== 'OPEN') fail('افتح يوم الحضور قبل إغلاقه.');
@@ -58,7 +63,11 @@ export function applyAttendanceChanges(context: MutationContext) {
     if (!previous || !same(previous.startTime, item.startTime) || !same(previous.departmentIds, item.departmentIds) || !same(previous.overrides, item.overrides)) syncWorkday(after, previous, item, reason, stamp, attendanceChanges);
   }
   for (const value of upserts.get('attendance') ?? []) {
-    requireAdmin(actor); const item = value as unknown as AttendanceRecord; const previous = before.attendance.find(record => record.id === item.id);
+    const item = value as unknown as AttendanceRecord; const previous = before.attendance.find(record => record.id === item.id);
+    if (actor.role === 'EMPLOYEE') {
+      const employee = before.employees.find(row => row.id === actor.employeeId);
+      if (!hasEmployeePermission(employee, 'ATTENDANCE', previous ? 'edit' : 'create')) fail('ليس لديك صلاحية إدارة الحضور.');
+    } else requireAdmin(actor);
     if (previous) unchanged(previous, item, ['employeeId', 'workdayId']);
     const employee = after.employees.find(employee => employee.id === item.employeeId); const day = after.workdays.find(day => day.id === item.workdayId);
     if (!employee || !day) fail('سجل الحضور أو الموظف غير موجود.');

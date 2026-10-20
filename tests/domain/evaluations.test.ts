@@ -167,7 +167,7 @@ describe('season rankings and publication', () => {
 
   it('archives a complete season snapshot only after all cycles are archived', () => {
     const data = seasonData();
-    expect(() => buildEvaluationSeasonSnapshot(data, 'season-1')).toThrow('أغلق دورة التقييم الحالية');
+    expect(() => buildEvaluationSeasonSnapshot(data, 'season-1')).toThrow('أغلق الـ Drive الحالي');
     const cycle = data.evaluationCycles[0];
     cycle.snapshot = buildEvaluationCycleSnapshot(data, cycle.id);
     cycle.state = 'ARCHIVED';

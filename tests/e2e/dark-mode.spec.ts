@@ -100,7 +100,7 @@ for (const [width, height] of [[390, 844], [768, 1024], [1366, 900]]) {
     await expect(page.locator('main h1')).toHaveText('التدقيق');
     for (const section of [
       { path: '/evaluations/seasons', title: 'المواسم', control: 'إغلاق الموسم' },
-      { path: '/evaluations/cycles', title: 'دورات التقييم', control: 'إغلاق الدورة' },
+      { path: '/evaluations/cycles', title: 'Drives', control: 'إغلاق الـ Drive' },
       { path: '/evaluations/exams', title: 'الامتحانات', control: 'إضافة امتحان' },
     ]) {
       const card = page.locator(`main a[href="${section.path}"]`);
