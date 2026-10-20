@@ -26,7 +26,7 @@ export interface DeletionPlan {
 export const deletionLabels: Record<DeletionCollection, string> = {
   employees: 'موظف', departments: 'قسم', workdays: 'يوم حضور', attendance: 'سجل حضور',
   deductions: 'خصم', bonuses: 'مكافأة', months: 'أرشيف رواتب', payments: 'عملية صرف راتب',
-  evaluationSeasons: 'موسم تقييم', evaluationCycles: 'دورة تقييم',
+  evaluationSeasons: 'موسم تقييم', evaluationCycles: 'Drive',
   evaluationExams: 'امتحان', examEvaluations: 'تقييم مصحح',
 };
 
@@ -86,7 +86,7 @@ export function authorizeDeletion(data: DemoData, session: DemoSession | null, c
   const cycle = data.evaluationCycles.find(item => item.id === exam?.cycleId);
   if (!entry || exam?.state !== 'OPEN' || cycle?.state !== 'OPEN' ||
     (cycle.seasonId && data.evaluationSeasons.find(item => item.id === cycle.seasonId)?.state !== 'OPEN')) {
-    throw new Error('الحذف متاح ضمن امتحان ودورة مفتوحين فقط.');
+    throw new Error('الحذف متاح ضمن امتحان و Drive مفتوحين فقط.');
   }
 }
 
@@ -133,7 +133,7 @@ export function getDeletionPlan(data: DemoData, collection: DeletionCollection, 
         data.bonuses.some(record => record.employeeId === id && record.date.startsWith(item.month))
       ))) plan.blockers.push('للموظف بيانات مرتبطة بكشف رواتب مؤرشف أو معاد فتحه؛ لا يمكن حذف هويته وتاريخه المالي.');
       if (data.examEvaluations.some(item => item.employeeId === id && data.evaluationCycles.find(cycle => cycle.id === data.evaluationExams.find(exam => exam.id === item.examId)?.cycleId)?.state === 'ARCHIVED')) {
-        plan.blockers.push('الموظف مرتبط بتدقيق دورة مؤرشفة. لا يمكن حذف سجل التدقيق مع بقاء أرشيف الدورة.');
+        plan.blockers.push('الموظف مرتبط بتدقيق Drive مؤرشف. لا يمكن حذف سجل التدقيق مع بقاء أرشيف الـ Drive.');
       }
       const archivedDays = data.workdays.filter(day => Boolean(day.overrides[id]) && data.months.some(month => month.month === day.date.slice(0, 7) && month.state !== 'OPEN'));
       if (archivedDays.length) plan.blockers.push('للموظف استثناءات حضور في شهور مؤرشفة؛ لا يمكن تعديل تاريخها بالحذف.');
@@ -186,20 +186,20 @@ export function getDeletionPlan(data: DemoData, collection: DeletionCollection, 
       break;
     case 'evaluationSeasons':
       removeCycles(data.evaluationCycles.filter(item => item.seasonId === id).map(item => item.id));
-      plan.warnings.push('سيُحذف الموسم بما فيه الدورات والامتحانات وبيانات التدقيق التابعة، حتى لو كانت مؤرشفة.');
+      plan.warnings.push('سيُحذف الموسم بما فيه الـ Drives والامتحانات وبيانات التدقيق التابعة، حتى لو كانت مؤرشفة.');
       break;
     case 'evaluationCycles': {
       const cycle = data.evaluationCycles.find(item => item.id === id)!;
-      if (data.evaluationSeasons.find(item => item.id === cycle.seasonId)?.state === 'ARCHIVED') plan.blockers.push('الدورة تتبع موسماً مؤرشفاً. للحفاظ على تطابق أرشيف الموسم، احذف الموسم بالكامل إذا لزم الأمر.');
+      if (data.evaluationSeasons.find(item => item.id === cycle.seasonId)?.state === 'ARCHIVED') plan.blockers.push('الـ Drive يتبع موسماً مؤرشفاً. للحفاظ على تطابق أرشيف الموسم، احذف الموسم بالكامل إذا لزم الأمر.');
       removeExams(data.evaluationExams.filter(item => item.cycleId === id).map(item => item.id));
-      plan.warnings.push('سيُحذف أرشيف الدورة وامتحاناتها وتقييماتها، ويُعاد ترتيب الموسم المفتوح.');
+      plan.warnings.push('سيُحذف أرشيف الـ Drive وامتحاناته وتقييماته، ويُعاد ترتيب الموسم المفتوح.');
       break;
     }
     case 'evaluationExams': {
       const exam = data.evaluationExams.find(item => item.id === id)!;
-      if (data.evaluationCycles.find(item => item.id === exam.cycleId)?.state === 'ARCHIVED') plan.blockers.push('الامتحان ضمن دورة مؤرشفة؛ احذف الدورة كاملة بدل تغيير أرشيفها الجزئي.');
+      if (data.evaluationCycles.find(item => item.id === exam.cycleId)?.state === 'ARCHIVED') plan.blockers.push('الامتحان ضمن Drive مؤرشف؛ احذف الـ Drive كاملاً بدل تغيير أرشيفه الجزئي.');
       add('examEvaluations', data.examEvaluations.filter(item => item.examId === id).map(item => item.id));
-      plan.warnings.push('ستُحذف بيانات تدقيق الامتحان وتُحدّث نقاط الدورة والموسم المفتوحين.');
+      plan.warnings.push('ستُحذف بيانات تدقيق الامتحان وتُحدّث نقاط الـ Drive والموسم المفتوحين.');
       break;
     }
     case 'examEvaluations': {
@@ -207,8 +207,8 @@ export function getDeletionPlan(data: DemoData, collection: DeletionCollection, 
       const exam = data.evaluationExams.find(item => item.id === evaluation.examId);
       const cycle = data.evaluationCycles.find(item => item.id === exam?.cycleId);
       if (exam?.state !== 'OPEN') plan.blockers.push('هذا التقييم يتبع امتحاناً مغلقاً؛ لحماية النتائج المعلنة احذف الامتحان بالكامل بتأكيد منفصل إذا لزم الأمر.');
-      if (cycle?.state === 'ARCHIVED') plan.blockers.push('تقييم دورة مؤرشفة محفوظ ضمن نتائجها. احذف الدورة كاملة إذا لزم الأمر.');
-      plan.warnings.push('سيُطرح أثر هذا التقييم من نقاط الدورة والموسم المفتوحين.');
+      if (cycle?.state === 'ARCHIVED') plan.blockers.push('تقييم Drive مؤرشف محفوظ ضمن نتائجه. احذف الـ Drive كاملاً إذا لزم الأمر.');
+      plan.warnings.push('سيُطرح أثر هذا التقييم من نقاط الـ Drive والموسم المفتوحين.');
       break;
     }
   }

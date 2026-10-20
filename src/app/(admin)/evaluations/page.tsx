@@ -14,7 +14,7 @@ export default function EvaluationsAdminHub() {
   const cycleExams = cycle ? data.evaluationExams.filter(item => item.cycleId === cycle.id) : [];
   const cards = [
     { href:'/evaluations/exams', title:'الامتحانات', icon:ClipboardCheck, value:cycleExams.length, status: cycleExams.filter(item => item.state === 'OPEN').length ? `${cycleExams.filter(item => item.state === 'OPEN').length} مفتوح` : 'لا يوجد مفتوح' },
-    { href:'/evaluations/cycles', title:'دورات التقييم', icon:Trophy, value:data.evaluationCycles.length, status:cycle ? cycle.name : 'لا توجد دورة مفتوحة' },
+    { href:'/evaluations/cycles', title:'Drives', icon:Trophy, value:data.evaluationCycles.length, status:cycle ? cycle.name : 'لا يوجد Drive مفتوح' },
     { href:'/evaluations/seasons', title:'المواسم', icon:Layers3, value:data.evaluationSeasons.length, status:season ? season.name : 'لا يوجد موسم مفتوح' },
   ];
   return <div className="page-stack">
@@ -26,7 +26,7 @@ export default function EvaluationsAdminHub() {
     <Card title="الحالة الحالية">
       <div className={styles.adminHubStatus}>
         <div><span>الموسم</span><strong>{season?.name ?? '—'}</strong></div>
-        <div><span>الدورة</span><strong>{cycle?.name ?? '—'}</strong></div>
+        <div><span>Drive</span><strong>{cycle?.name ?? '—'}</strong></div>
         <div><span>الامتحانات المفتوحة</span><strong dir="ltr">{cycleExams.filter(item => item.state === 'OPEN').length}</strong></div>
       </div>
     </Card>

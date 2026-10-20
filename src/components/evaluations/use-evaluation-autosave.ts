@@ -46,7 +46,7 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
             if (!auditAllowed) throw new Error('لم تُحفظ التغييرات لأن الحساب لا يملك صلاحية إضافة أو تعديل التدقيق.');
             const exam = draft.evaluationExams.find(item => item.id === examId);
             const cycle = draft.evaluationCycles.find(item => item.id === exam?.cycleId);
-            if (!exam || exam.state !== 'OPEN' || cycle?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الامتحان مغلق أو الدورة مؤرشفة.');
+            if (!exam || exam.state !== 'OPEN' || cycle?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الامتحان مغلق أو الـ Drive مؤرشف.');
             if (cycle.seasonId && draft.evaluationSeasons.find(item => item.id === cycle.seasonId)?.state !== 'OPEN') throw new Error('لم تُحفظ التغييرات لأن الموسم مؤرشف.');
             const targetEmployee = draft.employees.find(item => item.id === employeeId);
             if (!targetEmployee || !isCorrectionEmployee(draft, targetEmployee)) throw new Error('لم تُحفظ التغييرات لأن الموظف لم يعد ضمن المصححين الفعالين.');

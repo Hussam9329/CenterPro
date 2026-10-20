@@ -35,7 +35,7 @@ function row(container: Locator, name = 'ابرار حقي') {
 }
 
 async function openManagement(page: Page, section: 'seasons' | 'cycles' | 'exams') {
-  const title = { seasons: 'المواسم', cycles: 'دورات التقييم', exams: 'الامتحانات' }[section];
+  const title = { seasons: 'المواسم', cycles: 'Drives', exams: 'الامتحانات' }[section];
   await gotoPreview(page, '/evaluations');
   await expect(page.getByRole('heading', { name: 'التدقيق', exact: true })).toBeVisible();
   await page.getByRole('main').getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) }).click();
@@ -52,7 +52,7 @@ async function openSeasonAndCycle(page: Page) {
   await seasonDialog.getByRole('button', { name: 'فتح الموسم', exact: true }).click();
   await expect(seasonDialog).toBeHidden();
   await openManagement(page, 'cycles');
-  await page.getByRole('button', { name: 'فتح دورة', exact: true }).click();
+  await page.getByRole('button', { name: 'فتح Drive', exact: true }).click();
   await openManagement(page, 'seasons');
   await expect(page.getByRole('button', { name: 'إغلاق الموسم', exact: true })).toBeDisabled();
   const state = await readPreviewData(page);
@@ -123,7 +123,7 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await expect(card(page, 'تفاصيل الامتحانات')).not.toContainText(/513 ورقة|2 تصحيح|1 سلوك|500 نقطة/);
     await expect(card(page, 'Leaderboard الامتحان')).toContainText('قيد التدقيق');
     await expect(card(page, 'Leaderboard الامتحان').getByRole('table')).toHaveCount(0);
-    await expect(row(card(page, 'Leaderboard الدورة')).getByRole('cell').nth(7)).toHaveText('0');
+    await expect(row(card(page, 'Leaderboard الـ Drive')).getByRole('cell').nth(7)).toHaveText('0');
     await expect(row(card(page, 'Leaderboard الموسم')).getByRole('cell').nth(3)).toHaveText('0');
     await expect(page.getByText('500 pts', { exact: true })).toHaveCount(0);
     await expect(page.getByText('التقييم النهائي', { exact: true }).locator('..').locator('strong')).toHaveText('0');
@@ -168,12 +168,12 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await closeExamAsAdmin(page, firstExam.id);
 
     await openManagement(page, 'cycles');
-    await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
-    const closeCycle = page.getByRole('dialog', { name: 'إغلاق وأرشفة دورة التقييم؟', exact: true });
-    await closeCycle.getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
+    await page.getByRole('button', { name: 'إغلاق الـ Drive', exact: true }).click();
+    const closeCycle = page.getByRole('dialog', { name: 'إغلاق وأرشفة الـ Drive؟', exact: true });
+    await closeCycle.getByRole('button', { name: 'إغلاق وأرشفة الـ Drive', exact: true }).click();
     await expect(closeCycle).toBeHidden();
     const archivedCycle = (await readPreviewData(page)).evaluationCycles[0];
-    await page.getByRole('button', { name: 'فتح دورة', exact: true }).click();
+    await page.getByRole('button', { name: 'فتح Drive', exact: true }).click();
     const secondExam = await addExam(page, 'امتحان الدورة الثانية');
 
     await enterAccount(page, auditorId);
@@ -199,8 +199,8 @@ test.describe('Evaluation seasons, publishing and roles', () => {
 
     await enterAccount(page);
     await openManagement(page, 'cycles');
-    await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
-    await page.getByRole('dialog', { name: 'إغلاق وأرشفة دورة التقييم؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
+    await page.getByRole('button', { name: 'إغلاق الـ Drive', exact: true }).click();
+    await page.getByRole('dialog', { name: 'إغلاق وأرشفة الـ Drive؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الـ Drive', exact: true }).click();
     await openManagement(page, 'seasons');
     await page.getByRole('button', { name: 'إغلاق الموسم', exact: true }).click();
     await page.getByRole('dialog', { name: 'إغلاق وأرشفة الموسم؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الموسم', exact: true }).click();
@@ -221,12 +221,12 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await enterAccount(page, correctorId);
     await expect(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true })).toContainText('0 pts');
     await gotoPreview(page, '/employee/evaluation');
-    await expect(page.getByLabel('اختيار دورة التقييم', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('لا توجد دورات في هذا الموسم', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('اختيار الـ Drive', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('لا توجد Drives في هذا الموسم', { exact: true })).toBeVisible();
     await page.getByLabel('اختيار الموسم', { exact: true }).selectOption(archived.id);
     await expect(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true })).toContainText('107 pts');
-    await expect(page.getByLabel('اختيار دورة التقييم', { exact: true }).locator('option')).toHaveCount(2);
-    await page.getByLabel('اختيار دورة التقييم', { exact: true }).selectOption(archivedCycle.id);
+    await expect(page.getByLabel('اختيار الـ Drive', { exact: true }).locator('option')).toHaveCount(2);
+    await page.getByLabel('اختيار الـ Drive', { exact: true }).selectOption(archivedCycle.id);
     await expect(card(page, 'تفاصيل الامتحانات')).toContainText('87 نقطة');
     await expect(card(page, 'تفاصيل الامتحانات')).not.toContainText('امتحان الدورة الثانية');
     await expect(row(card(page, 'Leaderboard الموسم')).getByRole('cell').nth(8)).toHaveText('7.5 ورقة/يوم');
@@ -241,14 +241,14 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await seedPopulatedPreview(page, fixture);
     await enterAccount(page);
     await openManagement(page, 'cycles');
-    await expect(page.getByText('دورة سابقة بلا موسم', { exact: true })).toBeVisible();
+    await expect(page.getByText('Drive سابق بلا موسم', { exact: true })).toBeVisible();
     await page.getByRole('main').getByRole('link', { name: 'الامتحانات', exact: true }).click();
     await expect(page).toHaveURL(/\/evaluations\/exams\?cycle=legacy-cycle$/);
     await expect(page.getByRole('heading', { name: 'امتحان محفوظ قبل المواسم', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'التفاصيل', exact: true })).toBeVisible();
     await openManagement(page, 'cycles');
-    await page.getByRole('button', { name: 'إغلاق الدورة', exact: true }).click();
-    await page.getByRole('dialog', { name: 'إغلاق وأرشفة دورة التقييم؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الدورة', exact: true }).click();
+    await page.getByRole('button', { name: 'إغلاق الـ Drive', exact: true }).click();
+    await page.getByRole('dialog', { name: 'إغلاق وأرشفة الـ Drive؟', exact: true }).getByRole('button', { name: 'إغلاق وأرشفة الـ Drive', exact: true }).click();
     const archivedCycle = (await readPreviewData(page)).evaluationCycles[0];
     expect(archivedCycle.state).toBe('ARCHIVED');
     expect(archivedCycle.snapshot?.rows.find(item => item.employeeId === correctorId)?.score).toBe(39);
@@ -265,10 +265,10 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await gotoPreview(page, '/employee/evaluation');
     await expect(page.getByLabel('اختيار الموسم', { exact: true })).toHaveValue(currentSeasonId);
     await expect(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true })).toContainText('0 pts');
-    await expect(page.getByLabel('اختيار دورة التقييم', { exact: true })).toHaveCount(0);
-    await page.getByLabel('اختيار الموسم', { exact: true }).selectOption({ label: 'دورات سابقة بلا موسم' });
+    await expect(page.getByLabel('اختيار الـ Drive', { exact: true })).toHaveCount(0);
+    await page.getByLabel('اختيار الموسم', { exact: true }).selectOption({ label: 'Drives سابقة بلا موسم' });
     await expect(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true })).toHaveCount(0);
-    await expect(page.getByLabel('اختيار دورة التقييم', { exact: true })).toHaveValue('legacy-cycle');
+    await expect(page.getByLabel('اختيار الـ Drive', { exact: true })).toHaveValue('legacy-cycle');
     await expect(page.getByText('التقييم النهائي', { exact: true }).locator('..').locator('strong')).toHaveText('39');
     await expect(card(page, 'تفاصيل الامتحانات')).toContainText('50 ورقة · 1 تصحيح · 2 سلوك · 39 نقطة');
     expect((await readPreviewData(page)).evaluationCycles[0]).toEqual(archivedCycle);

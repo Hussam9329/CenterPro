@@ -3,9 +3,9 @@ import { getCycleLeaderboard, getExamLeaderboard, getSeasonLeaderboard } from '.
 
 export function buildEvaluationCycleSnapshot(data: DemoData, cycleId: string): EvaluationCycleSnapshot {
   const cycle = data.evaluationCycles.find(item => item.id === cycleId);
-  if (!cycle) throw new Error('لم يتم العثور على دورة التقييم.');
+  if (!cycle) throw new Error('لم يتم العثور على الـ Drive.');
   if (cycle.state === 'ARCHIVED') {
-    if (!cycle.snapshot) throw new Error('النسخة الأرشيفية لدورة التقييم غير موجودة.');
+    if (!cycle.snapshot) throw new Error('النسخة الأرشيفية للـ Drive غير موجودة.');
     return structuredClone(cycle.snapshot);
   }
   const exams = data.evaluationExams.filter(item => item.cycleId === cycleId);
@@ -23,6 +23,6 @@ export function buildEvaluationSeasonSnapshot(data: DemoData, seasonId: string):
     return structuredClone(season.snapshot);
   }
   const cycles = data.evaluationCycles.filter(item => item.seasonId === seasonId);
-  if (data.evaluationCycles.some(item => item.state === 'OPEN')) throw new Error('أغلق دورة التقييم الحالية قبل أرشفة الموسم.');
+  if (data.evaluationCycles.some(item => item.state === 'OPEN')) throw new Error('أغلق الـ Drive الحالي قبل أرشفة الموسم.');
   return { rows: getSeasonLeaderboard(data, seasonId), cycleIds: cycles.map(item => item.id) };
 }

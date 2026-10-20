@@ -40,7 +40,7 @@ function historicalHubFixture() {
   data.evaluationCycles.push({ id: 'cycle-current-archived', seasonId: 'season-current', name: 'الدورة السابقة في الموسم الحالي', state: 'OPEN', openedAt: '2026-09-20T08:00:00.000Z', openedBy: 'مدير النظام' });
   addExam('exam-current-archived', 'cycle-current-archived', 'امتحان الدورة السابقة', '2026-09-22', 'CLOSED', 70);
   archiveCycle('cycle-current-archived', '2026-09-23T08:00:00.000Z');
-  data.evaluationCycles.push({ id: 'cycle-current', seasonId: 'season-current', name: 'الدورة الحالية', state: 'OPEN', openedAt: '2026-09-25T08:00:00.000Z', openedBy: 'مدير النظام' });
+  data.evaluationCycles.push({ id: 'cycle-current', seasonId: 'season-current', name: 'الـ Drive الحالي', state: 'OPEN', openedAt: '2026-09-25T08:00:00.000Z', openedBy: 'مدير النظام' });
   addExam('exam-published', 'cycle-current', 'امتحان منشور حالي', '2026-09-26', 'CLOSED', 80);
   addExam('exam-open', 'cycle-current', 'امتحان مفتوح حالي', '2026-09-28', 'OPEN', 90);
   // Historical displays must use their frozen metadata, not the current label.
@@ -56,7 +56,7 @@ async function expectHub(page: Page, counts: { seasons: number; cycles: number; 
   await expect(page.getByRole('heading', { name: 'التدقيق', level: 1, exact: true })).toBeVisible();
   for (const [title, count, href] of [
     ['المواسم', counts.seasons, '/evaluations/seasons'],
-    ['دورات التقييم', counts.cycles, '/evaluations/cycles'],
+    ['Drives', counts.cycles, '/evaluations/cycles'],
     ['الامتحانات', counts.exams, '/evaluations/exams'],
   ] as const) {
     await expect(hubCard(page, title)).toHaveAttribute('href', href);
@@ -74,14 +74,14 @@ test.describe('Evaluation admin hub navigation', () => {
     await expectHub(page, { seasons: 0, cycles: 0, exams: 0, open: 0 });
     await hubCard(page, 'الامتحانات').click();
     await expect(page).toHaveURL(/\/evaluations\/exams$/);
-    await expect(page.getByRole('heading', { name: 'لا توجد دورة تقييم مفتوحة', exact: true })).toBeVisible();
-    await page.getByRole('main').getByRole('link', { name: 'دورات التقييم', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'لا يوجد Drive مفتوح', exact: true })).toBeVisible();
+    await page.getByRole('main').getByRole('link', { name: 'Drives', exact: true }).click();
     await expect(page).toHaveURL(/\/evaluations\/cycles$/);
-    await expect(page.getByRole('button', { name: 'فتح دورة', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'فتح Drive', exact: true })).toBeDisabled();
     await page.getByRole('main').getByRole('link', { name: 'المواسم', exact: true }).click();
     await expect(page).toHaveURL(/\/evaluations\/seasons$/);
     await expect(page.getByRole('button', { name: 'فتح موسم', exact: true })).toBeEnabled();
-    for (const title of ['الامتحانات', 'دورات التقييم', 'المواسم']) {
+    for (const title of ['الامتحانات', 'Drives', 'المواسم']) {
       await page.getByRole('main').getByRole('link', { name: 'التدقيق', exact: true }).click();
       await expectHub(page, { seasons: 0, cycles: 0, exams: 0, open: 0 });
       await hubCard(page, title).click();
@@ -99,10 +99,10 @@ test.describe('Evaluation admin hub navigation', () => {
     await gotoPreview(page, '/evaluations');
     await expectHub(page, { seasons: 2, cycles: 4, exams: 2, open: 1 });
     await expect(hubCard(page, 'المواسم')).toContainText('الموسم الحالي');
-    await expect(hubCard(page, 'دورات التقييم')).toContainText('الدورة الحالية');
+    await expect(hubCard(page, 'Drives')).toContainText('الـ Drive الحالي');
     await hubCard(page, 'المواسم').click();
     await page.locator('summary').filter({ hasText: 'الموسم السابق' }).click();
-    await page.getByRole('link', { name: 'عرض دورات الموسم السابق', exact: true }).click();
+    await page.getByRole('link', { name: 'عرض Drives الموسم السابق', exact: true }).click();
     await expect(page).toHaveURL(/\/evaluations\/cycles\?season=season-old$/);
     await expect(page.getByLabel('اختيار الموسم', { exact: true })).toHaveValue('season-old');
     await expect(page.locator('summary')).toHaveCount(1);
@@ -110,7 +110,7 @@ test.describe('Evaluation admin hub navigation', () => {
     await page.locator('summary').click();
     await page.getByRole('link', { name: 'عرض امتحانات دورة الموسم السابق', exact: true }).click();
     await expect(page).toHaveURL(/\/evaluations\/exams\?cycle=cycle-old$/);
-    const cycleFilter = page.getByLabel('اختيار دورة التقييم', { exact: true });
+    const cycleFilter = page.getByLabel('اختيار الـ Drive', { exact: true });
     await expect(cycleFilter).toHaveValue('cycle-old');
     await expect(page.getByRole('heading', { name: 'امتحان الموسم السابق', exact: true })).toBeVisible();
     await expect(page.getByText('اسم حالي لا يمثل الأرشيف', { exact: true })).toHaveCount(0);
@@ -135,11 +135,11 @@ test.describe('Evaluation admin hub navigation', () => {
     await page.getByRole('main').getByRole('link', { name: 'التدقيق', exact: true }).click();
     await expectHub(page, { seasons: 2, cycles: 4, exams: 2, open: 0 });
 
-    await hubCard(page, 'دورات التقييم').click();
+    await hubCard(page, 'Drives').click();
     await page.getByLabel('اختيار الموسم', { exact: true }).selectOption('season-current');
     await expect(page.locator('summary')).toHaveCount(1);
     await expect(page.locator('summary')).toContainText('الدورة السابقة في الموسم الحالي');
-    await page.getByLabel('اختيار الموسم', { exact: true }).selectOption({ label: 'دورات سابقة بلا موسم' });
+    await page.getByLabel('اختيار الموسم', { exact: true }).selectOption({ label: 'Drives سابقة بلا موسم' });
     await expect(page.locator('summary')).toHaveCount(1);
     await expect(page.locator('summary')).toContainText('دورة محفوظة بلا موسم');
     await page.locator('summary').click();

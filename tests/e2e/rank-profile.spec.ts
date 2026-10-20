@@ -83,7 +83,7 @@ test('admin profile rank includes live scores while the corrector rank and place
   await expect(profile.getByText('Bronze 2', { exact: true })).toHaveCount(1);
   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '70');
   await expect(profile.getByRole('progressbar')).toHaveAttribute('aria-valuetext', 'متبقي 150 نقطة');
-  for (const [label, value] of [['الترتيب', '#1'], ['الأوراق', '876'], ['الامتحانات', '2'], ['الدورات', '1'], ['أيام الحضور', '16'], ['متوسط اليوم', '54.8'], ['أخطاء التصحيح', '4'], ['أخطاء السلوك', '2'], ['معدل الدقة', '99.32 / 100']]) {
+  for (const [label, value] of [['الترتيب', '#1'], ['الأوراق', '876'], ['الامتحانات', '2'], ['Drives', '1'], ['أيام الحضور', '16'], ['متوسط اليوم', '54.8'], ['أخطاء التصحيح', '4'], ['أخطاء السلوك', '2'], ['معدل الدقة', '99.32 / 100']]) {
     await expect(metric(profile, label)).toHaveText(value);
   }
   await expect(profile.getByRole('link', { name: 'Leaderboard الموسم', exact: true })).toHaveAttribute('href', '/evaluations/seasons');

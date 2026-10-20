@@ -11,7 +11,7 @@ const auditorId = 'employee-jaafar-ali';
 const correctorId = 'employee-abrar-haqi';
 const managementSections = [
   { path: '/evaluations/seasons', title: 'المواسم', control: 'إغلاق الموسم', screenshot: 'admin-seasons' },
-  { path: '/evaluations/cycles', title: 'دورات التقييم', control: 'إغلاق الدورة', screenshot: 'admin-cycles' },
+  { path: '/evaluations/cycles', title: 'Drives', control: 'إغلاق الـ Drive', screenshot: 'admin-cycles' },
   { path: '/evaluations/exams', title: 'الامتحانات', control: 'إضافة امتحان', screenshot: 'admin-exams' },
 ];
 
@@ -21,7 +21,7 @@ function createEvaluationFixture(): DemoData {
   const timestamp = '2026-09-28T10:00:00.000Z';
   fixture.evaluationSeasons.push({ id: 'responsive-season', name: 'موسم الاختبار', startDate: '2026-09-01', state: 'OPEN', openedAt: timestamp, openedBy: 'المدير العام' });
   fixture.evaluationCycles.push({
-    id: 'responsive-evaluation-cycle', seasonId: 'responsive-season', name: 'دورة تقييم المصححين — المراجعة الشاملة للفصل الثالث',
+    id: 'responsive-evaluation-cycle', seasonId: 'responsive-season', name: 'Drive المصححين — المراجعة الشاملة للفصل الثالث',
     state: 'OPEN', openedAt: timestamp, openedBy: 'المدير العام',
   });
   fixture.evaluationExams.push({
@@ -257,7 +257,7 @@ for (const [width, height] of sizes) {
     await expect(page.getByRole('heading', { name: 'ابرار حقي', exact: true })).toBeVisible();
     await expectRankAssets(page.getByRole('region', { name: 'ملخص تقييم الموسم', exact: true }), true);
     await expectEvaluationLayout(page, width, 'تقييم المصحح');
-    await expect(page.getByLabel('اختيار دورة التقييم', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('اختيار الـ Drive', { exact: true })).toBeVisible();
     await expect(page.getByLabel('اختيار امتحان التقييم', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true })).toHaveCount(0);
     await screenshot(page, testInfo, `${width}-corrector-evaluation`);
