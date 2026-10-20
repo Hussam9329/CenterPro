@@ -84,10 +84,21 @@ describe('rest area API on real PostgreSQL', () => {
     expect(overview.leaderboards.wordle?.[0]).toMatchObject({ name: fixture.employees[0].name, best: 4 });
   }, 30_000);
 
-  it('rejects anonymous, non-employee and implausible plays, and limits bursts', async () => {
+  it('records any employee-linked account, lets the system owner view boards without saving, and rejects anonymous plays', async () => {
     expect((await postPlay(request('/api/rest/plays', play()))).status).toBe(401);
+    expect((await getOverview(request('/api/rest/overview'))).status).toBe(401);
+    const manager = await signIn(fixture.employees[1].username);
+    expect((await postPlay(request('/api/rest/plays', play({ score: 30 }), manager))).status).toBe(200);
     const owner = await signIn('test-owner');
     expect((await postPlay(request('/api/rest/plays', play(), owner))).status).toBe(403);
+    const ownerView = await getOverview(request('/api/rest/overview', undefined, owner));
+    expect(ownerView.status).toBe(200);
+    const board = await ownerView.json() as RestOverview;
+    expect(board.mine).toEqual({ best: {}, wordleToday: null });
+    expect(board.leaderboards.snake?.[0]).toMatchObject({ name: fixture.employees[1].name, best: 30 });
+  }, 30_000);
+
+  it('rejects implausible plays and limits bursts', async () => {
     const employee = await signIn(fixture.employees[0].username);
     for (const tampered of [play({ score: 5000 }), play({ startedAt: new Date(Date.now() + 10 * 60_000).toISOString() }), play({ durationMs: 10 * 60 * 60_000 }), play({ game: 'xo', score: 3, outcome: 'win' }), play({ outcome: 'win' })]) {
       expect((await postPlay(request('/api/rest/plays', tampered, employee))).status, JSON.stringify(tampered)).toBe(400);

@@ -29,7 +29,8 @@ const adminNav: readonly NavigationItem[] = [
   { href: '/calculator', label: 'الحاسبة', icon: Calculator },
   { href: '/audit', label: 'سجل العمليات', icon: History, superOnly: true, feature: 'AUDIT_LOG' },
   { href: '/settings', label: 'الإعدادات', icon: Settings2, superOnly: true, feature: 'SETTINGS' },
-  { href: '/rest-stats', label: 'إحصائيات الاستراحة', icon: Gamepad2, superOnly: true },
+  { href: '/rest', label: 'استراحة', icon: Gamepad2 },
+  { href: '/rest-stats', label: 'إحصائيات الاستراحة', icon: ChartNoAxesCombined, superOnly: true },
 ];
 const baseEmployeeNav: readonly NavigationItem[] = [
   { href: '/employee', label: 'الرئيسية', icon: LayoutDashboard }, { href: '/employee/scan', label: 'تسجيل الحضور', icon: ScanLine },
