@@ -35,6 +35,7 @@ async function database() {
   const client = new PGlite(); clients.push(client);
   await client.exec(await readFile(new URL('../../drizzle/0001_centerpro.sql', import.meta.url), 'utf8'));
   await client.exec(await readFile(new URL('../../drizzle/0002_qr_display_account.sql', import.meta.url), 'utf8'));
+  await client.exec(await readFile(new URL('../../drizzle/0003_game_plays.sql', import.meta.url), 'utf8'));
   return { client, db: drizzle(client, { schema }) };
 }
 function authFixture(data = createPopulatedTestData()): AuthStore {

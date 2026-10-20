@@ -1,0 +1,55 @@
+.root { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; color: var(--text); }
+
+.score { display: flex; gap: 8px; margin: 0; flex-wrap: wrap; justify-content: center; }
+.scoreItem { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--rd-chip, var(--surface)); border: 1px solid var(--rd-line, #ececf0); }
+.scoreItem dt { color: var(--muted); font-size: 0.85rem; }
+.scoreItem dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.status { margin: 0; font-weight: 700; font-size: 1.05rem; min-height: 1.5em; }
+
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 96px)); gap: 10px; width: min(100%, 308px); }
+
+.cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid var(--rd-line, #ececf0);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.cell:not(:disabled):hover { background: var(--rd-chip, var(--surface)); }
+.cell:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.cell:disabled { cursor: default; }
+.win { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, var(--surface)); }
+
+.mark { width: 62%; height: 62%; fill: none; stroke-width: 5; stroke-linecap: round; animation: pop 180ms ease-out; }
+.markX { stroke: var(--brand); }
+.markO { stroke: var(--ink, var(--text)); }
+
+@keyframes pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.pill {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--rd-line, #ececf0);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pill:hover { background: var(--rd-chip, var(--surface)); }
+.pill:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.primary, .primary:hover { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mark { animation: none; }
+  .cell { transition: none; }
+}

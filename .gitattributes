@@ -1,0 +1,2 @@
+# Migration digests are recorded in the database; keep SQL byte-identical on every OS.
+drizzle/*.sql text eol=lf

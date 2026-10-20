@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { sql } from 'drizzle-orm';
 import { withDatabase } from '../src/server/db/connection';
 
-const migrations = ['0001_centerpro', '0002_qr_display_account'] as const;
+const migrations = ['0001_centerpro', '0002_qr_display_account', '0003_game_plays'] as const;
 
 async function migrationSource(id: string) {
   const source = await readFile(new URL(`../drizzle/${id}.sql`, import.meta.url), 'utf8');

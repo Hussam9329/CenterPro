@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, UsersRound, CalendarCheck2, Wallet, Receipt, Gift, Building2,
   ChartNoAxesCombined, History, Settings2, UserRound, ScanLine, ClipboardCheck,
-  Trophy, Calculator, ShieldCheck, type LucideIcon,
+  Trophy, Calculator, ShieldCheck, Gamepad2, type LucideIcon,
 } from 'lucide-react';
 import { isAuditEmployee, isCorrectionEmployee } from '@/lib/evaluations';
 import { hasEmployeePermission } from '@/lib/permissions';
@@ -29,11 +29,13 @@ const adminNav: readonly NavigationItem[] = [
   { href: '/calculator', label: 'الحاسبة', icon: Calculator },
   { href: '/audit', label: 'سجل العمليات', icon: History, superOnly: true, feature: 'AUDIT_LOG' },
   { href: '/settings', label: 'الإعدادات', icon: Settings2, superOnly: true, feature: 'SETTINGS' },
+  { href: '/rest-stats', label: 'إحصائيات الاستراحة', icon: Gamepad2, superOnly: true },
 ];
 const baseEmployeeNav: readonly NavigationItem[] = [
   { href: '/employee', label: 'الرئيسية', icon: LayoutDashboard }, { href: '/employee/scan', label: 'تسجيل الحضور', icon: ScanLine },
   { href: '/employee/attendance', label: 'سجل الحضور', icon: CalendarCheck2 }, { href: '/employee/salary', label: 'راتبي', icon: Wallet },
   { href: '/calculator', label: 'الحاسبة', icon: Calculator }, { href: '/employee/profile', label: 'حسابي', icon: UserRound },
+  { href: '/employee/rest', label: 'استراحة', icon: Gamepad2 },
 ];
 
 function delegatedAdminNav(data: DemoData, session: DemoSession): NavigationItem[] {
@@ -62,7 +64,7 @@ export function getShellRedirect(data: DemoData, session: DemoSession | null, em
     return feature && hasEmployeePermission(employee, feature, 'view') ? null : '/employee';
   }
   if (employeeLayout) return '/dashboard';
-  if (session.role === 'ADMIN' && ['/permissions', '/departments', '/audit', '/settings'].some(path => pathname === path || pathname.startsWith(`${path}/`))) return '/dashboard';
+  if (session.role === 'ADMIN' && ['/permissions', '/departments', '/audit', '/settings', '/rest-stats'].some(path => pathname === path || pathname.startsWith(`${path}/`))) return '/dashboard';
   return null;
 }
 

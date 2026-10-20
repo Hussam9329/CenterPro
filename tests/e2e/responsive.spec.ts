@@ -5,8 +5,8 @@ import { test, expect, gotoPreview, loginPreview, seedPopulatedPreview } from '.
 import { createPopulatedTestData } from '../fixtures/populated-data';
 
 const sizes = [[360, 800], [390, 844], [430, 932], [768, 1024], [1024, 1366], [1366, 768], [1440, 900], [1920, 1080]];
-const adminRoutes = ['/dashboard', '/employees', '/departments', '/attendance', '/payroll', '/deductions', '/bonuses', '/reports', '/audit', '/settings', '/attendance-display'];
-const employeeRoutes = ['/employee', '/employee/attendance', '/employee/salary', '/employee/profile', '/employee/scan'];
+const adminRoutes = ['/dashboard', '/employees', '/departments', '/attendance', '/payroll', '/deductions', '/bonuses', '/reports', '/audit', '/settings', '/rest-stats', '/attendance-display'];
+const employeeRoutes = ['/employee', '/employee/attendance', '/employee/salary', '/employee/profile', '/employee/scan', '/employee/rest', '/employee/rest/minesweeper', '/employee/rest/connect4'];
 
 async function checkRoute(page: Page, path: string, width: number, scenario: string) {
   await gotoPreview(page, path);
