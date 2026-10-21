@@ -134,17 +134,16 @@ test.describe('Attendance preview workflows', () => {
     expect(data.audit[0]).toMatchObject({ action: 'إزالة تسجيل حضور', employeeId: 'CP-0001', oldValues: { status: 'PRESENT' }, newValues: { status: 'UNRESOLVED' } });
   });
 
-  test('quick absence and exemption selections remain unsaved until reviewed, and exemption updates participation', async ({ page }) => {
+  test('quick absence selections remain unsaved until reviewed, and exemption saves directly and updates participation', async ({ page }) => {
     await login(page);
     await gotoPreview(page, '/attendance/wd-2026-09-28');
     const status = page.locator('.desktop-table tbody tr').filter({ hasText: 'علي محمد حسن' }).getByRole('combobox', { name: 'تغيير حالة علي محمد حسن' });
     const before = await readPreviewData(page);
-    for (const target of ['EXCUSED', 'UNEXCUSED', 'EXEMPT']) {
+    const review = page.getByRole('dialog', { name: 'مراجعة سجل الحضور', exact: true });
+    for (const target of ['EXCUSED', 'UNEXCUSED']) {
       await status.selectOption(target);
-      const review = page.getByRole('dialog', { name: 'مراجعة سجل الحضور', exact: true });
       await expect(review).toBeVisible();
-      if (target === 'EXEMPT') await expect(review.getByLabel('الحالة الجديدة', { exact: true })).toHaveValue(target);
-      else await expect(review.getByRole('radio', { name: target === 'EXCUSED' ? 'غياب بعذر' : 'غياب بدون عذر', exact: true })).toBeChecked();
+      await expect(review.getByRole('radio', { name: target === 'EXCUSED' ? 'غياب بعذر' : 'غياب بدون عذر', exact: true })).toBeChecked();
       await review.getByLabel('ملاحظة / سبب', { exact: true }).fill('ملاحظة لم يتم حفظها');
       await review.getByRole('button', { name: 'إلغاء', exact: true }).click();
       await expect(status).toHaveValue('UNRESOLVED');
@@ -153,10 +152,9 @@ test.describe('Attendance preview workflows', () => {
       expect(afterCancel.workdays).toEqual(before.workdays);
       expect(afterCancel.audit).toEqual(before.audit);
     }
+    // Exemption is a plain status: it saves at once without asking for a reason.
     await status.selectOption('EXEMPT');
-    const review = page.getByRole('dialog', { name: 'مراجعة سجل الحضور', exact: true });
-    await review.getByLabel('ملاحظة / سبب', { exact: true }).fill('لا يوجد دوام لهذا الموظف اليوم');
-    await review.getByRole('button', { name: 'حفظ التعديل', exact: true }).click();
+    await expect(page.getByText('تم تحديث حالة الحضور.')).toBeVisible();
     await expect(review).toBeHidden();
     await expect(status).toHaveValue('EXEMPT');
     expect((await readPreviewData(page)).workdays.find(day => day.id === 'wd-2026-09-28')?.overrides['CP-0001']).toBe('EXCLUDE');

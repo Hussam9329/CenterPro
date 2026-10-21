@@ -104,7 +104,7 @@ export function useAttendanceReview(dayId: string) {
     const action = getQuickReviewAction(row.record.status, target);
     if (action === 'NO_CHANGE') return;
     if (action === 'DETAILS') {
-      // Absences and exemptions need the existing review dialog for their
+      // Absences need the existing review dialog for their
       // classification, notes and optional reasons. Nothing is saved yet.
       openEdit(row, target);
       return;

@@ -12,7 +12,7 @@ describe('quick attendance review', () => {
     expect(getQuickReviewAction('PRESENT', 'UNRESOLVED')).toBe('CONFIRM_REMOVAL');
     expect(getQuickReviewAction('UNRESOLVED', 'EXCUSED')).toBe('DETAILS');
     expect(getQuickReviewAction('PRESENT', 'UNEXCUSED')).toBe('DETAILS');
-    expect(getQuickReviewAction('UNRESOLVED', 'EXEMPT')).toBe('DETAILS');
+    expect(getQuickReviewAction('UNRESOLVED', 'EXEMPT')).toBe('SAVE');
     expect(getQuickReviewAction('PRESENT', 'PRESENT')).toBe('NO_CHANGE');
   });
 

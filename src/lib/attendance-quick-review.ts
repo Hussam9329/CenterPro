@@ -5,7 +5,7 @@ export type QuickReviewAction = 'NO_CHANGE' | 'SAVE' | 'DETAILS' | 'CONFIRM_REMO
 /** Avoid replacing a real check-in with a guessed time or skipping the removal confirmation. */
 export function getQuickReviewAction(current: AttendanceStatus, target: AttendanceStatus): QuickReviewAction {
   if (current === target) return 'NO_CHANGE';
-  if (target === 'EXCUSED' || target === 'UNEXCUSED' || target === 'EXEMPT') return 'DETAILS';
+  if (target === 'EXCUSED' || target === 'UNEXCUSED') return 'DETAILS';
   if (current === 'PRESENT' && target === 'UNRESOLVED') return 'CONFIRM_REMOVAL';
   return 'SAVE';
 }
