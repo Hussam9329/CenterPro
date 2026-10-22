@@ -25,6 +25,16 @@ test.describe('Rest area', () => {
     for (const cell of [1, 4, 2, 5, 3]) await page.getByRole('button', { name: `المربع ${cell}: فارغ` }).click();
     await expect(page.getByText('فاز اللاعب X!').first()).toBeVisible();
 
+    // Each player keeps three marks: the mover's oldest fades, then vanishes on their fourth.
+    // Round two starts with O.
+    await page.getByRole('button', { name: 'جولة جديدة', exact: true }).click();
+    for (const cell of [1, 5, 9, 2, 8, 7]) await page.getByRole('button', { name: `المربع ${cell}: فارغ` }).click();
+    await expect(page.getByRole('button', { name: 'المربع 1: O (ستختفي)', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'المربع 3: فارغ', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'المربع 1: فارغ', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'المربع 3: O', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'المربع 5: X (ستختفي)', exact: true })).toBeVisible();
+
     await loginPreview(page);
     await gotoPreview(page, '/rest-stats');
     await page.getByLabel('الفترة', { exact: true }).selectOption('all');

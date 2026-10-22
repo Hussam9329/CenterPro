@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scoreGuess } from '../../src/components/rest/games/wordle';
-import { winnerOf } from '../../src/components/rest/games/xo';
+import { boardOf, placeMark, vanishingMove, winnerOf, type XoMove } from '../../src/components/rest/games/xo';
 import { dropDisc, emptyBoard, findWinner } from '../../src/components/rest/games/connect4';
 import { createBoard, revealCells } from '../../src/components/rest/games/minesweeper';
 import { initialState, step } from '../../src/components/rest/games/snake';
@@ -12,6 +12,19 @@ describe('rest games logic', () => {
     // Only one ة exists in the answer, so the second guessed copy is absent.
     expect(scoreGuess('ةةبرد', 'مدرسة')).toEqual(['present', 'absent', 'absent', 'present', 'present']);
     expect(scoreGuess('أمطار', 'امطار')).toEqual(['correct', 'correct', 'correct', 'correct', 'correct']);
+  });
+
+  it('keeps three XO marks per player and removes the oldest on the fourth', () => {
+    let moves: XoMove[] = [];
+    for (const [index, player] of [[0, 'X'], [4, 'O'], [8, 'X'], [1, 'O'], [7, 'X'], [6, 'O']] as const) moves = placeMark(moves, index, player);
+    expect(vanishingMove(moves, 'X')).toEqual({ index: 0, player: 'X' });
+    moves = placeMark(moves, 2, 'X');
+    expect(boardOf(moves)).toEqual([null, 'O', 'X', null, 'O', null, 'O', 'X', 'X']);
+    expect(moves.filter(move => move.player === 'X')).toHaveLength(3);
+    // The vacated square can be taken again.
+    moves = placeMark(moves, 0, 'O');
+    expect(boardOf(moves)[0]).toBe('O');
+    expect(boardOf(moves)[4]).toBeNull();
   });
 
   it('finds XO and Connect 4 winners', () => {
