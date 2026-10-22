@@ -53,3 +53,15 @@
   .mark { animation: none; }
   .cell { transition: none; }
 }
+
+/* Vanishing marks: the mover's oldest mark fades before it is removed. */
+.rule { margin: -8px 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; max-width: 308px; }
+.vanishing .mark { opacity: 0.32; animation: fade 1.4s ease-in-out infinite alternate; }
+.vanishing { border-style: dashed; }
+@keyframes fade {
+  from { opacity: 0.55; }
+  to { opacity: 0.2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vanishing .mark { animation: none; }
+}

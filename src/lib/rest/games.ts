@@ -35,7 +35,7 @@ export const GAMES: readonly GameInfo[] = [
   { id: 'wordle', name: 'كلمة اليوم', description: 'احزر الكلمة العربية المشتركة لليوم بست محاولات.', players: 'solo', ranked: true, scoreLabel: 'نقاط (أقل محاولات = نقاط أكثر)' },
   { id: 'minesweeper', name: 'كاسحة الألغام', description: 'افتح المربعات وتجنّب الألغام بالاعتماد على الأرقام.', players: 'solo', ranked: true, scoreLabel: 'نقاط (أسرع فوز = نقاط أكثر)' },
   { id: 'snake', name: 'الثعبان', description: 'كُل أكبر عدد من النقاط دون أن تصطدم.', players: 'solo', ranked: true, scoreLabel: 'عدد النقاط المأكولة' },
-  { id: 'xo', name: 'إكس أو', description: 'لاعبان على نفس الجهاز بالتناوب.', players: 'pair', ranked: false, scoreLabel: '' },
+  { id: 'xo', name: 'إكس أو', description: 'لاعبان على نفس الجهاز؛ لكل لاعب 3 علامات والأقدم تختفي.', players: 'pair', ranked: false, scoreLabel: '' },
   { id: 'connect4', name: 'أربعة بخط', description: 'لاعبان على نفس الجهاز: صِل أربع قطع بخط واحد.', players: 'pair', ranked: false, scoreLabel: '' },
 ];
 
