@@ -1,3 +1,4 @@
+import { attributeErrors, errorActorKey } from '@/lib/evaluations/error-attribution';
 import { buildEvaluationCycleSnapshot, buildEvaluationSeasonSnapshot } from '@/lib/evaluations';
 import type { DemoData } from '@/lib/types';
 import { fail, put, requireAdmin, unchanged, type MutationContext } from './shared';
@@ -54,6 +55,9 @@ export function applyEvaluationChanges(context: MutationContext) {
     if (previous) unchanged(previous, item, ['employeeId', 'examId', 'note']);
     else if (item.note) fail('تعديل الملاحظات غير متاح من هذا الإجراء.');
     item.createdAt = previous?.createdAt ?? stamp; item.createdBy = previous?.createdBy ?? actor.name; item.updatedAt = stamp; item.updatedBy = actor.name;
+    // Who added which errors is derived from the signed-in actor, never trusted from the browser.
+    const errorsBy = attributeErrors(previous, item, { key: errorActorKey(actor), name: actor.name });
+    if (errorsBy) item.errorsBy = errorsBy; else delete item.errorsBy;
     // Clearing a numeric field edits the record; actual removal requires the
     // explicit, reasoned deletion command, even when all fields become empty.
     put(after, 'examEvaluations', value);

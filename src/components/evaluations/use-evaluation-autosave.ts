@@ -4,7 +4,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDemo } from '@/components/demo-provider';
 import { calculateEvaluationScore, getExamEvaluation, isCorrectionEmployee } from '@/lib/evaluations';
 import { hasSessionAccountPermission } from '@/lib/permissions';
+import { attributeErrors, errorActorKey } from '@/lib/evaluations/error-attribution';
+import { PAPER_BATCHES_LIMIT,sumPaperBatches, visiblePaperBatches } from '@/lib/evaluations/paper-batches';
+import type { ExamEvaluation } from '@/lib/types';
 import { actorKey, numericFields, safeNumber, valueText, type NumericField, type PendingValues, type SaveState } from './editor-values';
+
+function sameBatches(saved: readonly number[] | undefined, next: readonly number[]): boolean {
+  const list = saved ?? [];
+  return list.length === next.length && list.every((value, index) => value === next[index]);
+}
 
 /** Owns the identity-bound queue; rendering never handles timers or retries. */
 export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId: string; employeeId: string; disabled: boolean }) {
@@ -34,6 +42,7 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
       while (Object.keys(pending.current).length) {
         const values = pending.current;
         const fields = numericFields.filter(field => values[field] !== undefined);
+        const batches = values.paperBatches;
         pending.current = {};
         try {
           await updateData((draft, currentSession) => {
@@ -52,10 +61,19 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
             if (!targetEmployee || !isCorrectionEmployee(draft, targetEmployee)) throw new Error('لم تُحفظ التغييرات لأن الموظف لم يعد ضمن المصححين الفعالين.');
 
             const changed = fields.filter(field => (existing?.[field] ?? null) !== safeNumber(values[field]!));
-            if (!changed.length) return;
+            const batchesChanged = batches !== undefined && !sameBatches(existing?.paperBatches, batches);
+            if (!changed.length && !batchesChanged) return;
             const now = new Date().toISOString();
-            const target = existing ?? { id: crypto.randomUUID(), examId, employeeId, papers: null, correctionErrors: null, behaviorErrors: null, note: '', createdBy: currentSession.name, createdAt: now, updatedBy: currentSession.name, updatedAt: now };
+            const target: ExamEvaluation = existing ?? { id: crypto.randomUUID(), examId, employeeId, papers: null, correctionErrors: null, behaviorErrors: null, note: '', createdBy: currentSession.name, createdAt: now, updatedBy: currentSession.name, updatedAt: now };
+            const before = existing ? { correctionErrors: existing.correctionErrors, behaviorErrors: existing.behaviorErrors, errorsBy: existing.errorsBy } : undefined;
             changed.forEach(field => { target[field] = safeNumber(values[field]!); });
+            // The server recomputes this from the signed-in account; the local preview mirrors it.
+            const errorsBy = attributeErrors(before, target, { key: errorActorKey(currentSession), name: currentSession.name });
+            if (errorsBy) target.errorsBy = errorsBy; else delete target.errorsBy;
+            if (batches !== undefined) {
+              if (batches.length) target.paperBatches = [...batches];
+              else delete target.paperBatches;
+            }
             target.updatedBy = currentSession.name;
             target.updatedAt = now;
             // Clearing values edits this row; removing it requires the separate
@@ -67,12 +85,14 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
             const before = getExamEvaluation(beforeData, examId, employeeId);
             const after = getExamEvaluation(afterData, examId, employeeId);
             const changed = fields.filter(field => (before?.[field] ?? null) !== (after?.[field] ?? null));
-            if (!changed.length) return undefined;
+            const listChanged = batches !== undefined && !sameBatches(before?.paperBatches, after?.paperBatches ?? []);
+            if (!changed.length && !listChanged) return undefined;
+            const list = (record: ExamEvaluation | undefined) => listChanged ? { paperBatches: record?.paperBatches ?? [] } : {};
             return {
               action: before ? 'تعديل بيانات تدقيق مصحح' : 'إضافة بيانات تدقيق مصحح',
               entity: 'exam-evaluation', entityId: after?.id ?? before!.id, employeeId,
-              oldValues: Object.fromEntries(changed.map(field => [field, before?.[field] ?? null])),
-              newValues: { ...Object.fromEntries(changed.map(field => [field, after?.[field] ?? null])), examId },
+              oldValues: { ...Object.fromEntries(changed.map(field => [field, before?.[field] ?? null])), ...list(before) },
+              newValues: { ...Object.fromEntries(changed.map(field => [field, after?.[field] ?? null])), ...list(after), examId },
             };
           });
           if (showStatus && mounted.current) {
@@ -144,7 +164,27 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
     else debounce.current = setTimeout(() => flushRef.current(), 450);
   }
 
+  /** Adds, edits or removes one of the summed paper numbers and saves at once. */
+  function setPaperBatches(next: number[]) {
+    if (disabled) return;
+    const total = sumPaperBatches(next);
+    clearTimeout(statusTimer.current);
+    if (next.length > PAPER_BATCHES_LIMIT || !Number.isSafeInteger(total)) {
+      setError(next.length > PAPER_BATCHES_LIMIT ? `يمكن جمع ${PAPER_BATCHES_LIMIT} عدداً كحد أقصى.` : 'مجموع الأوراق أكبر من الحد المسموح.');
+      setSaveState('error');
+      return;
+    }
+    const papersText = next.length ? String(total) : '';
+    setDraftValues(previous => ({ ...previous, papers: papersText, paperBatches: next }));
+    pending.current.papers = papersText;
+    pending.current.paperBatches = next;
+    setError('');
+    setSaveState('saving');
+    void persist();
+  }
+
   const papers = draftValues.papers ?? valueText(current?.papers);
+  const paperBatches = draftValues.paperBatches ?? visiblePaperBatches(current?.papers ?? null, current?.paperBatches);
   const correctionErrors = draftValues.correctionErrors ?? valueText(current?.correctionErrors);
   const behaviorErrors = draftValues.behaviorErrors ?? valueText(current?.behaviorErrors);
   const score = calculateEvaluationScore(safeNumber(papers), safeNumber(correctionErrors), safeNumber(behaviorErrors));
@@ -152,8 +192,8 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
   function resetAfterDeletion() { clearTimeout(debounce.current); clearTimeout(statusTimer.current); pending.current = {}; setDraftValues({}); setSaveState('idle'); setError(''); }
 
   return {
-    current, papers, correctionErrors, behaviorErrors, score, saveState, error,
-    schedule, persist, retry, resetAfterDeletion,
+    current, papers, paperBatches, correctionErrors, behaviorErrors, score, saveState, error,
+    schedule, setPaperBatches, persist, retry, resetAfterDeletion,
     hasPendingChanges: saveState === 'saving' || saveState === 'error' || Object.keys(draftValues).length > 0,
   };
 }

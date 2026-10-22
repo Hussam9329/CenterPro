@@ -77,7 +77,8 @@ async function recordEvaluation(page: Page, papers = 100) {
   expect(await readPreviewSession(page)).toMatchObject({ role: 'EMPLOYEE', employeeId: auditorId, name: 'جعفر علي' });
   await gotoPreview(page, '/employee/audit');
   const editor = page.getByRole('article', { name: 'تدقيق ابرار حقي', exact: true });
-  await editor.getByLabel('عدد الأوراق المصححة', { exact: true }).fill(String(papers));
+  await editor.getByLabel('إضافة أوراق مصححة', { exact: true }).fill(String(papers));
+  await editor.getByLabel('إضافة أوراق مصححة', { exact: true }).press('Enter');
   await page.clock.runFor(500);
   await editor.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true }).click();
   await editor.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true }).click();
@@ -146,7 +147,7 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await enterAccount(page, auditorId);
     await gotoPreview(page, '/employee/audit');
     const closedEditor = page.getByRole('article', { name: 'تدقيق ابرار حقي', exact: true });
-    await expect(closedEditor.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+    await expect(closedEditor.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
     await expect(closedEditor.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true })).toBeDisabled();
     await enterAccount(page);
     await gotoPreview(page, `/evaluations/${exam.id}`);
@@ -179,7 +180,8 @@ test.describe('Evaluation seasons, publishing and roles', () => {
     await enterAccount(page, auditorId);
     await gotoPreview(page, '/employee/audit');
     const editor = page.getByRole('article', { name: 'تدقيق ابرار حقي', exact: true });
-    await editor.getByLabel('عدد الأوراق المصححة', { exact: true }).fill('20');
+    await editor.getByLabel('إضافة أوراق مصححة', { exact: true }).fill('20');
+    await editor.getByLabel('إضافة أوراق مصححة', { exact: true }).press('Enter');
     await page.clock.runFor(500);
 
     await enterAccount(page);

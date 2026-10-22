@@ -2,7 +2,7 @@ import type { DemoSession } from '@/lib/types';
 
 export type NumericField = 'papers' | 'correctionErrors' | 'behaviorErrors';
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error';
-export type PendingValues = Partial<Record<NumericField, string>>;
+export type PendingValues = Partial<Record<NumericField, string>> & { paperBatches?: number[] };
 export const numericFields: NumericField[] = ['papers', 'correctionErrors', 'behaviorErrors'];
 
 export function safeNumber(value: string): number | null {

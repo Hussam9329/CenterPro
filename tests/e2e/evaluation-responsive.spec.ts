@@ -132,7 +132,8 @@ async function expectEditorsFit(page: Page, width: number) {
   for (const editor of await editors.all()) {
     const name = await editor.getAttribute('aria-label');
     await expectSurfaceFits(editor, width, `${name}: card`);
-    const papers = editor.getByLabel('عدد الأوراق المصححة', { exact: true });
+    const papers = editor.getByLabel('إضافة أوراق مصححة', { exact: true });
+    await expectSurfaceFits(papers.locator('..'), width, `${name}: papers`);
     await expect(papers).toBeVisible();
     await expect(papers).toBeEnabled();
     for (const label of ['أخطاء التصحيح', 'أخطاء السلوك']) {
@@ -245,7 +246,7 @@ for (const [width, height] of sizes) {
     await expect(correctionErrors).toHaveValue('13');
     await editor.getByRole('button', { name: 'إنقاص أخطاء التصحيح', exact: true }).click();
     await expect(correctionErrors).toHaveValue('12');
-    await editor.getByLabel('عدد الأوراق المصححة', { exact: true }).fill('1251');
+    await editor.getByLabel('إضافة أوراق مصححة', { exact: true }).fill('1');
     await page.getByLabel('البحث في المصححين المختارين', { exact: true }).click();
     await expect.poll(async () => (await readPreviewData(page)).examEvaluations.find(row => row.employeeId === correctorId && row.examId === examId)?.papers).toBe(1251);
     await expectEvaluationLayout(page, width, 'مساحة المدقق بعد الإدخال');

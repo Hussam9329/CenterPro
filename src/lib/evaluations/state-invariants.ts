@@ -45,7 +45,7 @@ export function assertEvaluationState(data: DemoData): void {
     const pair = JSON.stringify([evaluation.examId, evaluation.employeeId]);
     if (!evaluation.employeeId || pairs.has(pair)) throw new Error('يسمح بتقييم واحد فقط لكل موظف في الامتحان.');
     pairs.add(pair);
-    for (const value of [evaluation.papers, evaluation.correctionErrors, evaluation.behaviorErrors]) {
+    for (const value of [evaluation.papers, ...(evaluation.paperBatches ?? []), evaluation.correctionErrors, evaluation.behaviorErrors]) {
       if (value !== null && (!Number.isSafeInteger(value) || value < 0)) throw new Error('أعداد الأوراق والأخطاء يجب أن تكون أعداداً صحيحة غير سالبة أو حقولاً فارغة.');
     }
   }
