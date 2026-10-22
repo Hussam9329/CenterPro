@@ -97,6 +97,11 @@ describe('per-account permissions through authenticated API sessions', () => {
     const fresh = await signIn(fixture.employees[3].username);
     expect(fresh.state.data.examEvaluations).toHaveLength(1);
     expect((await write(fresh.cookie, [{ collection: 'examEvaluations', upsert: [{ ...fixture.examEvaluations[0], papers: 200 }] }], 11)).status).toBe(200);
+    // The list of summed paper numbers is stored with the record and returned to auditors.
+    expect((await write(fresh.cookie, [{ collection: 'examEvaluations', upsert: [{ ...fixture.examEvaluations[0], papers: 230, paperBatches: [200, 30] }] }], 12)).status).toBe(200);
+    expect((await loadData(database as unknown as DbExecutor)).examEvaluations[0]).toMatchObject({ papers: 230, paperBatches: [200, 30] });
+    expect((await state(fresh.cookie)).data.examEvaluations[0]).toMatchObject({ paperBatches: [200, 30] });
+    expect((await write(fresh.cookie, [{ collection: 'examEvaluations', upsert: [{ ...fixture.examEvaluations[0], paperBatches: [-1] }] }], 13)).status).toBe(400);
   }, 30_000);
 
   it('fails closed for malformed truthy permission values carried by a legacy imported extension', async () => {

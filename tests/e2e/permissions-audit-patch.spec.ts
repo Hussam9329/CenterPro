@@ -44,13 +44,13 @@ test('delete-only audit permission works independently of editing and keeps clos
   await enter(page, fixture, auditorId);
   await page.getByRole('navigation', { name: 'التنقل السريع', exact: true }).getByRole('link', { name: 'التدقيق', exact: true }).click();
   const card = editor(page);
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
   await expect(card.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true })).toBeDisabled();
   const remove = card.getByRole('button', { name: `حذف تقييم ${correctorName}`, exact: true });
   await expect(remove).toBeEnabled();
 
   await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption(closedExamId);
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
   await expect(remove).toHaveCount(0);
   await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption(openExamId);
   await remove.click();
@@ -60,14 +60,14 @@ test('delete-only audit permission works independently of editing and keeps clos
   await dialog.getByRole('button', { name: 'تأكيد الحذف', exact: true }).click();
   await expect(dialog).toBeHidden();
   await expect(card).toContainText('لم يُدخل بعد');
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
   const saved = await readPreviewData(page);
   expect(saved.examEvaluations).toEqual(fixture.examEvaluations.filter(item => item.examId === closedExamId));
   expect(saved.audit[0]).toMatchObject({ action: 'حذف آمن مؤكد', actor: fixture.employees.find(item => item.id === auditorId)!.name, entity: 'examEvaluations' });
   expect(saved.employees).toEqual(fixture.employees);
   await page.reload();
   await expect(card).toContainText('لم يُدخل بعد');
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
 });
 
 test('owner edits exam metadata and open audit values while closed numeric values and manager access stay locked', async ({ page }) => {
@@ -76,7 +76,7 @@ test('owner edits exam metadata and open audit values while closed numeric value
   await enter(page, fixture);
   await gotoPreview(page, `/evaluations/${closedExamId}`);
   const card = editor(page);
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
   await expect(card.getByRole('button', { name: /^حذف تقييم/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'تعديل التفاصيل', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'تعديل تفاصيل الامتحان', exact: true });
@@ -91,17 +91,19 @@ test('owner edits exam metadata and open audit values while closed numeric value
   expect(saved.examEvaluations).toEqual(fixture.examEvaluations);
 
   await gotoPreview(page, `/evaluations/${openExamId}`);
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeEnabled();
-  await card.getByLabel('عدد الأوراق المصححة', { exact: true }).fill('56');
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeEnabled();
+  await card.getByLabel('إضافة أوراق مصححة', { exact: true }).fill('14');
+  await card.getByLabel('إضافة أوراق مصححة', { exact: true }).press('Enter');
   await page.clock.runFor(500);
   await expect(card.getByRole('status')).toContainText('تم الحفظ');
   saved = await readPreviewData(page);
   expect(saved.examEvaluations.find(item => item.examId === openExamId)).toMatchObject({ papers: 56, correctionErrors: 1, updatedBy: 'مدير النظام' });
   await page.getByRole('button', { name: 'إغلاق التدقيق', exact: true }).click();
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
   await page.reload();
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toHaveValue('56');
-  await expect(card.getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+  await expect(card.locator('[data-paper-total]')).toContainText('56');
+  await expect(card.getByRole('list', { name: 'الأعداد المضافة', exact: true }).getByRole('listitem')).toHaveText(['42', '14']);
+  await expect(card.getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
 
   const manager = fixture.employees.find(item => item.role === 'ADMIN')!;
   await loginAccount(page, manager.id);

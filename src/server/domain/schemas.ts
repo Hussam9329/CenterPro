@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { hasEmployeePermission, permissionFeatureForCollection } from '@/lib/permissions';
 import type { MutationRequest } from '@/lib/server-contract';
 import type { DemoData, DemoSession } from '@/lib/types';
+import { PAPER_BATCHES_LIMIT } from '@/lib/evaluations/paper-batches';
 import { assertUnique, collections, fail, find, same, type Collection, type RecordValue } from './shared';
 
 const identifier = z.string().min(1).max(200).refine(value => !['__proto__', 'prototype', 'constructor'].includes(value));
@@ -100,7 +101,7 @@ const schemas = {
   }),
   examEvaluations: z.object({
     id: identifier, examId: identifier, employeeId: identifier,
-    papers: int.nullable(), correctionErrors: int.nullable(), behaviorErrors: int.nullable(),
+    papers: int.nullable(), paperBatches: z.array(int).max(PAPER_BATCHES_LIMIT).optional(), correctionErrors: int.nullable(), behaviorErrors: int.nullable(),
     note: text, createdBy: text, createdAt: timestamp, updatedBy: text, updatedAt: timestamp,
   }),
 };

@@ -100,7 +100,7 @@ const evaluationCycle = object({ id: str, seasonId: str.optional(), name: str, s
 const evaluationExam = object({ id: str, cycleId: str, name: str, date: str, note: str, state: z.enum(['OPEN', 'CLOSED']),
   createdBy: str, createdAt: str, closedAt: str.optional(), closedBy: str.optional(),
 });
-const examEvaluation = object({ id: str, examId: str, employeeId: str, papers: num.nullable(),
+const examEvaluation = object({ id: str, examId: str, employeeId: str, papers: num.nullable(), paperBatches: z.array(num).optional(),
   correctionErrors: num.nullable(), behaviorErrors: num.nullable(), note: str,
   createdBy: str, createdAt: str, updatedBy: str, updatedAt: str,
 });

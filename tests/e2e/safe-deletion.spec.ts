@@ -178,10 +178,8 @@ test.describe('Safe deletion workflows', () => {
     await gotoPreview(page, '/employee/audit');
     await page.clock.pauseAt(new Date('2026-09-28T12:00:00.000Z'));
     const editor = page.getByRole('article', { name: `تدقيق ${employeeName}`, exact: true });
-    await editor.getByLabel('عدد الأوراق المصححة', { exact: true }).fill('');
+    await editor.getByRole('button', { name: 'حذف العدد 1: 42', exact: true }).click();
     const trigger = editor.getByRole('button', { name: `حذف تقييم ${employeeName}`, exact: true });
-    await expect(trigger).toBeDisabled();
-    await page.clock.fastForward(451);
     await expect(trigger).toBeEnabled();
     expect((await readPreviewData(page)).examEvaluations.find(row => row.id === 'delete-evaluation')).toMatchObject({ papers: null });
     await trigger.click();
@@ -203,7 +201,7 @@ test.describe('Safe deletion workflows', () => {
     fixture.evaluationExams[0].closedBy = 'مدير النظام';
     await enter(page, fixture, 'CP-0004');
     await gotoPreview(page, '/employee/audit');
-    await expect(page.getByRole('article', { name: `تدقيق ${employeeName}`, exact: true }).getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+    await expect(page.getByRole('article', { name: `تدقيق ${employeeName}`, exact: true }).getByLabel('إضافة أوراق مصححة', { exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: /^حذف/ })).toHaveCount(0);
     await loginAccount(page, 'CP-0002');
     await gotoPreview(page, '/employee/salary');

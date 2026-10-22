@@ -41,6 +41,13 @@ function editor(page: Page, name = correctorName) {
   return page.getByRole('article', { name: `تدقيق ${name}`, exact: true });
 }
 
+function paperEntry(card: ReturnType<typeof editor>) { return card.getByLabel('إضافة أوراق مصححة', { exact: true }); }
+function paperTotal(card: ReturnType<typeof editor>) { return card.locator('[data-paper-total]'); }
+async function addPapers(card: ReturnType<typeof editor>, value: string) {
+  await paperEntry(card).fill(value);
+  await paperEntry(card).press('Enter');
+}
+
 async function currentEvaluation(page: Page, examId = firstExam) {
   return (await readPreviewData(page)).examEvaluations.find(item => item.examId === examId && item.employeeId === corrector);
 }
@@ -51,18 +58,17 @@ test.describe('Evaluation autosave', () => {
   test('keeps rapid edits across fields and immediate steppers with accurate audit history', async ({ page }) => {
     await startAuditing(page);
     const card = editor(page);
-    const papers = card.getByLabel('عدد الأوراق المصححة', { exact: true });
-    await papers.pressSequentially('120');
+    await addPapers(card, '120');
     await card.getByLabel('أخطاء التصحيح', { exact: true }).pressSequentially('2');
     await card.getByLabel('أخطاء السلوك', { exact: true }).pressSequentially('3');
-    await expect(papers).toHaveValue('120');
+    await expect(paperTotal(card)).toContainText('120');
     await expect(card.getByLabel('أخطاء التصحيح', { exact: true })).toHaveValue('2');
     await expect(card.getByRole('status')).toContainText('جارٍ الحفظ');
     await page.clock.fastForward(451);
     expect(await currentEvaluation(page)).toMatchObject({ papers: 120, correctionErrors: 2, behaviorErrors: 3, updatedBy: 'مصطفى عمر كريم' });
     await expect(card).toContainText('101 نقطة');
 
-    await papers.fill('121');
+    await addPapers(card, '1');
     await card.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true }).click();
     expect(await currentEvaluation(page)).toMatchObject({ papers: 121, correctionErrors: 3, behaviorErrors: 3 });
     await expect(card).toContainText('97 نقطة');
@@ -79,9 +85,9 @@ test.describe('Evaluation autosave', () => {
 
   test('flushes to the original exam on switching and keeps filtered employee edits separate', async ({ page }) => {
     await startAuditing(page);
-    await editor(page).getByLabel('عدد الأوراق المصححة', { exact: true }).fill('42');
+    await addPapers(editor(page), '42');
     await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption(secondExam);
-    await expect(editor(page).getByLabel('عدد الأوراق المصححة', { exact: true })).toHaveValue('8');
+    await expect(paperTotal(editor(page))).toContainText('8');
     expect(await currentEvaluation(page, firstExam)).toMatchObject({ papers: 42, correctionErrors: null, behaviorErrors: null });
     await editor(page).getByLabel('أخطاء السلوك', { exact: true }).fill('7');
     await page.getByRole('button', { name: 'اختيار المصححين', exact: true }).click();
@@ -92,11 +98,11 @@ test.describe('Evaluation autosave', () => {
     await page.getByRole('button', { name: 'اختيار المصححين', exact: true }).click();
     await expect(editor(page).getByLabel('أخطاء السلوك', { exact: true })).toHaveValue('7');
 
-    await editor(page, 'مريم أحمد ناصر').getByLabel('عدد الأوراق المصححة', { exact: true }).fill('31');
+    await addPapers(editor(page, 'مريم أحمد ناصر'), '31');
     await page.getByLabel('البحث في المصححين المختارين', { exact: true }).fill('علي');
     await expect(editor(page, 'مريم أحمد ناصر')).toHaveCount(0);
     await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption(firstExam);
-    await expect(editor(page).getByLabel('عدد الأوراق المصححة', { exact: true })).toHaveValue('42');
+    await expect(paperTotal(editor(page))).toContainText('42');
     await page.clock.fastForward(2000);
     const data = await readPreviewData(page);
     expect(data.examEvaluations.find(item => item.examId === secondExam && item.employeeId === 'CP-0002')).toMatchObject({ papers: 31 });
@@ -106,12 +112,12 @@ test.describe('Evaluation autosave', () => {
 
   test('preserves pending input on internal navigation and a full page reload', async ({ page }) => {
     await startAuditing(page);
-    await editor(page).getByLabel('عدد الأوراق المصححة', { exact: true }).fill('61');
+    await addPapers(editor(page), '61');
     await page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true }).getByRole('link', { name: 'حسابي', exact: true }).click();
     await expect(page).toHaveURL(/\/employee\/profile$/);
     expect(await currentEvaluation(page)).toMatchObject({ papers: 61 });
     await page.getByRole('navigation', { name: 'القائمة الرئيسية', exact: true }).getByRole('link', { name: 'التدقيق', exact: true }).click();
-    await expect(editor(page).getByLabel('عدد الأوراق المصححة', { exact: true })).toHaveValue('61');
+    await expect(paperTotal(editor(page))).toContainText('61');
     await editor(page).getByLabel('أخطاء السلوك', { exact: true }).fill('4');
     // Reload without blurring the input exercises the page lifecycle flush.
     await page.reload();
@@ -121,7 +127,7 @@ test.describe('Evaluation autosave', () => {
 
   test('rejects queued writes after logout and attributes new input to the current auditor', async ({ page }) => {
     await startAuditing(page);
-    await editor(page).getByLabel('عدد الأوراق المصححة', { exact: true }).fill('777');
+    await paperEntry(editor(page)).fill('777');
     expect(await currentEvaluation(page)).toBeUndefined();
     // Activate logout without a focus change: pending cleanup must reject the
     // old account even when a click did not trigger the input's blur handler.
@@ -131,7 +137,7 @@ test.describe('Evaluation autosave', () => {
     await enterAccount(page, 'CP-0005');
     await page.clock.fastForward(2000);
     expect(await currentEvaluation(page)).toBeUndefined();
-    await editor(page).getByLabel('عدد الأوراق المصححة', { exact: true }).fill('12');
+    await addPapers(editor(page), '12');
     await editor(page).getByRole('button', { name: 'زيادة أخطاء السلوك', exact: true }).click();
     expect(await currentEvaluation(page)).toMatchObject({ papers: 12, behaviorErrors: 1, createdBy: 'نور سامي جاسم', updatedBy: 'نور سامي جاسم' });
     const history = (await readPreviewData(page)).audit.filter(item => item.entity === 'exam-evaluation');
@@ -140,9 +146,9 @@ test.describe('Evaluation autosave', () => {
 
   test('does not replay pending changes into closed exams or archived cycles', async ({ page }) => {
     await startAuditing(page);
-    await editor(page).getByLabel('عدد الأوراق المصححة', { exact: true }).fill('53');
+    await addPapers(editor(page), '53');
     await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption(closedExam);
-    await expect(editor(page).getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+    await expect(paperEntry(editor(page))).toBeDisabled();
     await expect(editor(page).getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true })).toBeDisabled();
     await page.clock.fastForward(2000);
     expect(await currentEvaluation(page, firstExam)).toMatchObject({ papers: 53 });
@@ -154,7 +160,7 @@ test.describe('Evaluation autosave', () => {
     const closedRecords = (await readPreviewData(page)).examEvaluations;
     await gotoPreview(page, '/login');
     await enterAccount(page);
-    await expect(editor(page).getByLabel('عدد الأوراق المصححة', { exact: true })).toBeDisabled();
+    await expect(paperEntry(editor(page))).toBeDisabled();
     await page.clock.fastForward(2000);
     expect((await readPreviewData(page)).examEvaluations).toEqual(closedRecords);
 
@@ -173,5 +179,53 @@ test.describe('Evaluation autosave', () => {
     const after = await readPreviewData(page);
     expect(after.examEvaluations).toEqual(archived.examEvaluations);
     expect(after.evaluationCycles[0].snapshot).toEqual(archived.evaluationCycles[0].snapshot);
+  });
+
+  test('adds corrected papers as editable numbers that sum into the total', async ({ page }) => {
+    await startAuditing(page);
+    const card = editor(page);
+    const chips = card.getByRole('list', { name: 'الأعداد المضافة', exact: true });
+    await addPapers(card, '20');
+    await paperEntry(card).fill('15');
+    await card.getByRole('button', { name: 'إضافة إلى الأوراق المصححة', exact: true }).click();
+    await expect(paperEntry(card)).toHaveValue('');
+    await expect(paperEntry(card)).toBeFocused();
+    // A typed number is not lost when the auditor moves on without Enter.
+    await paperEntry(card).fill('10');
+    await card.getByLabel('أخطاء السلوك', { exact: true }).click();
+    await expect(paperTotal(card)).toContainText('45');
+    await expect(chips.getByRole('listitem')).toHaveCount(3);
+    expect(await currentEvaluation(page)).toMatchObject({ papers: 45, paperBatches: [20, 15, 10] });
+
+    await chips.getByRole('button', { name: 'تعديل العدد 2: 15', exact: true }).click();
+    await card.getByLabel('تعديل العدد 2', { exact: true }).fill('25');
+    await card.getByLabel('تعديل العدد 2', { exact: true }).press('Enter');
+    expect(await currentEvaluation(page)).toMatchObject({ papers: 55, paperBatches: [20, 25, 10] });
+    await chips.getByRole('button', { name: 'حذف العدد 1: 20', exact: true }).click();
+    await expect(paperTotal(card)).toContainText('35');
+    expect(await currentEvaluation(page)).toMatchObject({ papers: 35, paperBatches: [25, 10] });
+    await expect(card).toContainText('35 نقطة');
+
+    const history = (await readPreviewData(page)).audit.filter(item => item.entity === 'exam-evaluation');
+    expect(history[0]).toMatchObject({ oldValues: { papers: 55, paperBatches: [20, 25, 10] }, newValues: { papers: 35, paperBatches: [25, 10] } });
+    await page.reload();
+    await expect(chips.getByRole('listitem')).toHaveCount(2);
+    await expect(paperTotal(card)).toContainText('35');
+
+    // Removing every number clears the total instead of saving zero.
+    await chips.getByRole('button', { name: 'حذف العدد 1: 25', exact: true }).click();
+    await chips.getByRole('button', { name: 'حذف العدد 1: 10', exact: true }).click();
+    await expect(chips).toHaveCount(0);
+    expect(await currentEvaluation(page)).toMatchObject({ papers: null });
+    expect((await currentEvaluation(page))?.paperBatches).toBeUndefined();
+  });
+
+  test('shows an older total as one number and keeps adding to it', async ({ page }) => {
+    await startAuditing(page);
+    await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption(secondExam);
+    const card = editor(page);
+    await expect(card.getByRole('list', { name: 'الأعداد المضافة', exact: true }).getByRole('listitem')).toHaveText(['8']);
+    await addPapers(card, '4');
+    expect(await currentEvaluation(page, secondExam)).toMatchObject({ papers: 12, paperBatches: [8, 4] });
   });
 });

@@ -67,6 +67,8 @@ export interface ExamEvaluation {
   examId: string;
   employeeId: string;
   papers: number | null;
+  /** The numbers an auditor added up to reach `papers`, in entry order. */
+  paperBatches?: number[];
   correctionErrors: number | null;
   behaviorErrors: number | null;
   note: string;

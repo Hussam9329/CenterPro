@@ -379,3 +379,36 @@
 .adminSectionBar { border-inline-start:1px solid var(--rd-line,#ececf0); }
 .adminHubCard { border-color:var(--rd-line,#ececf0); border-radius:18px; }
 .adminHubIcon { border-radius:50%; background:var(--brand-light,#fbf0f2); }
+
+/* Corrected papers: numbers are added up, each one kept as an editable chip. */
+.editorFields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.paperField { grid-column:1 / -1; }
+.paperHead { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.paperTotal { color:var(--text,#20242b); font-size:20px; font-weight:750; line-height:1; font-variant-numeric:tabular-nums; }
+.paperAdd { display:grid; grid-template-columns:minmax(0,1fr) 47px; border:1px solid var(--border,#dedfe5); border-radius:10px; overflow:hidden; min-height:47px; background:var(--surface,#fff); }
+.paperAdd input { min-width:0; border:0; outline:none; padding-inline:12px; background:transparent; color:var(--text,#353a44); font-size:14px; font-weight:650; font-variant-numeric:tabular-nums; }
+.paperAdd input::placeholder { color:var(--muted,#6b707b); font-weight:500; }
+.paperAdd button { border:0; border-inline-start:1px solid var(--border,#ececf0); background:#a51c30; color:#fff; display:grid; place-items:center; }
+.paperAdd button:hover:not(:disabled) { background:#861627; }
+.paperAdd button:disabled { background:color-mix(in srgb,var(--surface,#fff) 94%,#a51c30 6%); color:var(--brand-text,#a51c30); opacity:.55; cursor:not-allowed; }
+.paperAdd:focus-within { border-color:var(--focus,#a51c30); box-shadow:0 0 0 3px color-mix(in srgb,#a51c30 14%,transparent); }
+.paperAdd button:focus-visible { outline:2px solid #fff; outline-offset:-5px; }
+.paperChips { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px; max-height:96px; overflow-y:auto; }
+.paperChip { display:inline-flex; align-items:center; border:1px solid color-mix(in srgb,#a51c30 22%,var(--border,#e4e4ea)); border-radius:999px; background:color-mix(in srgb,var(--surface,#fff) 92%,#a51c30 8%); min-height:32px; overflow:hidden; }
+.paperChipValue { border:0; background:transparent; color:var(--text,#2b3038); font-size:13px; font-weight:650; font-variant-numeric:tabular-nums; padding:0 4px 0 12px; min-height:32px; min-width:34px; cursor:text; }
+.paperChip input { width:62px; border:0; outline:none; background:transparent; color:var(--text,#2b3038); font-size:13px; font-weight:650; text-align:center; min-height:32px; font-variant-numeric:tabular-nums; }
+.paperChip[data-editing] { border-color:var(--focus,#a51c30); box-shadow:0 0 0 2px color-mix(in srgb,#a51c30 18%,transparent); }
+.paperChipRemove { border:0; background:transparent; color:var(--muted,#6b707b); width:30px; min-height:32px; display:grid; place-items:center; }
+.paperChipRemove:hover:not(:disabled) { color:#a51c30; }
+span.paperChipValue { display:inline-flex; align-items:center; padding:0 12px; cursor:default; }
+.paperChipValue:focus-visible, .paperChipRemove:focus-visible { outline:2px solid var(--focus,#a51c30); outline-offset:-3px; border-radius:999px; }
+@media (max-width:767px) {
+  .editorFields { grid-template-columns:1fr; }
+  .paperChip, .paperChipValue, .paperChipRemove, .paperChip input { min-height:36px; }
+  .paperChipRemove { width:34px; }
+}
+:global(html[data-theme='dark']) .paperAdd { background:#181b20; border-color:#2b3038; }
+:global(html[data-theme='dark']) .paperAdd button { border-color:#2b3038; }
+:global(html[data-theme='dark']) .paperAdd button:disabled { background:#241b20; color:var(--brand-text); }
+:global(html[data-theme='dark']) .paperChip { background:#241b20; border-color:#46303a; }
+:global(html[data-theme='dark']) .paperTotal { color:#eef0f3; }
