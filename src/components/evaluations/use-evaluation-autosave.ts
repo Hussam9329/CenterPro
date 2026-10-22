@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDemo } from '@/components/demo-provider';
 import { calculateEvaluationScore, getExamEvaluation, isCorrectionEmployee } from '@/lib/evaluations';
 import { hasSessionAccountPermission } from '@/lib/permissions';
-import { PAPER_BATCHES_LIMIT, sumPaperBatches, visiblePaperBatches } from '@/lib/evaluations/paper-batches';
+import { attributeErrors, errorActorKey } from '@/lib/evaluations/error-attribution';
+import { PAPER_BATCHES_LIMIT,sumPaperBatches, visiblePaperBatches } from '@/lib/evaluations/paper-batches';
 import type { ExamEvaluation } from '@/lib/types';
 import { actorKey, numericFields, safeNumber, valueText, type NumericField, type PendingValues, type SaveState } from './editor-values';
 
@@ -64,7 +65,11 @@ export function useEvaluationAutosave({ examId, employeeId, disabled }: { examId
             if (!changed.length && !batchesChanged) return;
             const now = new Date().toISOString();
             const target: ExamEvaluation = existing ?? { id: crypto.randomUUID(), examId, employeeId, papers: null, correctionErrors: null, behaviorErrors: null, note: '', createdBy: currentSession.name, createdAt: now, updatedBy: currentSession.name, updatedAt: now };
+            const before = existing ? { correctionErrors: existing.correctionErrors, behaviorErrors: existing.behaviorErrors, errorsBy: existing.errorsBy } : undefined;
             changed.forEach(field => { target[field] = safeNumber(values[field]!); });
+            // The server recomputes this from the signed-in account; the local preview mirrors it.
+            const errorsBy = attributeErrors(before, target, { key: errorActorKey(currentSession), name: currentSession.name });
+            if (errorsBy) target.errorsBy = errorsBy; else delete target.errorsBy;
             if (batches !== undefined) {
               if (batches.length) target.paperBatches = [...batches];
               else delete target.paperBatches;

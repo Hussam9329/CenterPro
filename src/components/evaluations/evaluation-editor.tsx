@@ -6,6 +6,7 @@ import { SafeDeleteButton } from '@/components/delete/safe-delete-button';
 import { Avatar, Badge, Button } from '@/components/ui';
 import { date, time } from '@/lib/format';
 import { hasSessionAccountPermission } from '@/lib/permissions';
+import { ErrorsByAuditor } from './errors-by-auditor';
 import { EvaluationStepper } from './evaluation-stepper';
 import { PaperCounter } from './paper-counter';
 import { useEvaluationAutosave } from './use-evaluation-autosave';
@@ -23,6 +24,7 @@ export function EvaluationEditor({ examId, employeeId, disabled, deletionLocked 
       <EvaluationStepper label="أخطاء التصحيح" value={correctionErrors} disabled={disabled} onImmediate={value => schedule('correctionErrors', String(value), true)} onType={value => schedule('correctionErrors', value)} onBlur={() => persist()}/>
       <EvaluationStepper label="أخطاء السلوك" value={behaviorErrors} disabled={disabled} onImmediate={value => schedule('behaviorErrors', String(value), true)} onType={value => schedule('behaviorErrors', value)} onBlur={() => persist()}/>
     </div>
+    <ErrorsByAuditor evaluation={current} correctorName={employee.name}/>
     <div className={styles.scoreStrip}><div><span className="muted">التقييم الحالي</span><strong dir="ltr">{score} نقطة</strong></div><span className={styles.saveState} data-state={saveState} role="status" aria-live="polite">{saveState === 'saving' ? 'جارٍ الحفظ…' : saveState === 'saved' ? <><Check size={13}/>تم الحفظ</> : saveState === 'error' ? 'لم يُحفظ التعديل' : current ? 'حفظ تلقائي' : 'أدخل القيم للبدء'}</span></div>
     {error && <div className="stack"><p className="text-danger" role="alert">{error}</p><Button variant="secondary" disabled={disabled} onClick={retry}>إعادة محاولة الحفظ</Button></div>}
     {current && <div className={styles.metaLine}>آخر تحديث بواسطة {current.updatedBy} · <span dir="ltr">{date(current.updatedAt)} — <bdi dir="ltr">{time(current.updatedAt)}</bdi></span></div>}

@@ -101,7 +101,9 @@ const schemas = {
   }),
   examEvaluations: z.object({
     id: identifier, examId: identifier, employeeId: identifier,
-    papers: int.nullable(), paperBatches: z.array(int).max(PAPER_BATCHES_LIMIT).optional(), correctionErrors: int.nullable(), behaviorErrors: int.nullable(),
+    papers: int.nullable(), paperBatches: z.array(int).max(PAPER_BATCHES_LIMIT).optional(),
+    // Accepted for shape only; the server recomputes it from the signed-in actor.
+    errorsBy: z.record(z.string().max(200), z.object({ name: z.string().max(200), correctionErrors: int, behaviorErrors: int })).optional(), correctionErrors: int.nullable(), behaviorErrors: int.nullable(),
     note: text, createdBy: text, createdAt: timestamp, updatedBy: text, updatedAt: timestamp,
   }),
 };

@@ -228,4 +228,33 @@ test.describe('Evaluation autosave', () => {
     await addPapers(card, '4');
     expect(await currentEvaluation(page, secondExam)).toMatchObject({ papers: 12, paperBatches: [8, 4] });
   });
+
+  test('shows how many errors each auditor added to a corrector', async ({ page }) => {
+    await startAuditing(page);
+    let card = editor(page);
+    await card.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true }).click();
+    await card.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true }).click();
+    await card.getByRole('button', { name: 'زيادة أخطاء السلوك', exact: true }).click();
+    await expect(card.getByRole('status')).toContainText('تم الحفظ');
+
+    await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
+    await enterAccount(page, 'CP-0005');
+    card = editor(page);
+    await card.getByRole('button', { name: 'زيادة أخطاء التصحيح', exact: true }).click();
+    await expect(card.getByRole('status')).toContainText('تم الحفظ');
+
+    await card.getByRole('button', { name: `الأخطاء حسب المدقق لـ ${correctorName}`, exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: `أخطاء ${correctorName}`, exact: true });
+    await expect(dialog).toBeVisible();
+    const rows = dialog.getByRole('row');
+    await expect(rows.nth(1)).toHaveText(/مصطفى عمر كريم\s*2\s*1/);
+    await expect(rows.nth(2)).toHaveText(/نور سامي جاسم\s*1\s*0/);
+    await expect(rows.last()).toHaveText(/المجموع\s*3\s*1/);
+    await dialog.getByRole('button', { name: 'إغلاق النافذة', exact: true }).click();
+
+    // An older exam result entered before tracking shows its errors as uncredited.
+    await page.getByLabel('اختيار الامتحان', { exact: true }).selectOption(secondExam);
+    await editor(page).getByRole('button', { name: `الأخطاء حسب المدقق لـ ${correctorName}`, exact: true }).click();
+    await expect(page.getByRole('dialog').getByRole('row').nth(1)).toHaveText(/غير محدد \(قبل تفعيل التتبع\)\s*1\s*0/);
+  });
 });

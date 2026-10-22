@@ -62,6 +62,8 @@ export interface EvaluationExam {
   closedAt?: string;
   closedBy?: string;
 }
+export interface ErrorContribution { name: string; correctionErrors: number; behaviorErrors: number }
+
 export interface ExamEvaluation {
   id: string;
   examId: string;
@@ -69,6 +71,8 @@ export interface ExamEvaluation {
   papers: number | null;
   /** The numbers an auditor added up to reach `papers`, in entry order. */
   paperBatches?: number[];
+  /** Errors credited to each auditor, keyed by employee id (or SYSTEM). Set by the server. */
+  errorsBy?: Record<string, ErrorContribution>;
   correctionErrors: number | null;
   behaviorErrors: number | null;
   note: string;

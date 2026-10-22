@@ -412,3 +412,21 @@ span.paperChipValue { display:inline-flex; align-items:center; padding:0 12px; c
 :global(html[data-theme='dark']) .paperAdd button:disabled { background:#241b20; color:var(--brand-text); }
 :global(html[data-theme='dark']) .paperChip { background:#241b20; border-color:#46303a; }
 :global(html[data-theme='dark']) .paperTotal { color:#eef0f3; }
+
+/* Per-corrector breakdown of who added which errors. */
+.errorsByButton { align-self:flex-start; display:inline-flex; align-items:center; gap:7px; min-height:36px; padding:0 12px; border:1px solid var(--border,#e4e4ea); border-radius:999px; background:var(--surface,#fff); color:var(--brand-text,#a51c30); font-size:12.5px; font-weight:650; cursor:pointer; }
+.errorsByButton:hover { background:color-mix(in srgb,var(--surface,#fff) 92%,#a51c30 8%); border-color:color-mix(in srgb,#a51c30 30%,var(--border,#e4e4ea)); }
+.errorsByButton:focus-visible { outline:2px solid var(--focus,#a51c30); outline-offset:2px; }
+.errorsByCount { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#a51c30; color:#fff; font-size:11px; font-variant-numeric:tabular-nums; }
+.errorsByWrap { overflow-x:auto; }
+.errorsByTable { width:100%; border-collapse:collapse; font-size:13px; }
+.errorsByTable th, .errorsByTable td { padding:11px 10px; border-bottom:1px solid var(--border,#ececf0); text-align:start; }
+.errorsByTable thead th { color:var(--muted,#6b707b); font-size:12px; font-weight:600; }
+.errorsByTable td { width:26%; text-align:center; font-variant-numeric:tabular-nums; font-weight:650; }
+.errorsByTable thead th:not(:first-child) { text-align:center; }
+.errorsByTable tbody th { font-weight:600; color:var(--text,#2b3038); overflow-wrap:anywhere; }
+.errorsByTable tfoot th, .errorsByTable tfoot td { border-bottom:0; font-weight:750; color:var(--brand-text,#a51c30); }
+.errorsByMuted th, .errorsByMuted td { color:var(--muted,#6b707b) !important; font-weight:500 !important; }
+:global(html[data-theme='dark']) .errorsByButton { background:#181b20; border-color:#2b3038; }
+:global(html[data-theme='dark']) .errorsByTable th, :global(html[data-theme='dark']) .errorsByTable td { border-color:#2b3038; }
+:global(html[data-theme='dark']) .errorsByTable tbody th { color:#e3e6ea; }
