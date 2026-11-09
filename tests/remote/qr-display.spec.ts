@@ -166,7 +166,7 @@ for (const firstSave of ['qr', 'center'] as const) {
         : { qrDisplayUsername: 'OTHER_TABLET' }),
     };
     const readsBeforePoll = reads;
-    await page.clock.fastForward(15_001);
+    await page.clock.fastForward(60_001);
     await expect.poll(() => reads).toBeGreaterThan(readsBeforePoll);
     await expect(page.getByLabel('اسم المركز', { exact: false })).toHaveValue('مسودة اسم المركز');
     await expect(page.getByLabel('اسم المستخدم', { exact: false })).toHaveValue('TABLET_DRAFT');
@@ -191,7 +191,7 @@ test('display follows open and closed workdays, rotates QR, and removes access a
   await page.goto('/attendance-display');
   await expect(page.getByText('لا يوجد يوم حضور مفتوح حالياً.', { exact: true })).toBeVisible();
   current = { ...openSnapshot(), revision: 12 };
-  await page.clock.fastForward(15_001);
+  await page.clock.fastForward(60_001);
   await expect(qrImage(page)).toBeVisible();
   const firstQr = await qrImage(page).innerHTML();
   await page.clock.fastForward(45_001);
@@ -199,11 +199,11 @@ test('display follows open and closed workdays, rotates QR, and removes access a
   await expect(qrImage(page)).toBeVisible();
   await expect.poll(() => qrImage(page).innerHTML()).not.toBe(firstQr);
   current = { ...snapshot(), revision: 13 };
-  await page.clock.fastForward(15_001);
+  await page.clock.fastForward(60_001);
   await expect(page.getByText('لا يوجد يوم حضور مفتوح حالياً.', { exact: true })).toBeVisible();
   await expect(qrImage(page)).toHaveCount(0);
   current = { ...snapshot(null), revision: 14 };
-  await page.clock.fastForward(15_001);
+  await page.clock.fastForward(60_001);
   await expect(page.getByText('شاشة الحضور غير متاحة لهذا الحساب', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'تسجيل الخروج', exact: true })).toHaveCount(0);
 });

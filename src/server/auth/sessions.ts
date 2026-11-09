@@ -27,7 +27,7 @@ export function clearSessionCookie(response: NextResponse): void {
   response.cookies.set(sessionCookieName(), '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/', maxAge: 0 });
 }
 
-export function resolveAccount(data: DemoData, auth: AuthStore, accountKey: string, version: number): DemoSession | null {
+export function resolveAccount(data: Pick<DemoData, 'employees'>, auth: AuthStore, accountKey: string, version: number): DemoSession | null {
   if (accountKey === 'SYSTEM') {
     return auth.system?.version === version ? { role: 'SUPER_ADMIN', kind: 'SYSTEM', name: 'مدير النظام', authVersion: version } : null;
   }
@@ -39,7 +39,7 @@ export function resolveAccount(data: DemoData, auth: AuthStore, accountKey: stri
   return employee && credential?.version === version ? { role: employee.role, kind: 'EMPLOYEE', employeeId: employee.id, name: employee.name, authVersion: version } : null;
 }
 
-export async function resolveSession(tx: DbExecutor, request: Request, data: DemoData, auth: AuthStore, now = new Date()): Promise<Identity | null> {
+export async function resolveSession(tx: DbExecutor, request: Request, data: Pick<DemoData, 'employees'>, auth: AuthStore, now = new Date()): Promise<Identity | null> {
   const token = readSessionToken(request);
   if (!token) return null;
   const tokenHash = hashSessionToken(token);
