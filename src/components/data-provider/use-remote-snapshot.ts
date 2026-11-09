@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { RemoteSnapshot } from '@/lib/server-contract';
+import type { RemoteSnapshot, RemoteUnchanged } from '@/lib/server-contract';
 import type { RemoteDrafts } from './remote-drafts';
 import { remoteRequest } from './remote-request';
 import { sameAccount, serverSnapshot } from './snapshot';
@@ -25,7 +25,19 @@ export function useRemoteSnapshot(drafts: RemoteDrafts) {
   const refreshState = useCallback(async (background = false) => {
     const sequence = operation.current;
     try {
-      const next = await remoteRequest<RemoteSnapshot>('/api/state');
+      const held = current.current;
+      // Background polls send the held revision; the server then skips the full document when nothing changed.
+      const known = background && held.ready && held.session && typeof held.revision === 'number' ? held.revision : null;
+      const response = await remoteRequest<RemoteSnapshot | RemoteUnchanged>(known === null ? '/api/state' : `/api/state?revision=${known}`);
+      if ('unchanged' in response) {
+        if (sequence !== operation.current || changing.current) return;
+        if (sameAccount(response.session, current.current.session) && response.revision === current.current.revision) {
+          publishRemote({ ...current.current, today: response.today, month: response.month, serverTime: response.serverTime, remembered: response.remembered, connectionError: undefined });
+          return;
+        }
+      }
+      // A different account or revision since the request was sent: read the whole document.
+      const next = 'unchanged' in response ? await remoteRequest<RemoteSnapshot>('/api/state') : response;
       if (sequence === operation.current && !changing.current) {
         if (current.current.ready && sameAccount(next.session, current.current.session) && next.revision < (current.current.revision ?? 0)) return;
         const editing = drafts.isEditing();
@@ -46,7 +58,7 @@ export function useRemoteSnapshot(drafts: RemoteDrafts) {
     let active = true;
     const load = () => { if (active && !changing.current && document.visibilityState !== 'hidden') void refreshState(true).catch(() => {}); };
     load();
-    const timer = window.setInterval(load, 15_000);
+    const timer = window.setInterval(load, 60_000);
     document.addEventListener('input', drafts.markEdited);
     document.addEventListener('change', drafts.markEdited);
     window.addEventListener('focus', load);

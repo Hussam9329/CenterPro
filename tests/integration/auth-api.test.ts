@@ -121,6 +121,25 @@ describe('real PostgreSQL authentication and API boundaries', () => {
     expect((await state(another.cookie)).session).toBeNull();
   }, 30_000);
 
+  it('answers a poll that already holds the current revision without the document, and falls back to a full read otherwise', async () => {
+    await seed();
+    const { cookie, state: signedIn } = await signIn();
+    const poll = async (revision: string, withCookie: string | undefined = cookie) => await (await getState(request(`/api/state?revision=${revision}`, undefined, withCookie))).json() as Record<string, unknown>;
+    const unchanged = await poll(String(signedIn.revision));
+    expect(unchanged).toMatchObject({ unchanged: true, revision: signedIn.revision, session: { role: 'SUPER_ADMIN' }, remembered: false });
+    expect(unchanged).not.toHaveProperty('data');
+    expect((await poll(String(signedIn.revision - 1))).data).toEqual(signedIn.data);
+    expect((await poll('not-a-number')).data).toEqual(signedIn.data);
+    await database.update(schema.state).set({ revision: signedIn.revision + 1 });
+    const moved = await poll(String(signedIn.revision)) as unknown as RemoteSnapshot;
+    expect(moved.revision).toBe(signedIn.revision + 1); expect(moved.data.employees.length).toBeGreaterThan(0);
+    const anonymous = await poll(String(signedIn.revision + 1), '');
+    expect(anonymous).not.toHaveProperty('unchanged'); expect(anonymous.session).toBeNull();
+    await database.update(schema.sessions).set({ expiresAt: new Date(Date.now() - 1) });
+    const expired = await poll(String(signedIn.revision + 1));
+    expect(expired).not.toHaveProperty('unchanged'); expect(expired.session).toBeNull();
+  }, 30_000);
+
   it('creates a dedicated QR display account that can only read the open workday and issue QR tokens', async () => {
     fixture.employees[0].photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aKp0AAAAASUVORK5CYII=';
     Object.assign(fixture, { privateExtension: 'root-secret' });

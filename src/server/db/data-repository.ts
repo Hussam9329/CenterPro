@@ -21,16 +21,28 @@ export async function bumpRevision(db: DbExecutor): Promise<number> {
   return rows[0].revision;
 }
 
+/** Plain-read counterpart of lockState: revision and settings only, no row lock. */
+export async function readStateHeader(db: DbExecutor): Promise<{ revision: number; settings: DemoData['settings'] }> {
+  const rows = await db.select({ revision: schema.state.revision, settings: schema.state.settings }).from(schema.state).where(eq(schema.state.id, 1));
+  if (!rows[0]) throw new Error('Database has not been migrated.');
+  return rows[0];
+}
+
+/** Loads only the named collections, so hot read paths do not transfer the whole document. */
+export async function loadCollections<K extends CollectionName>(db: DbExecutor, names: readonly K[]): Promise<Pick<DemoData, K>> {
+  const data: Record<string, unknown> = {};
+  for (const name of names as readonly CollectionName[]) {
+    const table = schema[name];
+    data[name] = (await db.select({ record: table.record }).from(table).orderBy(asc(table.position), asc(table.id))).map(row => row.record);
+  }
+  return data as Pick<DemoData, K>;
+}
+
 /** Use inside a transaction (lockState for writes; repeatable-read for plain reads). */
 export async function loadData(db: DbExecutor): Promise<DemoData> {
   const rows = await db.select().from(schema.state).where(eq(schema.state.id, 1));
   if (!rows[0]) throw new Error('Database has not been migrated.');
-  const data: Record<string, unknown> = { ...rows[0].extras, settings: rows[0].settings };
-  for (const name of collectionNames) {
-    const table = schema[name];
-    data[name] = (await db.select({ record: table.record }).from(table).orderBy(asc(table.position), asc(table.id))).map(row => row.record);
-  }
-  return data as unknown as DemoData;
+  return { ...rows[0].extras, settings: rows[0].settings, ...await loadCollections(db, collectionNames) } as unknown as DemoData;
 }
 
 function recordArray(data: DemoData, name: CollectionName): JsonRecord[] { return data[name] as unknown as JsonRecord[]; }

@@ -17,6 +17,17 @@ export interface MutationRequest extends MutationOptions {
   settings?: DemoSettings;
   audit?: AuditInput;
 }
+/** Answer to GET /api/state?revision=N when the signed-in reader already holds revision N. */
+export interface RemoteUnchanged {
+  unchanged: true;
+  session: DemoSession;
+  revision: number;
+  remembered: boolean;
+  today: string;
+  month: string;
+  serverTime: string;
+}
+
 export interface RemoteSnapshot {
   data: DemoData;
   session: DemoSession | null;
