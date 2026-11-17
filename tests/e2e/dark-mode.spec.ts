@@ -27,7 +27,7 @@ async function expectSeasonRankLayout(page: Page, width: number, description: st
   for (const badge of await badges.all()) {
     const tier = await badge.getAttribute('data-rank-tier');
     const level = await badge.getAttribute('data-rank-level');
-    const asset = tier === 'grandmaster' ? '/ranks/grandmaster.png' : `/ranks/${tier}-${level}.png`;
+    const asset = tier === 'grandmaster' ? '/ranks/grandmaster.webp' : `/ranks/${tier}-${level}.webp`;
     const image = badge.locator('img');
     await expect(image).toHaveAttribute('src', asset);
     await image.scrollIntoViewIfNeeded();

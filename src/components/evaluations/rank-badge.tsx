@@ -7,7 +7,7 @@ import styles from './evaluations.module.css';
 type RankTier = ReturnType<typeof getSeasonRank>['tier'];
 
 function assetFor(tier: RankTier, level: number | null) {
-  return tier === 'grandmaster' ? '/ranks/grandmaster.png' : `/ranks/${tier}-${level ?? 1}.png`;
+  return tier === 'grandmaster' ? '/ranks/grandmaster.webp' : `/ranks/${tier}-${level ?? 1}.webp`;
 }
 
 export function RankBadge({ score, size = 'md', animated = false, showLabel = true }: { score: number; size?: 'sm' | 'md' | 'lg'; animated?: boolean; showLabel?: boolean }) {
@@ -15,7 +15,7 @@ export function RankBadge({ score, size = 'md', animated = false, showLabel = tr
   const src = assetFor(rank.tier, rank.level);
   return <div className={`${styles.rankBadgeWrap} ${styles[`rankBadge${size.toUpperCase()}`]} ${animated ? styles.rankBadgeAnimated : ''}`} data-rank-tier={rank.tier} data-rank-level={rank.level ?? 'grandmaster'} aria-label={showLabel ? undefined : rank.name} role={showLabel ? undefined : 'img'}>
     <div className={styles.rankBadgeIcon}>
-      <Image className={styles.rankAssetImage} src={src} width={1024} height={1024} alt="" aria-hidden="true" unoptimized priority={size === 'lg'} />
+      <Image className={styles.rankAssetImage} src={src} width={512} height={512} alt="" aria-hidden="true" unoptimized priority={size === 'lg'} />
       <span className={styles.rankVectorOutline} data-rank-outline aria-hidden="true" />
       {animated && <span className={styles.rankAssetShine} data-rank-shine aria-hidden="true" />}
     </div>
