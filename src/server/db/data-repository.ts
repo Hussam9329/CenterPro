@@ -1,4 +1,4 @@
-import { asc, eq, sql, type SQL } from 'drizzle-orm';
+import { eq, sql, type SQL } from 'drizzle-orm';
 import type { DemoData } from '@/lib/types';
 import { assertPhotosExternalized } from '@/server/photos';
 import type { DbExecutor } from './connection';
@@ -28,13 +28,16 @@ export async function readStateHeader(db: DbExecutor): Promise<{ revision: numbe
   return rows[0];
 }
 
-/** Loads only the named collections, so hot read paths do not transfer the whole document. */
+/** Loads only the named collections, so hot read paths do not transfer the whole document.
+ * One statement for all of them: every round trip pays the app-to-database latency. */
 export async function loadCollections<K extends CollectionName>(db: DbExecutor, names: readonly K[]): Promise<Pick<DemoData, K>> {
+  const unique = [...new Set(names as readonly CollectionName[])];
+  if (!unique.length) return {} as Pick<DemoData, K>;
+  const columns = unique.map(name => sql`(select coalesce(json_agg(${sql.identifier('record')} order by ${sql.identifier('position')}, ${sql.identifier('id')}), '[]'::json) from ${qualifiedTable(name)}) as ${sql.identifier(name)}`);
+  const result = await db.execute(sql`select ${sql.join(columns, sql`, `)}`);
+  const row = (result as unknown as { rows: Record<string, unknown>[] }).rows[0];
   const data: Record<string, unknown> = {};
-  for (const name of names as readonly CollectionName[]) {
-    const table = schema[name];
-    data[name] = (await db.select({ record: table.record }).from(table).orderBy(asc(table.position), asc(table.id))).map(row => row.record);
-  }
+  for (const name of unique) data[name] = typeof row[name] === 'string' ? JSON.parse(row[name] as string) : row[name];
   return data as Pick<DemoData, K>;
 }
 
