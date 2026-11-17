@@ -18,6 +18,8 @@
 
 All 22 badges were compared before and after in light and dark themes at a rendered size of 176px. The supplied PNG silhouettes differ slightly between tiers; a shared clean vector perimeter necessarily trims their rough margins. Browser alpha-weighted measurements retain 86.85–91.94% of original painted alpha (Grandmaster: 89.54%). Tests use an 85% severe-clipping guard together with actual SVG decoding, exact tier mapping, nonempty masks, matching bounds and connected outlines. The original PNG bytes and their internal transparent regions remain unchanged.
 
+Update (November 2026, performance): the artwork is now served as 512×512 WebP (`public/ranks/*.webp`, quality 88, alpha kept) resized from those PNGs, about 44 KB per badge instead of about 480 KB. The largest display is 220 CSS px, so 512 px stays sharp on 2x screens. The original 1024×1024 PNGs remain in Git history.
+
 ![All ranks, light comparison](rank-edge-comparison-light.png)
 
 ![All ranks, dark comparison](rank-edge-comparison-dark.png)
