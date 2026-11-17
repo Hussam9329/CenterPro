@@ -146,8 +146,8 @@ async function expectRankAssets(scope: Locator) {
   expect(new Set(results.map(item => item.source)).size).toBe(22);
   expect(new Set(results.map(item => item.pixelHash)).size, 'All 22 loaded emblems have distinct browser-painted pixels, not only different URLs').toBe(22);
   for (const rank of results) {
-    expect(rank.resolution, `${rank.name}: the full-resolution asset is loaded`).toEqual([1024, 1024]);
-    expect(rank.source).toMatch(/\/ranks\/(?:bronze|silver|gold|platinum|diamond|emerald|master)-[123]\.png|\/ranks\/grandmaster\.png/);
+    expect(rank.resolution, `${rank.name}: the full-resolution asset is loaded`).toEqual([512, 512]);
+    expect(rank.source).toMatch(/\/ranks\/(?:bronze|silver|gold|platinum|diamond|emerald|master)-[123]\.webp|\/ranks\/grandmaster\.webp/);
     expect(rank.painted, `${rank.name}: nonempty transparent artwork`).toBeGreaterThan(1000);
     expect(rank.painted, `${rank.name}: transparent breathing room`).toBeLessThan(60_000);
     expect(rank.touchesEdge, `${rank.name}: artwork must not be clipped`).toBeFalsy();

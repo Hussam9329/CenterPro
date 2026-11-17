@@ -55,12 +55,12 @@ async function expectLoadedRank(container: Locator, level: 1 | 2) {
   const badge = container.getByRole('img', { name: `Bronze ${level}`, exact: true });
   await expect(badge).toBeVisible();
   const image = badge.locator('img');
-  await expect(image).toHaveAttribute('src', `/ranks/bronze-${level}.png`);
+  await expect(image).toHaveAttribute('src', `/ranks/bronze-${level}.webp`);
   await image.scrollIntoViewIfNeeded();
   await image.evaluate(element => (element as HTMLImageElement).decode());
   expect(await image.evaluate(element => {
     const image = element as HTMLImageElement;
-    return image.complete && image.naturalWidth === 1024 && image.naturalHeight === 1024 && getComputedStyle(image).objectFit === 'contain';
+    return image.complete && image.naturalWidth === 512 && image.naturalHeight === 512 && getComputedStyle(image).objectFit === 'contain';
   }), 'The profile rank artwork is loaded and keeps its aspect ratio').toBeTruthy();
   expect(await container.evaluate(element => {
     const container = element.getBoundingClientRect();

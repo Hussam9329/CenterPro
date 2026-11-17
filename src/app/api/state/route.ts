@@ -1,3 +1,4 @@
+import { createInitialData } from '@/lib/mock-data';
 import type { RemoteUnchanged } from '@/lib/server-contract';
 import { baghdadDate, makeSnapshot, withReadState } from '@/server/auth';
 import { loadData } from '@/server/db/repository';
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
         today, month: today.slice(0, 7), serverTime: context.now.toISOString(),
       } satisfies RemoteUnchanged;
     }
-    return makeSnapshot({ ...context, data: await loadData(context.tx) });
+    // Signed-out visitors only receive public status, so skip reading the document.
+    return makeSnapshot({ ...context, data: context.identity ? await loadData(context.tx) : createInitialData() });
   })));
 }
