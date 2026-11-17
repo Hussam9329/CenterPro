@@ -64,9 +64,12 @@ export function photoHashes(data: DemoData): Set<string> {
   return hashes;
 }
 
+/** A stalled object-storage call must not hold the request (and its database transaction) open. */
+const BLOB_TIMEOUT_MS = 15_000;
+
 async function readStored(hash: string): Promise<string | null> {
   if (!/^[a-f0-9]{64}$/.test(hash)) return null;
-  const result = await get(storagePath(hash), { access: 'private', useCache: false });
+  const result = await get(storagePath(hash), { access: 'private', useCache: false, abortSignal: AbortSignal.timeout(BLOB_TIMEOUT_MS) });
   if (!result) return null;
   if (result.statusCode !== 200 || result.blob.size > MAX_STORED_BYTES) throw new PhotoValidationError();
   const reader = result.stream.getReader();
@@ -95,7 +98,7 @@ async function storePhoto(value: string): Promise<string> {
   try {
     // Hash-derived immutable names deduplicate archive copies and retries. Exact
     // original text lives privately in object storage; PostgreSQL stores a URL.
-    await put(storagePath(hash), value, { access: 'private', contentType: 'text/plain; charset=utf-8', addRandomSuffix: false, allowOverwrite: false });
+    await put(storagePath(hash), value, { access: 'private', contentType: 'text/plain; charset=utf-8', addRandomSuffix: false, allowOverwrite: false, abortSignal: AbortSignal.timeout(BLOB_TIMEOUT_MS) });
   } catch (error) {
     // A concurrent request may have created the same content-addressed object.
     // Do not overwrite or delete it; verify before treating the retry as success.
