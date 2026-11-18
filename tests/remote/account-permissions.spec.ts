@@ -47,6 +47,7 @@ async function permissionsTransport(page: Page, withManager = false) {
   await page.route('**/api/**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     if (pathname === '/api/state' && route.request().method() === 'GET') { reads += 1; return route.fulfill({ json: snapshot() }); }
+    if (pathname === '/api/todos') return route.fulfill({ json: [] });
     expect(pathname).toBe('/api/mutations');
     expect(route.request().method()).toBe('POST');
     const command = route.request().postDataJSON() as MutationRequest;
