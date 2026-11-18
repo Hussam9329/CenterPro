@@ -101,6 +101,17 @@ describe('navigation for the current account', () => {
     }
   });
 
+  it('offers the private to-do list to every signed-in account type', () => {
+    const data = createPopulatedTestData();
+    const employee = data.employees.find(item => item.role === 'EMPLOYEE' && item.active)!;
+    expect(hrefs(getShellNavigation(data, session('SUPER_ADMIN'), false))).toContain('/todos');
+    expect(hrefs(getShellNavigation(data, session('ADMIN'), false))).toContain('/todos');
+    expect(hrefs(getShellNavigation(data, session('EMPLOYEE', employee.id), true))).toContain('/employee/todos');
+    expect(getShellRedirect(data, session('ADMIN'), false, '/todos')).toBeNull();
+    expect(getShellRedirect(data, session('EMPLOYEE', employee.id), true, '/employee/todos')).toBeNull();
+    expect(getShellRedirect(data, session('QR_DISPLAY'), false, '/todos')).toBe('/attendance-display');
+  });
+
   it('selects nested destinations without treating the employee home as their active parent', () => {
     const data = createPopulatedTestData();
     const employeeNav = getShellNavigation(data, session('EMPLOYEE'), true);

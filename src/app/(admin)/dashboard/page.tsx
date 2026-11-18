@@ -4,6 +4,7 @@ import { UsersRound, CalendarCheck2, Wallet, Clock3, Plus, ArrowLeft, CalendarPl
 import { useDemo } from '@/components/demo-provider';
 import { Badge, Card, StatCard, Avatar, EmptyState } from '@/components/ui';
 import { AttendanceBars, AttendanceGauge, PayrollTrend } from '@/components/dashboard/charts';
+import { TodoHomeCard } from '@/components/todos/todo-home-card';
 import { getMonthPayroll } from '@/lib/payroll';
 import { money, number, time, duration, monthLabel, attendanceDateLabel } from '@/lib/format';
 import { getOpenWorkday, statusLabel } from '@/lib/attendance';
@@ -56,6 +57,7 @@ export default function DashboardPage() {
   const paid = payroll.length - unpaid.length;
   return <div className="page-stack dashboard-page"><header className="page-header"><div><div className="welcome-line"><span className="line"/>{attendanceDateLabel(today)}</div><h1>{data.employees.length ? `مرحباً، ${session?.name.split(' ')[0]}.` : 'مرحباً بك في CenterPro.'}</h1></div><div className="page-actions">{canView('REPORTS') && <Link className="btn btn-secondary" href="/reports"><FileChartColumnIncreasing size={17}/>عرض التقارير</Link>}{canCreate('ATTENDANCE') && <Link className="btn btn-primary" href="/attendance?open=new"><Plus size={17}/>فتح يوم حضور</Link>}</div></header>
     <div className="stats-grid"><StatCard label="الموظفون الفعّالون" value={number(data.employees.filter(e=>e.active).length)} icon={<UsersRound/>}/><StatCard label="الحاضرون اليوم" value={present.length} icon={<CalendarCheck2/>}/><StatCard label="غير محسوم" value={unresolved.length} icon={<Clock3/>}/><StatCard label="صافي رواتب الشهر" value={<>{number(total)} <small style={{fontSize:11,letterSpacing:0}}>د.ع</small></>} icon={<Wallet/>} accent/></div>
+    <TodoHomeCard/>
     {data.workdays.length === 0 && <Card title="البدء"><ol className="setup-guide">{setupSteps.map((step, index) => <li key={step.title} className={step.done ? 'setup-step completed' : 'setup-step'}><div className="setup-step-top"><span className="setup-step-number">{step.done ? <CheckCircle2 size={20}/> : `0${index + 1}`}</span><step.icon size={22}/></div><h3>{step.title}</h3>{step.done ? <Badge tone="success">مكتمل</Badge> : step.available ? <Link href={step.href} className="button-link">{step.title}<ArrowLeft size={15}/></Link> : <span className="muted">{index === 0 ? 'تحتاج صلاحية إضافة الأقسام' : 'أكمل الخطوة السابقة أو اطلب الصلاحية المطلوبة'}</span>}</li>)}</ol></Card>}
     <div className="dashboard-overview">
       <Card title="الحضور خلال آخر أيام الدوام" className="dashboard-chart-card" action={canView('ATTENDANCE') ? <Link className="button-link" href="/attendance">سجل الحضور<ArrowLeft size={14}/></Link> : undefined}>{recentDays.length ? <AttendanceBars points={recentDays}/> : <EmptyState title="لا توجد أيام حضور بعد."/>}</Card>

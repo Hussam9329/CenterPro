@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, check, index, integer, jsonb, pgSchema, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { bigint, boolean, check, index, integer, jsonb, pgSchema, primaryKey, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { DemoData, DemoSettings } from '@/lib/types';
 import type { StoredCredential, StoredSystemCredential } from '@/lib/local-auth';
+import type { TodoSubtask } from '@/lib/todos';
 
 export const centerpro = pgSchema('centerpro');
 const recordColumns = <T>() => ({ id: text('id').primaryKey(), position: integer('position').notNull(), record: jsonb('record').$type<T>().notNull() });
@@ -73,3 +74,11 @@ export const gamePlays = centerpro.table('game_plays', {
   durationMs: integer('duration_ms').notNull(), score: integer('score').notNull(), outcome: text('outcome').notNull(),
   playDate: text('play_date').notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => [index('game_plays_game_score_idx').on(t.game, t.score), index('game_plays_employee_started_idx').on(t.employeeId, t.startedAt)]);
+// Private to-do list (migration 0004). The owning account is part of the key on purpose.
+export const todos = centerpro.table('todos', {
+  accountKey: text('account_key').notNull().references(() => credentials.accountKey, { onDelete: 'cascade' }), id: text('id').notNull(),
+  title: text('title').notNull(), notes: text('notes').notNull().default(''), priority: text('priority').notNull().default('NORMAL'),
+  dueDate: text('due_date'), dueTime: text('due_time'), subtasks: jsonb('subtasks').$type<TodoSubtask[]>().notNull().default([]),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.accountKey, t.id] })]);
