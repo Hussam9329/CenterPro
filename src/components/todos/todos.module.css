@@ -1,0 +1,66 @@
+/* Private to-do list: page, home card and menu count. Theme colours come from shared tokens. */
+.navCount { margin-inline-start: auto; min-width: 22px; height: 22px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 11px; background: var(--brand); color: #fff; font-size: 11.5px; font-weight: 700; line-height: 1; }
+:global(.nav-link.active) .navCount { background: #fff; color: #a51c30; }
+
+.privacy { display: flex; align-items: center; gap: 8px; margin: -6px 0 0; color: var(--muted); font-size: 13px; }
+
+.quickAdd { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 14px; }
+.toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 190px); gap: 10px; align-items: center; margin-top: 14px; }
+.undo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 6px 14px; border-radius: 12px; background: var(--rd-chip); color: var(--text); font-size: 13px; overflow-wrap: anywhere; }
+.loading { margin-top: 14px; }
+
+.list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.row { border: 1px solid var(--rd-line); border-radius: 14px; background: var(--surface); }
+.rowMain { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 14px; }
+.rowText { min-width: 0; min-height: 44px; display: grid; align-content: center; gap: 5px; padding: 4px 0; border: 0; background: none; color: var(--ink); text-align: start; cursor: pointer; }
+.rowText strong { font-size: 14.5px; font-weight: 600; overflow-wrap: anywhere; }
+.rowText:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+.rowDone .rowText strong { color: var(--muted); text-decoration: line-through; }
+.rowActions { display: flex; align-items: center; gap: 2px; color: var(--muted); }
+.chevronOpen { transform: rotate(180deg); }
+
+.check { appearance: none; flex: none; width: 22px; height: 22px; margin: 0; display: inline-grid; place-items: center; border: 2px solid var(--muted); border-radius: 50%; background: transparent; cursor: pointer; }
+.check::after { content: ''; width: 10px; height: 5px; margin-top: -2px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) scale(0); }
+.check:hover { border-color: var(--brand); }
+.check:checked { border-color: var(--brand); background: var(--brand); }
+.check:checked::after { transform: rotate(-45deg) scale(1); }
+.check:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; color: var(--muted); font-size: 12.5px; font-weight: 500; }
+.metaItem { display: inline-flex; align-items: center; gap: 5px; }
+.late { color: var(--brand-text); font-weight: 650; }
+.dueToday { color: var(--warning); font-weight: 650; }
+
+.details { display: grid; gap: 12px; padding: 12px 14px 14px; border-top: 1px solid var(--rd-line); }
+.notes { margin: 0; color: var(--text); font-size: 13.5px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.progress { height: 6px; border-radius: 3px; background: var(--rd-chip); overflow: hidden; }
+.progress span { display: block; height: 100%; border-radius: 3px; background: var(--brand); }
+.subtasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.subtasks label { min-height: 40px; display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 13.5px; cursor: pointer; overflow-wrap: anywhere; }
+.subtasks label span { min-width: 0; }
+.subtaskDone { color: var(--muted) !important; text-decoration: line-through; }
+.subtaskAdd { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+
+.editor { display: grid; gap: 18px; }
+.editor :global(.form-actions) { margin-top: 0; }
+.priorityGroup, .subtaskEditor { min-width: 0; margin: 0; padding: 0; border: 0; }
+.subtaskEditor { display: grid; gap: 8px; }
+.priorityGroup > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.priorityGroup label { min-height: 44px; display: grid; place-items: center; border: 1px solid var(--rd-line); border-radius: 12px; color: var(--text); font-size: 13.5px; font-weight: 550; cursor: pointer; }
+.priorityGroup label:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.priorityActive { border-color: var(--brand) !important; background: var(--brand-light); color: var(--brand-text) !important; font-weight: 700 !important; }
+.dueFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.quickDates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -8px; }
+
+.summary { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--muted); font-size: 13px; }
+.summary strong { font-size: 18px; color: inherit; }
+.homeList { list-style: none; margin: 12px 0 0; padding: 0; display: grid; }
+.homeList li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; border-top: 1px solid var(--rd-line); }
+.homeText { min-width: 0; display: grid; gap: 4px; }
+.homeText strong { color: var(--ink); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .toolbar { grid-template-columns: 1fr; }
+  .rowMain { grid-template-columns: auto minmax(0, 1fr); padding: 8px 12px; }
+  .rowActions { grid-column: 1 / -1; justify-content: flex-end; margin-top: -6px; }
+}

@@ -9,6 +9,8 @@ import { Brand } from '@/components/brand';
 import { useTheme } from '@/components/theme-provider';
 import { getActiveNavigation, getMobileNavigation, getShellNavigation, getShellRedirect } from './app-shell/navigation';
 import { ShellMobileMenu, ShellMobileNavigation, ShellSidebar, ShellTopbar } from './app-shell/presentation';
+import { TodoNavCount } from './todos/todo-nav-count';
+import { TodosProvider, todoAccountKey } from './todos/todos-provider';
 
 export function AppSkeleton() { return <div className="app-loading" role="status" aria-label="جارٍ تحميل الصفحة"><Brand/><Skeleton className="loading-title"/><div className="stats-grid">{[0,1,2,3].map(i => <Skeleton key={i} className="loading-stat"/>)}</div><Skeleton className="loading-main"/></div>; }
 export function AppShell({ children, employee = false }: { children: ReactNode; employee?: boolean }) {
@@ -35,8 +37,9 @@ export function AppShell({ children, employee = false }: { children: ReactNode; 
     catch (error) { notify(error instanceof Error ? error.message : 'تعذر تسجيل الخروج. حاول مرة أخرى.'); }
     finally { setLoggingOut(false); }
   }
-  const links = <>{nav.map(item => <Link key={item.href} href={item.href === '/calculator' ? { pathname: '/calculator', query: { returnTo: pathname } } : item.href} onClick={() => setMenu(false)} className={`nav-link ${current?.href === item.href ? 'active' : ''}`} aria-current={current?.href === item.href ? 'page' : undefined}><item.icon size={19}/><span>{item.label}</span>{current?.href === item.href && <span className="nav-active-mark"/>}</Link>)}</>;
-  return <>
+  const links = <>{nav.map(item => <Link key={item.href} href={item.href === '/calculator' ? { pathname: '/calculator', query: { returnTo: pathname } } : item.href} onClick={() => setMenu(false)} className={`nav-link ${current?.href === item.href ? 'active' : ''}`} aria-current={current?.href === item.href ? 'page' : undefined}><item.icon size={19}/><span>{item.label}</span>{item.href.endsWith('/todos') && <TodoNavCount/>}{current?.href === item.href && <span className="nav-active-mark"/>}</Link>)}</>;
+  // Keyed by account so one person's tasks can never stay on screen for the next sign-in.
+  return <TodosProvider key={todoAccountKey(session)}>
     <div className={`app-shell ${employeeAccount ? 'employee-shell' : ''}`}>
       <ShellSidebar employee={employeeAccount} links={links}/>
       <div className="app-main">
@@ -50,5 +53,5 @@ export function AppShell({ children, employee = false }: { children: ReactNode; 
       <ShellMobileNavigation nav={getMobileNavigation(nav, employeeAccount)} current={current} openMenu={() => setMenu(true)}/>
     </div>
     <ShellMobileMenu employee={employeeAccount} links={links} open={menu} closeMenu={() => setMenu(false)} theme={theme} toggleTheme={toggleTheme} loggingOut={loggingOut} exit={exit}/>
-  </>;
+  </TodosProvider>;
 }

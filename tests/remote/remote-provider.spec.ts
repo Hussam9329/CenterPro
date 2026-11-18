@@ -37,6 +37,7 @@ async function transport(page: Page, read: () => RemoteSnapshot, post?: (route: 
   await page.route('**/api/**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     if (pathname === '/api/state' && route.request().method() === 'GET') return route.fulfill({ json: read() });
+    if (pathname === '/api/todos') return route.fulfill({ json: [] });
     if (post) return post(route, pathname);
     return route.fulfill({ status: 404, json: { error: 'طلب غير متوقع في الاختبار' } });
   });

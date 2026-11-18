@@ -29,6 +29,7 @@ async function transport(page: Page, read: () => RemoteSnapshot, mutate: (route:
   await page.route('**/api/**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     if (pathname === '/api/state' && route.request().method() === 'GET') return route.fulfill({ json: read() });
+    if (pathname === '/api/todos') return route.fulfill({ json: [] });
     expect(pathname).toBe('/api/mutations');
     expect(route.request().method()).toBe('POST');
     return mutate(route, route.request().postDataJSON() as MutationRequest);

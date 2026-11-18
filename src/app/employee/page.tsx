@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarCheck, CircleDollarSign, Clock3, Gift, QrCode, Recei
 import { Avatar, Badge, Card, EmptyState, PageHeader, Skeleton, StatCard } from '@/components/ui';
 import { AttendanceGauge } from '@/components/dashboard/charts';
 import { RankBadge } from '@/components/evaluations/rank-badge';
+import { TodoHomeCard } from '@/components/todos/todo-home-card';
 import styles from '@/components/evaluations/evaluations.module.css';
 import { useDemo } from '@/components/demo-provider';
 import { getEmployeePayroll } from '@/lib/payroll';
@@ -46,6 +47,7 @@ export default function EmployeeHomePage() {
       <div className="employee-hero-main"><div className="inline"><Avatar name={employee.name} src={employee.photo} size={52} /><div><strong>{employee.name}</strong><p>{department?.name} · <bdi>{employee.code}</bdi></p></div></div><div className="employee-salary"><span>صافي راتبك المتوقع</span><strong><bdi dir="ltr">{money(result.finalSalary)}</bdi></strong><span>بعد احتساب الغياب والخصومات والمكافآت</span></div><Link href="/employee/salary" className="button-link">عرض تفاصيل الراتب <ArrowLeft size={17} /></Link></div>
       <div className="employee-hero-scan"><div className="employee-scan-icon"><QrCode size={38} strokeWidth={1.5} /></div><h2>{registered ? 'تم تسجيل حضورك لهذا اليوم' : 'سجّل حضورك بسهولة'}</h2><p>{registered ? `وقت الدخول: \u2066${time(todayAttendance.checkIn ?? '')}\u2069` : today?.state === 'OPEN' && expected ? `يبدأ الدوام المفتوح \u2066${time(today.startTime)}\u2069` : !today ? 'لا يوجد يوم حضور مفتوح حالياً.' : !expected ? 'أنت مستثنى من دوام هذا اليوم.' : 'يوم الحضور مغلق حالياً.'}</p><Link href="/employee/scan" className="btn btn-primary"><QrCode size={18} />{registered ? 'عرض حالة تسجيل الحضور' : 'تسجيل الحضور'}</Link><span className="muted">{date(today?.date || currentDate)} · بتوقيت بغداد</span></div>
     </section>
+    <TodoHomeCard/>
     <Card title="حضوري هذا الشهر" className="employee-gauge-card"><AttendanceGauge rate={result.requiredDays ? Math.round(result.attendanceDays / result.requiredDays * 100) : 0} present={result.attendanceDays} unresolved={result.excusedDays} absent={result.unexcusedDays} caption="نسبة حضورك" labels={['يوم حضور', 'بعذر', 'بدون عذر']}/></Card>
     {result.paymentStatus === 'REVIEW' && <div className="notice notice-warning" role="status"><strong>راتبك يحتاج إلى مراجعة بعد الصرف</strong><p>المصروف سابقاً <bdi dir="ltr">{money(result.paidAmount)}</bdi> · الفرق <bdi dir="ltr">{money(result.difference)}</bdi></p></div>}
     <div className="stats-grid">
