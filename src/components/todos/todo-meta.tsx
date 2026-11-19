@@ -6,7 +6,7 @@ import { date } from '@/lib/format';
 import { TODO_PRIORITY_LABELS, shiftDate, todoDueState, type Todo, type TodoClock } from '@/lib/todos';
 import styles from './todos.module.css';
 
-function clockLabel(value: string): string {
+export function clockLabel(value: string): string {
   const [hours, minutes] = value.split(':').map(Number);
   return `${String(hours % 12 || 12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${hours >= 12 ? 'PM' : 'AM'}`;
 }
