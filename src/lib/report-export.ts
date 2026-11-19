@@ -1,4 +1,4 @@
-export interface ReportColumn { key: string; label: string; type?: 'money' | 'number' | 'date' | 'text' }
+export interface ReportColumn { key: string; label: string; type?: 'money' | 'number' | 'date' | 'text'; width?: number }
 export type ReportCell = string | number | Date;
 export interface ReportSection { title: string; columns: ReportColumn[]; rows: Record<string, ReportCell>[] }
 export interface CenterReport { title: string; subtitle: string; period: string; sections: ReportSection[] }
@@ -11,7 +11,7 @@ export async function exportReportExcel(report: CenterReport, options: { preview
   workbook.created = new Date();
   report.sections.forEach((section, index) => {
     const sheet = workbook.addWorksheet(`${index + 1} ${section.title}`.replace(/[\\/*?:[\]]/g, '').slice(0, 31), { views: [{ rightToLeft: true, state: 'frozen', ySplit: 5 }], pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
-    sheet.columns = section.columns.map(column => ({ key: column.key, width: column.key === 'reason' ? 48 : column.type === 'money' ? 22 : column.type === 'date' ? 17 : 27 }));
+    sheet.columns = section.columns.map(column => ({ key: column.key, width: column.width ?? (column.key === 'reason' ? 48 : column.type === 'money' ? 22 : column.type === 'date' ? 17 : 27) }));
     const end = Math.max(1, section.columns.length);
     sheet.mergeCells(1, 1, 1, end); sheet.getCell(1, 1).value = `CenterPro | ${report.title}`;
     sheet.mergeCells(2, 1, 2, end); sheet.getCell(2, 1).value = `${report.period} · ${report.subtitle}`;
